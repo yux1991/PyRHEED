@@ -905,17 +905,18 @@ class RHEED_GUI(ttk.Frame):
             pass
 
     def profile_update(self):
-        try:
-            self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
-            x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
-            self.canvas.delete(self.RectOnCanvas)
-            self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
-        except:
-            pass
-        try:
-            self.line_scan_update()
-        except:
-            pass
+        if self.EnableCanvasLines==1:
+            try:
+                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+                x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
+                self.canvas.delete(self.RectOnCanvas)
+                self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+            except:
+                pass
+            try:
+                self.line_scan_update()
+            except:
+                pass
 
     def profile_reset(self):
         self.IntegralWidth.set(20)
@@ -924,18 +925,18 @@ class RHEED_GUI(ttk.Frame):
         self.ProfileLabel3['text'] = 'Radius ({} \u00C5\u207B\u00B9)'.format(np.round(self.PFRadius.get(),2))
         self.ProfileLabel2['text'] = 'Chi Range ({}\u00B0)'.format(np.round(self.ChiRange.get(),1))
         self.ProfileLabel1['text'] = 'Integral Width ({} pixel)'.format(self.IntegralWidth.get())
-        try:
-            self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
-            x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
-            self.canvas.delete(self.RectOnCanvas)
-            self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
-        except:
-            pass
-
-        try:
-            self.line_scan_update()
-        except:
-            pass
+        if self.EnableCanvasLines==1:
+            try:
+                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+                x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
+                self.canvas.delete(self.RectOnCanvas)
+                self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+            except:
+                pass
+                try:
+                    self.line_scan_update()
+                except:
+                    pass
 
     def get_rectangle_position(self):
         x0,y0,x1,y1,x2,y2,x3,y3 = 0,0,0,0,0,0,0,0
