@@ -27,9 +27,8 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
-import tkinter.messagebox
-from PIL import Image, ImageTk
-from PIL import ImageOps
+from tkinter import messagebox
+from PIL import Image, ImageTk,ImageOps,ImageDraw,ImageFont
 from array import array
 from io import BytesIO
 from matplotlib.mathtext import math_to_image
@@ -88,25 +87,32 @@ class RHEED_GUI(ttk.Frame):
         self.fontname = 'Helvetica'
         self.fontsize = 10
         self.ScanStatus = 0
+        self.TrueTypeFont = 'C:\Windows\Fonts\Calibri.TTF'
 
         ''' Initialize the main Frame '''
 
         ttk.Frame.__init__(self, master=mainframe)
         self.DefaultFileName = os.path.basename(self.DefaultPath)
-        self.master.title('PyRHEED /'+self.DefaultFileName)
+        self.master.title('PyRHEED: ~/'+self.DefaultFileName)
         top=self.master.winfo_toplevel()
         self.menuBar = tk.Menu(top)
         top['menu']=self.menuBar
 
         self.FileMenu=tk.Menu(self.menuBar,tearoff=0)
         self.menuBar.add_cascade(label='File',menu=self.FileMenu)
-        FileModes = [('New',self._new),('Open',self._open),('Save',self._save),('Close',self._close)]
+        FileModes = [('New',self.menu_file_new),('Open',self.menu_file_open),('Save As...',self.menu_file_save_as),('Close',self.menu_file_close)]
         for label,command in FileModes:
             self.FileMenu.add_command(label=label,command=command)
 
+        self.PreferenceMenu=tk.Menu(self.menuBar,tearoff=0)
+        self.menuBar.add_cascade(label='Preferences',menu=self.PreferenceMenu)
+        PreferenceModes = [('Default Settings',self.menu_preference_default)]
+        for label,command in PreferenceModes:
+            self.PreferenceMenu.add_command(label=label,command=command)
+
         self.HelpMenu=tk.Menu(self.menuBar,tearoff=0)
         self.menuBar.add_cascade(label='Help',menu=self.HelpMenu)
-        HelpModes = [('About',self._about)]
+        HelpModes = [('About',self.menu_help_about)]
         for label,command in HelpModes:
             self.HelpMenu.add_command(label=label,command=command)
 
@@ -138,6 +144,7 @@ class RHEED_GUI(ttk.Frame):
         self.uint16 = np.uint8(self.img/256)
         self.outpil = self.uint16.astype(self.uint16.dtype.newbyteorder("L")).tobytes()
         self.image.frombytes(self.outpil)
+        self.AnnotatedImage = self.image.copy()
         self.width, self.height = self.image.size
         self.imscale = 1.0  # scale for the canvas image
         self.delta = 1.2  # zoom magnitude
@@ -147,13 +154,19 @@ class RHEED_GUI(ttk.Frame):
 
         '''Initialize the information panel on the right hand side of the canvas'''
         #create InfoFrame to display informations
-        self.InfoFrame = ttk.Frame(self.master, relief=FLAT)
+        self.InfoFrame = ttk.Frame(self.master, relief=FLAT,padding="0.05i")
         self.InfoFrame.grid(row=0,column=19+2,sticky=N+E+S+W)
         #create a treeview widget as a file browser
         self.FileBrowserLabelFrame = ttk.LabelFrame(self.InfoFrame,text="Browse File",labelanchor=NW)
         self.FileBrowserLabelFrame.grid(row=0,column=0,sticky=N+E+W+S)
-        self.ChooseWorkingDirectory = ttk.Button(self.FileBrowserLabelFrame,command=self.choose_file,text='Choose File',cursor='hand2')
+        self.FileBrowserButtonFrame = ttk.Frame(self.FileBrowserLabelFrame,padding="0.05i")
+        self.FileBrowserButtonFrame.grid(row=0,column=0,sticky=N+E+W+S)
+        self.ChooseWorkingDirectory = ttk.Button(self.FileBrowserButtonFrame,command=self.choose_file,text='Choose File',width=20,cursor='hand2')
         self.ChooseWorkingDirectory.grid(row=0,column=0,sticky=EW)
+        self.SavePlainImage = ttk.Button(self.FileBrowserButtonFrame,command=self.save_as_plain_image,text='Save Plain Image',width=20,cursor='hand2')
+        self.SavePlainImage.grid(row=0,column=1,sticky=EW)
+        self.SaveAnnotatedImage = ttk.Button(self.FileBrowserButtonFrame,command=self.save_as_annotated_image,text='Save Annotated Image',width=20,cursor='hand2')
+        self.SaveAnnotatedImage.grid(row=0,column=2,sticky=EW)
         self.FileBrowserVSB = ttk.Scrollbar(self.FileBrowserLabelFrame,orient='vertical')
         self.FileBrowserHSB = ttk.Scrollbar(self.FileBrowserLabelFrame,orient='horizontal')
         self.FileBrowser = ttk.Treeview(self.FileBrowserLabelFrame,columns = ('fullpath','type','date','size'),displaycolumns=('date','size'),cursor='left_ptr',height=8,selectmode='browse',yscrollcommand=lambda f,l: self.autoscroll(self.FileBrowserVSB,f,l),xscrollcommand=lambda f,l:self.autoscroll(self.FileBrowserHSB,f,l))
@@ -162,7 +175,7 @@ class RHEED_GUI(ttk.Frame):
         self.FileBrowserHSB.grid(row=2,column=0,sticky=EW)
         self.FileBrowserVSB['command']=self.FileBrowser.yview
         self.FileBrowserHSB['command']=self.FileBrowser.xview
-        FileBrowserHeadings= [('#0','Directory Structure'),('date','Date'),('size','Size')]
+        FileBrowserHeadings= [('#0','Current Directory Structure'),('date','Date'),('size','Size')]
         for iid,text in FileBrowserHeadings:
             self.FileBrowser.heading(iid,text=text,anchor=W)
         FileBrowserColumns= [('#0',270),('date',70),('size',70)]
@@ -307,20 +320,24 @@ class RHEED_GUI(ttk.Frame):
         self.ZFtext.grid(row=0,column=0,sticky=NW)
         self.ZFtext.config(font=(self.fontname,self.fontsize+4),bg='black',fg='red',height=1,width=6,relief=FLAT)
 
-    def _new(self):
+    def menu_file_new(self):
         return
 
-    def _open(self):
+    def menu_file_open(self):
         self.choose_file()
 
-    def _save(self):
+    def menu_file_save_as(self):
+        self.save_as_plain_image()
         return
 
-    def _close(self):
+    def menu_file_close(self):
         return
 
-    def _about(self):
-        tkinter.messagebox.showinfo(title="About", message="PyRHEED 1.0.0   By Yu Xiang\n\nContact: yux1991@gmail.com")
+    def menu_preference_default(self):
+        return
+
+    def menu_help_about(self):
+        messagebox.showinfo(title="About", default="ok",message="PyRHEED 1.0.0   By Yu Xiang\n\nContact: yux1991@gmail.com")
 
     def adjust_update(self):
         self.img = self.read_image(self.DefaultPath)
@@ -393,33 +410,59 @@ class RHEED_GUI(ttk.Frame):
         bx0,by0 = self.convert_coords(bbox[0],bbox[1])
         bx1,by1 = self.convert_coords(bbox[2],bbox[3])
         x0,y0,y1 = bbox[0]+(bbox[2]-bbox[0])*position,bbox[3]-(bbox[3]-bbox[1])*position,bbox[3]-(bbox[3]-bbox[1])*position
+        positionx = 0.1
+        positiony = 0.05
         x1 = x0+float(self.ScaleBarLength.get())*(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))/(bx1-bx0)*(bbox[2]-bbox[0])
+        self.AnnotatedImage = self.image.copy()
         try:
             self.canvas.delete(self.ScaleBarLine)
         except:
             pass
         try:
-            self.canvas.delete(self.CanvasInformation)
+            self.canvas.delete(self.ScaleBarText)
         except:
             pass
         self.ScaleBarLine = self.canvas.create_line((x0,y0),(x1,y1),fill='white',width=thickness)
-        self.CanvasInformation = self.canvas.create_text(((x0+x1)/2,y0-40/(bx1-bx0)*(bbox[2]-bbox[0])),font=('Helvetica',fontsize),fill='white',text=u'{} \u00C5\u207B\u00B9'.format(np.round(float(self.ScaleBarLength.get()),1)))
+        self.ScaleBarText = self.canvas.create_text(((x0+x1)/2,y0-40/(bx1-bx0)*(bbox[2]-bbox[0])),font=('Helvetica',fontsize),fill='white',text=u'{} \u00C5\u207B\u00B9'.format(np.round(float(self.ScaleBarLength.get()),1)))
         self.EnableCalibration=1
+        ibox = self.AnnotatedImage.getbbox()
+        ix0,iy0,iy1 = ibox[0]+(ibox[2]-ibox[0])*position,ibox[3]-(ibox[3]-ibox[1])*position,ibox[3]-(ibox[3]-ibox[1])*position
+        ix1 = ix0+float(self.ScaleBarLength.get())*(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
+        draw = ImageDraw.Draw(self.AnnotatedImage)
+        draw.line([(ix0,iy0),(ix1,iy1)],fill='white',width=thickness*2)
+        draw.text(((ix0+ix1)/2-80,iy0-60),font=ImageFont.truetype(self.TrueTypeFont,40),fill='white',text=u'{} \u00C5\u207B\u00B9'.format(np.round(float(self.ScaleBarLength.get()),1)))
+        if self.EnableCanvasLabel ==1:
+            x0_2,y0_2 = ibox[0]+(ibox[2]-ibox[0])*positionx,ibox[1]+(ibox[3]-ibox[1])*positiony
+            draw.text((x0_2-100,y0_2),font = ImageFont.truetype(self.TrueTypeFont,40),fill='white',text=u'Energy = {} keV\n\u03C6 = {}\u00B0'.format(np.round(float(self.ElectronEnergy.get()),1),np.round(float(self.Azimuth.get()),1)))
 
     def label(self):
-        positionx = 0.1
-        positiony = 0.05
+        thickness = 2
+        position = 0.05
         fontsize = int(40*self.ZoomFactor)
         bbox = self.canvas.bbox(self.container)
         bx0,by0 = self.convert_coords(bbox[0],bbox[1])
         bx1,by1 = self.convert_coords(bbox[2],bbox[3])
-        x0,y0 = bbox[0]+(bbox[2]-bbox[0])*positionx,bbox[1]+(bbox[3]-bbox[1])*positiony
+        x0,y0,y1 = bbox[0]+(bbox[2]-bbox[0])*position,bbox[3]-(bbox[3]-bbox[1])*position,bbox[3]-(bbox[3]-bbox[1])*position
+        positionx = 0.1
+        positiony = 0.05
+        x0_2,y0_2 = bbox[0]+(bbox[2]-bbox[0])*positionx,bbox[1]+(bbox[3]-bbox[1])*positiony
+        x1 = x0+float(self.ScaleBarLength.get())*(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))/(bx1-bx0)*(bbox[2]-bbox[0])
+        self.AnnotatedImage = self.image.copy()
         try:
             self.canvas.delete(self.CanvasLabel)
         except:
             pass
-        self.CanvasLabel = self.canvas.create_text((x0,y0),font = ('Helvtica',fontsize),fill='white',text=u'Energy = {} keV\n\u03C6 = {}\u00B0'.format(np.round(float(self.ElectronEnergy.get()),1),np.round(float(self.Azimuth.get()),1)))
+        self.CanvasLabel = self.canvas.create_text((x0_2,y0_2),font = ('Helvtica',fontsize),fill='white',text=u'Energy = {} keV\n\u03C6 = {}\u00B0'.format(np.round(float(self.ElectronEnergy.get()),1),np.round(float(self.Azimuth.get()),1)))
         self.EnableCanvasLabel = 1
+        ibox = self.AnnotatedImage.getbbox()
+        ix0,iy0,iy1 = ibox[0]+(ibox[2]-ibox[0])*position,ibox[3]-(ibox[3]-ibox[1])*position,ibox[3]-(ibox[3]-ibox[1])*position
+        ix0_2,iy0_2 = ibox[0]+(ibox[2]-ibox[0])*positionx,ibox[1]+(ibox[3]-ibox[1])*positiony
+        ix1 = ix0+float(self.ScaleBarLength.get())*(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
+        draw = ImageDraw.Draw(self.AnnotatedImage)
+        draw.text((ix0_2-100,iy0_2),font = ImageFont.truetype(self.TrueTypeFont,40),fill='white',text=u'Energy = {} keV\n\u03C6 = {}\u00B0'.format(np.round(float(self.ElectronEnergy.get()),1),np.round(float(self.Azimuth.get()),1)))
+        if self.EnableCalibration ==1:
+            draw.line([(ix0,iy0),(ix1,iy1)],fill='white',width=thickness*2)
+            draw.text(((ix0+ix1)/2-80,iy0-60),font=ImageFont.truetype(self.TrueTypeFont,40),fill='white',text=u'{} \u00C5\u207B\u00B9'.format(np.round(float(self.ScaleBarLength.get()),1)))
 
     def delete_calibration(self):
         self.EnableCalibration=0
@@ -429,13 +472,14 @@ class RHEED_GUI(ttk.Frame):
         except:
             pass
         try:
-            self.canvas.delete(self.CanvasInformation)
+            self.canvas.delete(self.ScaleBarText)
         except:
             pass
         try:
             self.canvas.delete(self.CanvasLabel)
         except:
             pass
+        self.AnnotatedImage = self.image.copy()
 
     def autoscroll(self,sbar,first,last):
         first,last = float(first),float(last)
@@ -531,7 +575,7 @@ class RHEED_GUI(ttk.Frame):
         except:
             initialdir = ''
             pass
-        self.CurrentFilePath=filedialog.askopenfilename(initialdir=initialdir,title='Choose File')
+        self.CurrentFilePath=filedialog.askopenfilename(initialdir=initialdir,filetypes=(("Raw File (*.nef)","*.nef"),("All Files (*.*)","*.*")),title='Choose File')
         if self.CurrentFilePath =='':pass
         else:
             self.FileBrowser.delete(self.FileBrowser.get_children(''))
@@ -548,6 +592,18 @@ class RHEED_GUI(ttk.Frame):
             self.delete_line()
             self.delete_calibration()
         return self.CurrentFilePath
+
+    def save_as_plain_image(self):
+        self.save_image_path = filedialog.asksaveasfilename(title="Save As",filetypes=(("JPEG (*.jpeg)","*.jpeg"),("TIFF (*.tif)","*.tif"),("PNG (*.png)","*.png"),("GIF (*.gif)","*.gif"),("All Files (*.*)","*.*")))
+        if self.save_image_path == '':pass
+        else:
+            self.image.save(self.save_image_path)
+
+    def save_as_annotated_image(self):
+        self.save_image_path = filedialog.asksaveasfilename(title="Save As",filetypes=(("JPEG (*.jpeg)","*.jpeg"),("TIFF (*.tif)","*.tif"),("PNG (*.png)","*.png"),("GIF (*.gif)","*.gif"),("All Files (*.*)","*.*")))
+        if self.save_image_path == '':pass
+        else:
+            self.AnnotatedImage.save(self.save_image_path)
 
     def get_center(self):
         #print(int(self.Ctr_X),int(self.Ctr_Y))
@@ -630,8 +686,8 @@ class RHEED_GUI(ttk.Frame):
         if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it in the visible area
             x = min(int(x2 / self.imscale), self.width)   # sometimes it is larger on 1 pixel...
             y = min(int(y2 / self.imscale), self.height)  # ...and sometimes not
-            image = self.image.crop((int(x1 / self.imscale), int(y1 / self.imscale), x, y))
-            imagetk = ImageTk.PhotoImage(image.resize((int(x2 - x1), int(y2 - y1))))
+            self.CroppedImage = self.image.crop((int(x1 / self.imscale), int(y1 / self.imscale), x, y))
+            imagetk = ImageTk.PhotoImage(self.CroppedImage.resize((int(x2 - x1), int(y2 - y1))))
             imageid = self.canvas.create_image(max(bbox2[0], bbox1[0]), max(bbox2[1], bbox1[1]),
                                                anchor='nw', image=imagetk)
             self.canvas.lift(imageid)  # set image into the top layer
@@ -644,6 +700,7 @@ class RHEED_GUI(ttk.Frame):
             except:
                 pass
             self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
+        self.AnnotatedImage = self.image.copy()
         calibration_status,label_status = self.EnableCalibration,self.EnableCanvasLabel
         self.delete_calibration()
         try:
