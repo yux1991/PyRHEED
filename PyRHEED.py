@@ -1,5 +1,5 @@
 #This program is used to analyze and simulate the RHEED pattern
-#Last updated by Yu Xiang at 07/29/2018
+#Last updated by Yu Xiang at 08/01/2018
 #This code is written in Python 3.6.6
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,6 +43,7 @@ class RHEED_GUI(ttk.Frame):
     def __init__(self, mainframe):
 
         self.DefaultPath = 'C:/RHEED/01192017 multilayer graphene on Ni/20 keV/Img0000.nef'
+        self.IconPath = './icons/'
         self.Ctr_X,self.Ctr_Y,self.Mouse_X,self.Mouse_Y=0,0,0,0
         self.scale = 1.0
         self.dpi = 100.
@@ -82,12 +83,20 @@ class RHEED_GUI(ttk.Frame):
         self.ProfileMode.set('2D')
         self.LineScanAxesPosition = [0.2,0.2,0.75,0.7]
         self.EnableCanvasLines = 0
-        self.EnableCalibration =1
-        self.EnableCanvasLabel =1
+        self.EnableCalibration =0
+        self.EnableCanvasLabel =0
         self.fontname = 'Helvetica'
         self.fontsize = 10
         self.ScanStatus = 0
         self.TrueTypeFont = 'C:\Windows\Fonts\Calibri.TTF'
+        self.imscale = 1.0  # scale for the canvas image
+        self.delta = 1.2  # zoom magnitude
+        self.image_crop = [1200,2650,500,3100]
+        self.style = ttk.Style()
+        self.style.map('My.TButton',background=[('disabled','magenta'),('pressed','!focus','cyan'),('active','green')],
+                foreground=[('disabled','yellow'),('pressed','red'),('active','blue')],
+                highlightcolor=[('focus','green'),('!focus','red')],
+                relief=[('pressed','groove'),('!pressed','flat')])
 
         ''' Initialize the main Frame '''
 
@@ -116,46 +125,60 @@ class RHEED_GUI(ttk.Frame):
         for label,command in HelpModes:
             self.HelpMenu.add_command(label=label,command=command)
 
+
+        '''Initialize the tool bar'''
+        self.ToolBarFrame = ttk.Frame(self.master)
+        self.ToolBarFrame.grid(row=0,column=0,sticky=NW)
+        self.OpenIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'open.gif'))
+        self.SaveIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'save.gif'))
+        self.SaveAsIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'save as.gif'))
+        LineIconImage = Image.open(os.path.join(self.IconPath,'line.png'))
+        ResizedLineIconImage = LineIconImage.resize(size=(24,24))
+        self.LineIcon = ImageTk.PhotoImage(ResizedLineIconImage)
+        RectangleIconImage = Image.open(os.path.join(self.IconPath,'rectangle.png'))
+        ResizedRectangleIconImage = RectangleIconImage.resize(size=(24,24))
+        self.RectangleIcon = ImageTk.PhotoImage(ResizedRectangleIconImage)
+        MoveIconImage = Image.open(os.path.join(self.IconPath,'move.png'))
+        ResizedMoveIconImage = MoveIconImage.resize(size=(24,24))
+        self.MoveIcon = ImageTk.PhotoImage(ResizedMoveIconImage)
+        ToolBarModes1 = [(self.OpenIcon,self.choose_file,0),(self.SaveIcon,self.save_as_plain_image,1),(self.SaveAsIcon,self.save_as_annotated_image,2)]
+        ToolBarModes2 = [(self.LineIcon,'LS',3),(self.RectangleIcon,'LI',4),(self.MoveIcon,'N',5)]
+        for icon,command,col in ToolBarModes1:
+            self.ToolButton = ttk.Button(self.ToolBarFrame,image=icon,command=command,cursor='hand2')
+            self.ToolButton.grid(row=0,column=col,sticky=NW)
+
+        for icon,mode,col in ToolBarModes2:
+            self.ToolButton = tk.Radiobutton(self.ToolBarFrame,command=self.choose_mode,image=icon,indicatoron=0,variable=self.mode,value=mode,cursor="hand2")
+            self.ToolButton.grid(row=0,column=col,sticky=NW)
+
         '''Initialize the canvas widget with two scrollbars'''
         # Vertical and horizontal scrollbars for canvas
         vbar = ttk.Scrollbar(self.master, orient='vertical')
         hbar = ttk.Scrollbar(self.master, orient='horizontal')
-        vbar.grid(row=0, column=1, sticky='ns')
-        hbar.grid(row=1, column=0, sticky='we')
+        vbar.grid(row=1, column=1, sticky='ns')
+        hbar.grid(row=2, column=0, sticky='we')
         # Create canvas and put image on it
         self.canvas = tk.Canvas(self.master, cursor = 'crosshair',relief=RIDGE, highlightthickness=0,xscrollcommand=hbar.set, yscrollcommand=vbar.set)
-        self.canvas.grid(row=0, column=0, sticky='nswe')
+        self.canvas.grid(row=1, column=0, sticky='nswe')
         self.canvas.update()  # wait till canvas is created
         vbar.configure(command=self.scroll_y)  # bind scrollbars to the canvas
         hbar.configure(command=self.scroll_x)
         # Make the canvas expandable
-        self.master.rowconfigure(0, weight=1)
+        self.master.rowconfigure(1, weight=1)
         self.master.columnconfigure(0, weight=1)
         # Bind events to the Canvas
-        self.canvas.bind('<Configure>', self.show_image)  # canvas is resized
+        self.canvas.bind('<Configure>', self.canvas_configure)  # canvas is resized
         self.canvas.bind('<MouseWheel>', self.wheel)  # with Windows and MacOS, but not Linux
         self.canvas.bind('<Double-Button-1>',self.click_coords)
         self.canvas.bind('<Motion>',self.canvas_mouse_coords)
         self.bind_all("<1>",lambda event:event.widget.focus_set())
-        #create an PIL.Image object
-        self.img = self.read_image(self.DefaultPath)
-        self.image = Image.new('L',(self.img.shape[1],self.img.shape[0]))
-        #convert 16 bit image to 8 bit image
-        self.uint16 = np.uint8(self.img/256)
-        self.outpil = self.uint16.astype(self.uint16.dtype.newbyteorder("L")).tobytes()
-        self.image.frombytes(self.outpil)
-        self.AnnotatedImage = self.image.copy()
-        self.width, self.height = self.image.size
-        self.imscale = 1.0  # scale for the canvas image
-        self.delta = 1.2  # zoom magnitude
         # Put image into container rectangle and use it to set proper coordinates to the image
-        self.container = self.canvas.create_rectangle(0, 0, self.width, self.height, width=0)
-        self.show_image()
+        self.container = self.canvas.create_rectangle(0, 0,self.image_crop[3]-self.image_crop[2], self.image_crop[1]-self.image_crop[0], width=0)
 
         '''Initialize the information panel on the right hand side of the canvas'''
         #create InfoFrame to display informations
         self.InfoFrame = ttk.Frame(self.master, relief=FLAT,padding="0.05i")
-        self.InfoFrame.grid(row=0,column=19+2,sticky=N+E+S+W)
+        self.InfoFrame.grid(row=1,column=19+2,sticky=N+E+S+W)
         #create a treeview widget as a file browser
         self.FileBrowserLabelFrame = ttk.LabelFrame(self.InfoFrame,text="Browse File",labelanchor=NW)
         self.FileBrowserLabelFrame.grid(row=0,column=0,sticky=N+E+W+S)
@@ -191,7 +214,7 @@ class RHEED_GUI(ttk.Frame):
         self.CIlabel1 = ttk.Label(self.CIframe,text="Coordinates of the spot is:\t\nNormalized intensity of spot is:\t")
         self.CIlabel1.grid(row=0,column=0,sticky=NW)
         self.CIlabel1.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
-        self.CIlabel2 = ttk.Label(self.CIframe,text="({}, {})\n{}".format(np.int(self.Ctr_X),np.int(self.Ctr_Y),np.int(self.img[np.int(self.Ctr_Y),np.int(self.Ctr_X)])))
+        self.CIlabel2 = ttk.Label(self.CIframe,text="({}, {})\n0".format(np.int(self.Ctr_X),np.int(self.Ctr_Y)))
         self.CIlabel2.grid(row=0,column=1,ipadx=5,sticky=NW)
         self.CIlabel2.config(font=(self.fontname,self.fontsize),width = 15,justify=LEFT,relief=FLAT)
         self.CIButton = ttk.Button(self.CIframe,command=self.get_center,text='Set As Center',cursor='hand2')
@@ -200,6 +223,7 @@ class RHEED_GUI(ttk.Frame):
         #create a Notebook widget
         self.nb = ttk.Notebook(self.InfoFrame,cursor = 'hand2')
         self.nb.grid(row=2,column=0,sticky=N+W+E+S)
+
         #create a Frame for "Parameters"
         self.Paraframe = ttk.Frame(self.nb,relief=FLAT,padding ='0.02i')
         self.Paraframe.grid(row=0,column=0,sticky=N+E+S+W)
@@ -230,9 +254,9 @@ class RHEED_GUI(ttk.Frame):
         self.ParaButtonFrame = ttk.Frame(self.Paraframe,cursor ='left_ptr',relief=FLAT,padding='0.2i')
         self.ParaButtonFrame.grid(row=0,column=1)
         self.InsertCalibration = ttk.Button(self.ParaButtonFrame,cursor='hand2',text='Calibrate',command=self.calibrate)
-        self.InsertCalibration.grid(row=0,column=0,sticky=E)
+        self.InsertCalibration.grid(row=1,column=0,sticky=E)
         self.InsertLabel = ttk.Button(self.ParaButtonFrame,cursor='hand2',text='Label',command=self.label)
-        self.InsertLabel.grid(row=1,column=0,sticky=E)
+        self.InsertLabel.grid(row=0,column=0,sticky=E)
         self.DeleteCalibration = ttk.Button(self.ParaButtonFrame,cursor='hand2',text='Clear',command=self.delete_calibration)
         self.DeleteCalibration.grid(row=2,column=0,sticky=E)
 
@@ -243,7 +267,7 @@ class RHEED_GUI(ttk.Frame):
         self.AdjustEntryFrame.grid(row=0,column=0)
         self.AdjustLabel1 = ttk.Label(self.AdjustEntryFrame,cursor='left_ptr',text='Brightness ({})'.format(self.CurrentBrightness),padding ='0.02i',width=20)
         self.AdjustLabel1.grid(row=0,column=0,sticky=W)
-        self.AdjustScale1 = ttk.Scale(self.AdjustEntryFrame,command = self.scale_update,variable=self.Brightness,value=0.5,cursor="hand2",length=150,orient=HORIZONTAL,from_=0,to=100)
+        self.AdjustScale1 = ttk.Scale(self.AdjustEntryFrame,command = self.brightness_update,variable=self.Brightness,value=0.5,cursor="hand2",length=150,orient=HORIZONTAL,from_=0,to=100)
         self.AdjustScale1.grid(row=0,column=1,sticky=W)
         self.AdjustLabel4 = ttk.Label(self.AdjustEntryFrame,cursor='left_ptr',text='Auto White Balance',padding = '0.02i',width=20)
         self.AdjustLabel4.grid(row=3,column=0,sticky=W)
@@ -259,7 +283,6 @@ class RHEED_GUI(ttk.Frame):
         #create a Frame for "Profile Type"
         self.Profileframe = ttk.Frame(self.nb,relief=FLAT,padding='0.02i')
         self.Profileframe.grid(row=0,column=0,sticky=W)
-        self.choose_profile_mode()
         self.ProfileModeFrame = ttk.Frame(self.Profileframe,relief=FLAT,padding='0.05i')
         self.ProfileModeFrame.grid(row=0,column=0,columnspan = 2,sticky=W)
         MODES = [("Pole Figure",'PF'),("2D Mapping","2D"),("3D Mapping","3D")]
@@ -291,21 +314,8 @@ class RHEED_GUI(ttk.Frame):
 
         #create a Label for "Cursor Motion Information"
         self.CMIlabel = ttk.Label(self.master,text='x={}, y={}'.format(self.Mouse_X,self.Mouse_Y))
-        self.CMIlabel.grid(row=1,column=19+2,sticky=E)
+        self.CMIlabel.grid(row=2,column=19+2,sticky=E)
         self.CMIlabel.config(font=(self.fontname,self.fontsize),justify=RIGHT)
-
-        #create a LabelFrame for a Radiobutton widget
-        self.RDlabelframe = ttk.LabelFrame(self.InfoFrame,text="Mode",labelanchor=NW)
-        self.RDlabelframe.grid(row=3,column=0,sticky=N+E+S+W)
-        self.RDframe = ttk.Frame(self.RDlabelframe,relief=FLAT)
-        self.RDframe.grid(row=0,column=0,sticky=N+W+S+E)
-        self.choose_mode()
-        MODES = [("Normal",'N'),("Line Scan","LS"),("Line Integral","LI")]
-        RDColumn = 0
-        for text,mode in MODES:
-            self.RB = ttk.Radiobutton(self.RDframe,command=self.choose_mode,text=text,variable=self.mode,value=mode,cursor="hand2")
-            self.RB.grid(row=2,column=RDColumn,sticky=E+W)
-            RDColumn+=1
 
         #create a canvas for the line scan
         self.LineScanCanvas = tk.Canvas(self.InfoFrame,bd=2,cursor='crosshair',relief=RIDGE)
@@ -317,27 +327,23 @@ class RHEED_GUI(ttk.Frame):
         self.ZFtext = Text(self.master)
         self.ZoomFactor = np.prod(self.scalehisto)*np.prod(self.scalehisto)
         self.ZFtext.insert(1.0,'x {}'.format(np.round(self.ZoomFactor,3)))
-        self.ZFtext.grid(row=0,column=0,sticky=NW)
+        self.ZFtext.grid(row=1,column=0,sticky=NW)
         self.ZFtext.config(font=(self.fontname,self.fontsize+4),bg='black',fg='red',height=1,width=6,relief=FLAT)
 
-    def menu_file_new(self):
-        return
+        '''Initial Actions'''
+        self.make_image()
+        self.show_image()
+        self.choose_mode()
 
-    def menu_file_open(self):
-        self.choose_file()
-
-    def menu_file_save_as(self):
-        self.save_as_plain_image()
-        return
-
-    def menu_file_close(self):
-        return
-
-    def menu_preference_default(self):
-        return
-
-    def menu_help_about(self):
-        messagebox.showinfo(title="About", default="ok",message="PyRHEED 1.0.0   By Yu Xiang\n\nContact: yux1991@gmail.com")
+    '''Primary Action Functions'''
+    def make_image(self):
+        self.img = self.read_image(self.DefaultPath)
+        self.image = Image.new('L',(self.img.shape[1],self.img.shape[0]))
+        #convert 16 bit image to 8 bit image
+        self.uint16 = np.uint8(self.img/256)
+        self.outpil = self.uint16.astype(self.uint16.dtype.newbyteorder("L")).tobytes()
+        self.image.frombytes(self.outpil)
+        self.AnnotatedImage = self.image.copy()
 
     def adjust_update(self):
         self.img = self.read_image(self.DefaultPath)
@@ -365,42 +371,6 @@ class RHEED_GUI(ttk.Frame):
             self.line_scan_update()
         except:
             pass
-
-    def scale_update(self,evt):
-        self.CurrentBrightness = round(float(evt)/100,2)
-        self.AdjustLabel1['text'] = 'Brightness ({})'.format(self.CurrentBrightness)
-
-
-    def choose_profile_mode(self):
-        return
-
-
-
-    def choose_mode(self):
-        if self.mode.get() == "N":
-            self.canvas.bind('<ButtonPress-1>',self.move_from)
-            self.canvas.bind('<B1-Motion>',self.move_to)
-            self.canvas.bind('<ButtonRelease-1>',self.move_end)
-            self.canvas.bind('<Button-3>',self.delete_line)
-        elif self.mode.get() == "LS":
-            self.canvas.bind('<ButtonPress-1>',self.scan_from)
-            self.canvas.bind('<B1-Motion>',self.scan_to)
-            self.canvas.bind('<ButtonRelease-1>',self.scan_end)
-            self.canvas.bind('<Alt-ButtonPress-1>',self.move_from)
-            self.canvas.bind('<Alt-B1-Motion>',self.move_to)
-            self.canvas.bind('<Alt-ButtonRelease-1>',self.move_end)
-            self.canvas.bind('<Button-3>',self.delete_line)
-        else:
-            self.canvas.bind('<ButtonPress-1>',self.integrate_from)
-            self.canvas.bind('<B1-Motion>',self.integrate_to)
-            self.canvas.bind('<ButtonRelease-1>',self.integrate_end)
-            self.canvas.bind('<Alt-ButtonPress-1>',self.move_from)
-            self.canvas.bind('<Alt-B1-Motion>',self.move_to)
-            self.canvas.bind('<Alt-ButtonRelease-1>',self.move_end)
-            self.canvas.bind('<Button-3>',self.delete_line)
-
-    def entry_is_okay(self,action):
-        return TRUE
 
     def calibrate(self):
         thickness = 2
@@ -481,55 +451,9 @@ class RHEED_GUI(ttk.Frame):
             pass
         self.AnnotatedImage = self.image.copy()
 
-    def autoscroll(self,sbar,first,last):
-        first,last = float(first),float(last)
-        if first<=0 and last >=1:
-            sbar.grid_remove()
-        else:
-            sbar.grid()
-        sbar.set(first,last)
-
-    def populate_tree(self,tree, node):
-        if tree.set(node, "type") != 'directory':
-            return
-        path = tree.set(node, "fullpath")
-        date = tree.set(node,"date")
-        tree.delete(*tree.get_children(node))
-        parent = tree.parent(node)
-        special_dirs = [] if parent else glob.glob('.') + glob.glob('..')
-
-        for p in special_dirs + os.listdir(path):
-            ptype = None
-            p = os.path.join(path, p).replace('\\', '/')
-            if os.path.isdir(p): ptype = "directory"
-            elif os.path.isfile(p): ptype = "file"
-
-            fname = os.path.split(p)[1]
-            iid = tree.insert(node, "end", text=fname, values=[p, ptype])
-            mtime = localtime(os.path.getmtime(p))
-            mdate = "{}/{}/{}".format(mtime.tm_mon,mtime.tm_mday,mtime.tm_year)
-            tree.set(iid,"date",mdate)
-
-            if ptype == 'directory':
-                if fname not in ('.', '..'):
-                    tree.insert(iid, 0, text="dummy")
-                    tree.item(iid, text=fname)
-            elif ptype == 'file':
-                size = self.format_size(os.stat(p).st_size)
-                tree.set(iid, "size", size)
-
-    def populate_roots(self,tree):
-        try:
-            dirname,filename = os.path.split(self.CurrentFilePath)
-            dir = dirname.replace('\\','/')
-            mtime = localtime(os.path.getmtime(self.CurrentFilePath))
-            FormatedTime = "{}/{}/{}".format(mtime.tm_mday,mtime.tm_mon,mtime.tm_year)
-        except:
-            dir = os.path.abspath('.').replace('\\', '/')
-            mtime = localtime(os.path.getmtime(dir))
-            FormatedTime = "{}/{}/{}".format(mtime.tm_mon,mtime.tm_mday,mtime.tm_year)
-        node = tree.insert('', 'end',open=TRUE, text=dir, values=[dir, 'directory',FormatedTime])
-        self.populate_tree(tree, node)
+    def brightness_update(self,evt):
+        self.CurrentBrightness = round(float(evt)/100,2)
+        self.AdjustLabel1['text'] = 'Brightness ({})'.format(self.CurrentBrightness)
 
     def tree_update(self,event):
         tree = event.widget
@@ -556,18 +480,6 @@ class RHEED_GUI(ttk.Frame):
                 self.show_image()
                 self.delete_line()
                 self.delete_calibration()
-
-    def format_size(self,size):
-        KB = 1024.0
-        MB = KB*KB
-        GB = MB*KB
-        if size >= GB:
-            return '{:,.1f} GB'.format(size/GB)
-        if size >= MB:
-            return '{:,.1f} MB'.format(size/MB)
-        if size >= KB:
-            return '{:,.1f} KB'.format(size/KB)
-        return '{} bytes'.format(size)
 
     def choose_file(self):
         try:
@@ -605,87 +517,17 @@ class RHEED_GUI(ttk.Frame):
         else:
             self.AnnotatedImage.save(self.save_image_path)
 
-    def get_center(self):
-        #print(int(self.Ctr_X),int(self.Ctr_Y))
-        return int(self.Ctr_X),int(self.Ctr_Y)
-
-    def scroll_y(self, *args, **kwargs):
-        ''' Scroll canvas vertically and redraw the image '''
-        self.canvas.yview(*args, **kwargs)  # scroll vertically
-        self.show_image()  # redraw the image
-
-    def scroll_x(self, *args, **kwargs):
-        ''' Scroll canvas horizontally and redraw the image '''
-        self.canvas.xview(*args, **kwargs)  # scroll horizontally
-        self.show_image()  # redraw the image
-
-    def wheel(self, event):
-        bbox = self.canvas.bbox(self.container)  # get image area
-        if bbox[0] < self.canvas.canvasx(event.x) < bbox[2] and bbox[1] < self.canvas.canvasy(event.y) < bbox[3]:
-            self.xx.append(int(self.canvas.canvasx(event.x)))
-            self.yy.append(int(self.canvas.canvasy(event.y)))
-        else: return  # zoom only inside image area
-
-        # Respond to Linux (event.num) or Windows (event.delta) wheel event
-        self.scale = 1.0
-        if event.num == 5 or event.delta == -120:  # scroll down
-            i = min(self.width, self.height)
-            if int(i * self.imscale) < 30:
-                self.xx.pop()
-                self.yy.pop()
-                return  # image is less than 30 pixels
-            self.imscale /= self.delta
-            self.scale   /= self.delta
-        if event.num == 4 or event.delta == 120:  # scroll up
-            i = min(self.canvas.winfo_width(), self.canvas.winfo_height())
-            if i < self.imscale:
-                self.xx.pop()
-                self.yy.pop()
-                return  # image is less than 30 pixels
-            self.imscale *= self.delta
-            self.scale   *= self.delta
-        self.scalehisto.append(self.scale)
-        self.canvas.scale('all', self.xx[-1], self.yy[-1], self.scale, self.scale)  # rescale all canvas objects
-        try:
-            self.LineStartX0 = (self.LineStartX0-self.xx[-1])*self.scale+self.xx[-1]
-            self.LineStartY0 = (self.LineStartY0-self.yy[-1])*self.scale+self.yy[-1]
-            self.SaveLineStartX0.append(self.LineStartX0)
-            self.SaveLineStartY0.append(self.LineStartY0)
-            self.LineEndX0 = (self.LineEndX0-self.xx[-1])*self.scale+self.xx[-1]
-            self.LineEndY0 = (self.LineEndY0-self.yy[-1])*self.scale+self.yy[-1]
-        except:
-            pass
-        self.ZFtext.delete(1.0,END)
-        self.ZoomFactor = np.prod(self.scalehisto)
-        self.ZFtext.insert(1.0,'x {}'.format(np.round(self.ZoomFactor*self.ZoomFactor,3)))
-        self.show_image()
-
     def show_image(self, event=None):
 
         ''' Show image on the Canvas '''
-        bbox1 = self.canvas.bbox(self.container)  # get image area
-        # Remove 1 pixel shift at the sides of the bbox1
-        bbox1 = (bbox1[0] + 1, bbox1[1] + 1, bbox1[2] - 1, bbox1[3] - 1)
-        bbox2 = (self.canvas.canvasx(0),  # get visible area of the canvas
-                 self.canvas.canvasy(0),
-                 self.canvas.canvasx(self.canvas.winfo_width()),
-                 self.canvas.canvasy(self.canvas.winfo_height()))
-        bbox = [min(bbox1[0], bbox2[0]), min(bbox1[1], bbox2[1]),  # get scroll region box
-                max(bbox1[2], bbox2[2]), max(bbox1[3], bbox2[3])]
-        if bbox[0] == bbox2[0] and bbox[2] == bbox2[2]:  # whole image in the visible area
-            bbox[0] = bbox1[0]
-            bbox[2] = bbox1[2]
-        if bbox[1] == bbox2[1] and bbox[3] == bbox2[3]:  # whole image in the visible area
-            bbox[1] = bbox1[1]
-            bbox[3] = bbox1[3]
-        self.canvas.configure(scrollregion=bbox)  # set scroll region
+        bbox,bbox1,bbox2 = self.canvas_configure()
         x1 = max(bbox2[0] - bbox1[0], 0)  # get coordinates (x1,y1,x2,y2) of the image tile
         y1 = max(bbox2[1] - bbox1[1], 0)
         x2 = min(bbox2[2], bbox1[2]) - bbox1[0]
         y2 = min(bbox2[3], bbox1[3]) - bbox1[1]
         if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it in the visible area
-            x = min(int(x2 / self.imscale), self.width)   # sometimes it is larger on 1 pixel...
-            y = min(int(y2 / self.imscale), self.height)  # ...and sometimes not
+            x = min(int(x2 / self.imscale), self.image_crop[3]-self.image_crop[2])   # sometimes it is larger on 1 pixel...
+            y = min(int(y2 / self.imscale), self.image_crop[1]-self.image_crop[0])  # ...and sometimes not
             self.CroppedImage = self.image.crop((int(x1 / self.imscale), int(y1 / self.imscale), x, y))
             imagetk = ImageTk.PhotoImage(self.CroppedImage.resize((int(x2 - x1), int(y2 - y1))))
             imageid = self.canvas.create_image(max(bbox2[0], bbox1[0]), max(bbox2[1], bbox1[1]),
@@ -736,6 +578,262 @@ class RHEED_GUI(ttk.Frame):
         self.Ctr_X,self.Ctr_Y = self.convert_coords(x,y)
         self.CIlabel2['text']="({}, {})\n{}".format(np.int(self.Ctr_X),np.int(self.Ctr_Y),np.round(self.img[np.int(self.Ctr_Y),np.int(self.Ctr_X)]/65535,3))
 
+    def delete_line(self,event=NONE):
+        try:
+            self.canvas.delete(self.LineOnCanvas)
+            self.EnableCanvasLines = 0
+            self.LineScanCanvas.delete('all')
+        except:
+            pass
+        try:
+            self.canvas.delete(self.RectOnCanvas)
+            self.EnableCanvasLines = 0
+            self.LineScanCanvas.delete('all')
+        except:
+            pass
+
+    def PFRadius_update(self,evt):
+        try:
+            self.ProfileLabel3['text'] = 'Radius ({} \u00C5\u207B\u00B9)'.format(np.round(self.PFRadius.get(),2))
+        except:
+            pass
+
+    def PFIntegralWidth_update(self,evt):
+        try:
+            self.ProfileLabel1['text'] = 'Integral Width ({} pixel)'.format(self.IntegralWidth.get())
+        except:
+            pass
+
+    def PFChiRange_update(self,evt):
+        try:
+            self.ProfileLabel2['text'] = 'Chi Range ({}\u00B0)'.format(np.round(self.ChiRange.get(),1))
+        except:
+            pass
+
+    def profile_update(self):
+        if self.EnableCanvasLines==1:
+            try:
+                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+                x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
+                self.canvas.delete(self.RectOnCanvas)
+                self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+            except:
+                pass
+            try:
+                self.line_scan_update()
+            except:
+                pass
+
+    def profile_reset(self):
+        self.IntegralWidth.set(20)
+        self.PFRadius.set(5.)
+        self.ChiRange.set(60.)
+        self.ProfileLabel3['text'] = 'Radius ({} \u00C5\u207B\u00B9)'.format(np.round(self.PFRadius.get(),2))
+        self.ProfileLabel2['text'] = 'Chi Range ({}\u00B0)'.format(np.round(self.ChiRange.get(),1))
+        self.ProfileLabel1['text'] = 'Integral Width ({} pixel)'.format(self.IntegralWidth.get())
+        if self.EnableCanvasLines==1:
+            try:
+                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+                x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
+                self.canvas.delete(self.RectOnCanvas)
+                self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+            except:
+                pass
+                try:
+                    self.line_scan_update()
+                except:
+                    pass
+
+
+
+
+
+    '''Secondary Action Functions'''
+
+    def menu_file_new(self):
+        return
+
+    def menu_file_open(self):
+        self.choose_file()
+
+    def menu_file_save_as(self):
+        self.save_as_plain_image()
+        return
+
+    def menu_file_close(self):
+        return
+
+    def menu_preference_default(self):
+        return
+
+    def menu_help_about(self):
+        messagebox.showinfo(title="About", default="ok",message="PyRHEED 1.0.0   By Yu Xiang\n\nContact: yux1991@gmail.com")
+
+    def choose_profile_mode(self):
+        return
+
+    def choose_mode(self):
+        if self.mode.get() == "N":
+            self.canvas.bind('<ButtonPress-1>',self.move_from)
+            self.canvas.bind('<B1-Motion>',self.move_to)
+            self.canvas.bind('<ButtonRelease-1>',self.move_end)
+            self.canvas.bind('<Button-3>',self.delete_line)
+        elif self.mode.get() == "LS":
+            self.canvas.bind('<ButtonPress-1>',self.scan_from)
+            self.canvas.bind('<B1-Motion>',self.scan_to)
+            self.canvas.bind('<ButtonRelease-1>',self.scan_end)
+            self.canvas.bind('<Alt-ButtonPress-1>',self.move_from)
+            self.canvas.bind('<Alt-B1-Motion>',self.move_to)
+            self.canvas.bind('<Alt-ButtonRelease-1>',self.move_end)
+            self.canvas.bind('<Button-3>',self.delete_line)
+        else:
+            self.canvas.bind('<ButtonPress-1>',self.integrate_from)
+            self.canvas.bind('<B1-Motion>',self.integrate_to)
+            self.canvas.bind('<ButtonRelease-1>',self.integrate_end)
+            self.canvas.bind('<Alt-ButtonPress-1>',self.move_from)
+            self.canvas.bind('<Alt-B1-Motion>',self.move_to)
+            self.canvas.bind('<Alt-ButtonRelease-1>',self.move_end)
+            self.canvas.bind('<Button-3>',self.delete_line)
+
+    def entry_is_okay(self,action):
+        return TRUE
+
+    def autoscroll(self,sbar,first,last):
+        first,last = float(first),float(last)
+        if first<=0 and last >=1:
+            sbar.grid_remove()
+        else:
+            sbar.grid()
+        sbar.set(first,last)
+
+    def populate_tree(self,tree, node):
+        if tree.set(node, "type") != 'directory':
+            return
+        path = tree.set(node, "fullpath")
+        date = tree.set(node,"date")
+        tree.delete(*tree.get_children(node))
+        parent = tree.parent(node)
+        special_dirs = [] if parent else glob.glob('.') + glob.glob('..')
+
+        for p in special_dirs + os.listdir(path):
+            ptype = None
+            p = os.path.join(path, p).replace('\\', '/')
+            if os.path.isdir(p): ptype = "directory"
+            elif os.path.isfile(p): ptype = "file"
+
+            fname = os.path.split(p)[1]
+            iid = tree.insert(node, "end", text=fname, values=[p, ptype])
+            mtime = localtime(os.path.getmtime(p))
+            mdate = "{}/{}/{}".format(mtime.tm_mon,mtime.tm_mday,mtime.tm_year)
+            tree.set(iid,"date",mdate)
+
+            if ptype == 'directory':
+                if fname not in ('.', '..'):
+                    tree.insert(iid, 0, text="dummy")
+                    tree.item(iid, text=fname)
+            elif ptype == 'file':
+                size = self.format_size(os.stat(p).st_size)
+                tree.set(iid, "size", size)
+
+    def populate_roots(self,tree):
+        try:
+            dirname,filename = os.path.split(self.CurrentFilePath)
+            dir = dirname.replace('\\','/')
+            mtime = localtime(os.path.getmtime(self.CurrentFilePath))
+            FormatedTime = "{}/{}/{}".format(mtime.tm_mday,mtime.tm_mon,mtime.tm_year)
+        except:
+            dir = os.path.abspath('.').replace('\\', '/')
+            mtime = localtime(os.path.getmtime(dir))
+            FormatedTime = "{}/{}/{}".format(mtime.tm_mon,mtime.tm_mday,mtime.tm_year)
+        node = tree.insert('', 'end',open=TRUE, text=dir, values=[dir, 'directory',FormatedTime])
+        self.populate_tree(tree, node)
+
+    def format_size(self,size):
+        KB = 1024.0
+        MB = KB*KB
+        GB = MB*KB
+        if size >= GB:
+            return '{:,.1f} GB'.format(size/GB)
+        if size >= MB:
+            return '{:,.1f} MB'.format(size/MB)
+        if size >= KB:
+            return '{:,.1f} KB'.format(size/KB)
+        return '{} bytes'.format(size)
+
+    def get_center(self):
+        #print(int(self.Ctr_X),int(self.Ctr_Y))
+        return int(self.Ctr_X),int(self.Ctr_Y)
+
+    def scroll_y(self, *args, **kwargs):
+        ''' Scroll canvas vertically and redraw the image '''
+        self.canvas.yview(*args, **kwargs)  # scroll vertically
+        self.show_image()  # redraw the image
+
+    def scroll_x(self, *args, **kwargs):
+        ''' Scroll canvas horizontally and redraw the image '''
+        self.canvas.xview(*args, **kwargs)  # scroll horizontally
+        self.show_image()  # redraw the image
+
+    def wheel(self, event):
+        bbox = self.canvas.bbox(self.container)  # get image area
+        if bbox[0] < self.canvas.canvasx(event.x) < bbox[2] and bbox[1] < self.canvas.canvasy(event.y) < bbox[3]:
+            self.xx.append(int(self.canvas.canvasx(event.x)))
+            self.yy.append(int(self.canvas.canvasy(event.y)))
+        else: return  # zoom only inside image area
+
+        # Respond to Linux (event.num) or Windows (event.delta) wheel event
+        self.scale = 1.0
+        if event.num == 5 or event.delta == -120:  # scroll down
+            i = min(self.image_crop[3]-self.image_crop[2], self.image_crop[1]-self.image_crop[0])
+            if int(i * self.imscale) < 30:
+                self.xx.pop()
+                self.yy.pop()
+                return  # image is less than 30 pixels
+            self.imscale /= self.delta
+            self.scale   /= self.delta
+        if event.num == 4 or event.delta == 120:  # scroll up
+            i = min(self.canvas.winfo_width(), self.canvas.winfo_height())
+            if i < self.imscale:
+                self.xx.pop()
+                self.yy.pop()
+                return  # image is less than 30 pixels
+            self.imscale *= self.delta
+            self.scale   *= self.delta
+        self.scalehisto.append(self.scale)
+        self.canvas.scale('all', self.xx[-1], self.yy[-1], self.scale, self.scale)  # rescale all canvas objects
+        try:
+            self.LineStartX0 = (self.LineStartX0-self.xx[-1])*self.scale+self.xx[-1]
+            self.LineStartY0 = (self.LineStartY0-self.yy[-1])*self.scale+self.yy[-1]
+            self.SaveLineStartX0.append(self.LineStartX0)
+            self.SaveLineStartY0.append(self.LineStartY0)
+            self.LineEndX0 = (self.LineEndX0-self.xx[-1])*self.scale+self.xx[-1]
+            self.LineEndY0 = (self.LineEndY0-self.yy[-1])*self.scale+self.yy[-1]
+        except:
+            pass
+        self.ZFtext.delete(1.0,END)
+        self.ZoomFactor = np.prod(self.scalehisto)
+        self.ZFtext.insert(1.0,'x {}'.format(np.round(self.ZoomFactor*self.ZoomFactor,3)))
+        self.show_image()
+
+    def canvas_configure(self,event=NONE):
+        bbox1 = self.canvas.bbox(self.container)  # get image area
+        # Remove 1 pixel shift at the sides of the bbox1
+        bbox1 = (bbox1[0] + 1, bbox1[1] + 1, bbox1[2] - 1, bbox1[3] - 1)
+        bbox2 = (self.canvas.canvasx(0),  # get visible area of the canvas
+                 self.canvas.canvasy(0),
+                 self.canvas.canvasx(self.canvas.winfo_width()),
+                 self.canvas.canvasy(self.canvas.winfo_height()))
+        bbox = [min(bbox1[0], bbox2[0]), min(bbox1[1], bbox2[1]),  # get scroll region box
+                max(bbox1[2], bbox2[2]), max(bbox1[3], bbox2[3])]
+        if bbox[0] == bbox2[0] and bbox[2] == bbox2[2]:  # whole image in the visible area
+            bbox[0] = bbox1[0]
+            bbox[2] = bbox1[2]
+        if bbox[1] == bbox2[1] and bbox[3] == bbox2[3]:  # whole image in the visible area
+            bbox[1] = bbox1[1]
+            bbox[3] = bbox1[3]
+        self.canvas.configure(scrollregion=bbox)  # set scroll region
+        return bbox,bbox1,bbox2
+
     def canvas_mouse_coords(self,event):
 
         #Get the coordinates of the mouse on the main canvas while it moves
@@ -765,7 +863,6 @@ class RHEED_GUI(ttk.Frame):
         except:
             self.LineScanCanvas['cursor']='left_ptr'
             pass
-
 
     def convert_coords(self,x,y):
 
@@ -848,22 +945,6 @@ class RHEED_GUI(ttk.Frame):
             self.LineStartX,self.LineStartY = 0,0
             self.LineEndX,self.LineEndY = 0,0
 
-
-
-    def delete_line(self,event=NONE):
-        try:
-            self.canvas.delete(self.LineOnCanvas)
-            self.EnableCanvasLines = 0
-            self.LineScanCanvas.delete('all')
-        except:
-            pass
-        try:
-            self.canvas.delete(self.RectOnCanvas)
-            self.EnableCanvasLines = 0
-            self.LineScanCanvas.delete('all')
-        except:
-            pass
-
     def integrate_from(self, event):
         ''' Remember previous coordinates for scrolling with the mouse '''
         x = self.canvas.canvasx(event.x)
@@ -942,58 +1023,6 @@ class RHEED_GUI(ttk.Frame):
             self.LinePlotRangeX = LinePlotAx.get_xlim()
             self.LinePlotRangeY = LinePlotAx.get_ylim()
             self.LineScanFigure = self.show_line_scan(self.LinePlot)
-
-    def PFRadius_update(self,evt):
-        try:
-            self.ProfileLabel3['text'] = 'Radius ({} \u00C5\u207B\u00B9)'.format(np.round(self.PFRadius.get(),2))
-        except:
-            pass
-
-    def PFIntegralWidth_update(self,evt):
-        try:
-            self.ProfileLabel1['text'] = 'Integral Width ({} pixel)'.format(self.IntegralWidth.get())
-        except:
-            pass
-
-    def PFChiRange_update(self,evt):
-        try:
-            self.ProfileLabel2['text'] = 'Chi Range ({}\u00B0)'.format(np.round(self.ChiRange.get(),1))
-        except:
-            pass
-
-    def profile_update(self):
-        if self.EnableCanvasLines==1:
-            try:
-                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
-                x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
-                self.canvas.delete(self.RectOnCanvas)
-                self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
-            except:
-                pass
-            try:
-                self.line_scan_update()
-            except:
-                pass
-
-    def profile_reset(self):
-        self.IntegralWidth.set(20)
-        self.PFRadius.set(5.)
-        self.ChiRange.set(60.)
-        self.ProfileLabel3['text'] = 'Radius ({} \u00C5\u207B\u00B9)'.format(np.round(self.PFRadius.get(),2))
-        self.ProfileLabel2['text'] = 'Chi Range ({}\u00B0)'.format(np.round(self.ChiRange.get(),1))
-        self.ProfileLabel1['text'] = 'Integral Width ({} pixel)'.format(self.IntegralWidth.get())
-        if self.EnableCanvasLines==1:
-            try:
-                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
-                x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
-                self.canvas.delete(self.RectOnCanvas)
-                self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
-            except:
-                pass
-                try:
-                    self.line_scan_update()
-                except:
-                    pass
 
     def get_rectangle_position(self):
         x0,y0,x1,y1,x2,y2,x3,y3 = 0,0,0,0,0,0,0,0
@@ -1106,7 +1135,7 @@ class RHEED_GUI(ttk.Frame):
         #Convert to grayvalue images
         img_bw = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
         #Crop the image
-        img = img_bw[1200:2650,500:3100]
+        img = img_bw[self.image_crop[0]:self.image_crop[1],self.image_crop[2]:self.image_crop[3]]
         return img
 
     def batch_read_image(img_path,nimg=0): # Read the raw image and convert it to grayvalue images
