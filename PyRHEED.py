@@ -33,6 +33,7 @@ from array import array
 from io import BytesIO
 from matplotlib.mathtext import math_to_image
 from matplotlib.font_manager import FontProperties
+from scipy.special import wofz
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,10 +59,31 @@ class RHEED_GUI(ttk.Frame):
         self.SaveLineStartY0 = array('f')
         self.SaveLineEndX = array('f')
         self.SaveLineEndY = array('f')
+        self.SaveLineEndX0 = array('f')
+        self.SaveLineEndY0 = array('f')
         self.mode = StringVar()
         self.mode.set("N")
         self.ElectronEnergy = StringVar()
         self.ElectronEnergy.set('20')
+        self.PeakFunction = StringVar()
+        self.PeakFunction.set('Gaussian')
+        self.NumberOfPeaks = StringVar()
+        self.NumberOfPeaks.set('9')
+        self.BackGroundType = StringVar()
+        self.BackGroundType.set('Gaussian')
+        self.ColorMap = StringVar()
+        self.ColorMap.set('jet')
+        self.Bonds = StringVar()
+        self.Bonds.set('0')
+        self.StartIndex = StringVar()
+        self.StartIndex.set('0')
+        self.EndIndex = StringVar()
+        self.EndIndex.set('100')
+        self.BackgroundLevel=0
+        self.CutoffLevel=100
+        self.ContourLevelNumber=40
+        self.Tolerance = StringVar()
+        self.Tolerance.set('1e-14')
         self.Sensitivity = StringVar()
         self.Sensitivity.set('361.13')
         self.Azimuth = StringVar()
@@ -70,6 +92,7 @@ class RHEED_GUI(ttk.Frame):
         self.ScaleBarLength.set('5')
         self.IntegralWidth = IntVar()
         self.IntegralWidth.set(20)
+        self.SaveRegionWidth = array('l')
         self.ChiRange = DoubleVar()
         self.ChiRange.set(60.)
         self.PFRadius = DoubleVar()
@@ -77,10 +100,15 @@ class RHEED_GUI(ttk.Frame):
         self.Brightness = DoubleVar()
         self.Brightness.set(30)
         self.CurrentBrightness =0.3
+        self.CurrentBlackLevel = 50
         self.EnableAutoWB = IntVar()
         self.EnableAutoWB.set(0)
+        self.UserBlack = IntVar()
+        self.UserBlack.set(50)
         self.ProfileMode = StringVar()
         self.ProfileMode.set('2D')
+        self.STMode = StringVar()
+        self.STMode.set('Fixed')
         self.LineScanAxesPosition = [0.2,0.2,0.75,0.7]
         self.EnableCanvasLines = 0
         self.EnableCalibration =0
@@ -91,12 +119,31 @@ class RHEED_GUI(ttk.Frame):
         self.TrueTypeFont = 'C:\Windows\Fonts\Calibri.TTF'
         self.imscale = 1.0  # scale for the canvas image
         self.delta = 1.2  # zoom magnitude
-        self.image_crop = [1200,2650,500,3100]
+        self.VerticalShift =IntVar()
+        self.VerticalShift.set(0)
+        self.HorizontalShift =IntVar()
+        self.HorizontalShift.set(0)
+        self.XOffset,self.YOffset=0,0
+        self.HS,self.VS = 0,0
+        self.Progress = IntVar()
+        self.Progress.set(0)
+        self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
         self.style = ttk.Style()
         self.style.map('My.TButton',background=[('disabled','magenta'),('pressed','!focus','cyan'),('active','green')],
                 foreground=[('disabled','yellow'),('pressed','red'),('active','blue')],
                 highlightcolor=[('focus','green'),('!focus','red')],
                 relief=[('pressed','groove'),('!pressed','flat')])
+
+
+        '''Dictionaries'''
+        self.FitDict = {'g1':self.gaussian,'l1':self.lorentzian,'v1':self.voigt,
+                'g3':self.three_gaussians,'l3':self.three_lorentzians,'v3':self.three_voigts,
+                'g5':self.five_gaussians,'l5':self.five_lorentzians,'v5':self.five_voigts,
+                'g7':self.seven_gaussians,'l7':self.seven_lorentzians,'v7':self.seven_voigts,
+                'g9':self.nine_gaussians,'l9':self.nine_lorentzians,'v9':self.nine_voigts,
+                'g11':self.eleven_gaussians,'l11':self.eleven_lorentzians,'v11':self.eleven_voigts}
+        self.BgDict ={'linear':self.linear,'gaussian':self.gaussian}
+
 
         ''' Initialize the main Frame '''
 
@@ -119,6 +166,18 @@ class RHEED_GUI(ttk.Frame):
         for label,command in PreferenceModes:
             self.PreferenceMenu.add_command(label=label,command=command)
 
+        self.TwoDimMenu=tk.Menu(self.menuBar,tearoff=0)
+        self.menuBar.add_cascade(label='2D Map',menu=self.TwoDimMenu)
+        TwoDimModes = [('Settings',self.TwoDimMapping)]
+        for label,command in TwoDimModes:
+            self.TwoDimMenu.add_command(label=label,command=command)
+
+        self.FitMenu=tk.Menu(self.menuBar,tearoff=0)
+        self.menuBar.add_cascade(label='Fit',menu=self.FitMenu)
+        FitModes = [('Settings',self.Fit)]
+        for label,command in FitModes:
+            self.FitMenu.add_command(label=label,command=command)
+
         self.HelpMenu=tk.Menu(self.menuBar,tearoff=0)
         self.menuBar.add_cascade(label='Help',menu=self.HelpMenu)
         HelpModes = [('About',self.menu_help_about)]
@@ -132,6 +191,9 @@ class RHEED_GUI(ttk.Frame):
         self.OpenIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'open.gif'))
         self.SaveIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'save.gif'))
         self.SaveAsIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'save as.gif'))
+        self.FitIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'curve.png'))
+        self.ZoomInIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'zoom in.gif'))
+        self.ZoomOutIcon = ImageTk.PhotoImage(file=os.path.join(self.IconPath,'zoom out.gif'))
         LineIconImage = Image.open(os.path.join(self.IconPath,'line.png'))
         ResizedLineIconImage = LineIconImage.resize(size=(24,24))
         self.LineIcon = ImageTk.PhotoImage(ResizedLineIconImage)
@@ -141,11 +203,16 @@ class RHEED_GUI(ttk.Frame):
         MoveIconImage = Image.open(os.path.join(self.IconPath,'move.png'))
         ResizedMoveIconImage = MoveIconImage.resize(size=(24,24))
         self.MoveIcon = ImageTk.PhotoImage(ResizedMoveIconImage)
-        ToolBarModes1 = [(self.OpenIcon,self.choose_file,0),(self.SaveIcon,self.save_as_plain_image,1),(self.SaveAsIcon,self.save_as_annotated_image,2)]
-        ToolBarModes2 = [(self.LineIcon,'LS',3),(self.RectangleIcon,'LI',4),(self.MoveIcon,'N',5)]
+        ToolBarModes1 = [(self.OpenIcon,self.choose_file,0),(self.SaveIcon,self.save_as_plain_image,1),(self.SaveAsIcon,self.save_as_annotated_image,2),(self.ZoomInIcon,self.zoom_in,6),(self.ZoomOutIcon,self.zoom_out,7),(self.FitIcon,self.Fit,3)]
+        ToolBarModes2 = [(self.LineIcon,'LS',8),(self.RectangleIcon,'LI',9),(self.MoveIcon,'N',10)]
         for icon,command,col in ToolBarModes1:
             self.ToolButton = ttk.Button(self.ToolBarFrame,image=icon,command=command,cursor='hand2')
             self.ToolButton.grid(row=0,column=col,sticky=NW)
+
+        self.ToolButton = ttk.Button(self.ToolBarFrame,text='2D',command=self.TwoDimMapping,cursor='hand2',width=4)
+        self.ToolButton.grid(row=0,column=4,sticky=N+S+W+E)
+        self.ToolButton = ttk.Button(self.ToolBarFrame,text='3D',command=self.ThreeDimMapping,cursor='hand2',width=4)
+        self.ToolButton.grid(row=0,column=5,sticky=N+S+W+E)
 
         for icon,mode,col in ToolBarModes2:
             self.ToolButton = tk.Radiobutton(self.ToolBarFrame,command=self.choose_mode,image=icon,indicatoron=0,variable=self.mode,value=mode,cursor="hand2")
@@ -171,7 +238,8 @@ class RHEED_GUI(ttk.Frame):
         self.canvas.bind('<MouseWheel>', self.wheel)  # with Windows and MacOS, but not Linux
         self.canvas.bind('<Double-Button-1>',self.click_coords)
         self.canvas.bind('<Motion>',self.canvas_mouse_coords)
-        self.bind_all("<1>",lambda event:event.widget.focus_set())
+        mainframe.bind('<Up>',self.press_up)
+        #self.bind_all("<1>",lambda event:event.widget.focus_set())
         # Put image into container rectangle and use it to set proper coordinates to the image
         self.container = self.canvas.create_rectangle(0, 0,self.image_crop[3]-self.image_crop[2], self.image_crop[1]-self.image_crop[0], width=0)
 
@@ -208,21 +276,10 @@ class RHEED_GUI(ttk.Frame):
         self.FileBrowser.bind('<<TreeviewOpen>>',self.tree_update)
         self.FileBrowser.bind('<Double-Button-1>',self.change_dir)
 
-        #create a LabelFrame for "Cursor Information"
-        self.CIframe = ttk.LabelFrame(self.InfoFrame,text='Cursor Information',labelanchor=NW)
-        self.CIframe.grid(row=1,ipadx=5,pady=5,column=0,sticky=N+E+S+W)
-        self.CIlabel1 = ttk.Label(self.CIframe,text="Coordinates of the spot is:\t\nNormalized intensity of spot is:\t")
-        self.CIlabel1.grid(row=0,column=0,sticky=NW)
-        self.CIlabel1.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
-        self.CIlabel2 = ttk.Label(self.CIframe,text="({}, {})\n0".format(np.int(self.Ctr_X),np.int(self.Ctr_Y)))
-        self.CIlabel2.grid(row=0,column=1,ipadx=5,sticky=NW)
-        self.CIlabel2.config(font=(self.fontname,self.fontsize),width = 15,justify=LEFT,relief=FLAT)
-        self.CIButton = ttk.Button(self.CIframe,command=self.get_center,text='Set As Center',cursor='hand2')
-        self.CIButton.grid(row=0,column=2,sticky=E)
 
         #create a Notebook widget
         self.nb = ttk.Notebook(self.InfoFrame,cursor = 'hand2')
-        self.nb.grid(row=2,column=0,sticky=N+W+E+S)
+        self.nb.grid(row=1,column=0,sticky=N+W+E+S)
 
         #create a Frame for "Parameters"
         self.Paraframe = ttk.Frame(self.nb,relief=FLAT,padding ='0.02i')
@@ -269,10 +326,14 @@ class RHEED_GUI(ttk.Frame):
         self.AdjustLabel1.grid(row=0,column=0,sticky=W)
         self.AdjustScale1 = ttk.Scale(self.AdjustEntryFrame,command = self.brightness_update,variable=self.Brightness,value=0.5,cursor="hand2",length=150,orient=HORIZONTAL,from_=0,to=100)
         self.AdjustScale1.grid(row=0,column=1,sticky=W)
+        self.AdjustLabel2 = ttk.Label(self.AdjustEntryFrame,cursor='left_ptr',text='Black Level ({})'.format(self.CurrentBlackLevel),padding ='0.02i',width=20)
+        self.AdjustLabel2.grid(row=1,column=0,sticky=W)
+        self.AdjustScale2 = ttk.Scale(self.AdjustEntryFrame,command = self.user_black_update,variable=self.UserBlack,value=50,cursor="hand2",length=150,orient=HORIZONTAL,from_=0,to=655)
+        self.AdjustScale2.grid(row=1,column=1,sticky=W)
         self.AdjustLabel4 = ttk.Label(self.AdjustEntryFrame,cursor='left_ptr',text='Auto White Balance',padding = '0.02i',width=20)
-        self.AdjustLabel4.grid(row=3,column=0,sticky=W)
+        self.AdjustLabel4.grid(row=2,column=0,sticky=W)
         self.AdjustCheck = ttk.Checkbutton(self.AdjustEntryFrame,cursor="hand2",variable = self.EnableAutoWB)
-        self.AdjustCheck.grid(row=3,column=1,sticky=W)
+        self.AdjustCheck.grid(row=2,column=1,sticky=W)
         self.AdjustButtonFrame = ttk.Frame(self.Adjustframe,cursor ='left_ptr',relief=FLAT,padding='0.2i')
         self.AdjustButtonFrame.grid(row=0,column=1)
         self.ApplyAdjust = ttk.Button(self.AdjustButtonFrame,cursor='hand2',text='Apply',command=self.adjust_update)
@@ -312,10 +373,33 @@ class RHEED_GUI(ttk.Frame):
         self.nb.add(self.Adjustframe,text="Image Adjust")
         self.nb.add(self.Profileframe,text="Profile Options")
 
+        #create a LabelFrame for "Cursor Information"
+        self.CIframe = ttk.LabelFrame(self.InfoFrame,text='Cursor Information',labelanchor=NW)
+        self.CIframe.grid(row=2,ipadx=5,pady=5,column=0,sticky=N+E+S+W)
+        self.CIlabel1 = ttk.Label(self.CIframe,text="Choosed (X,Y):\t\nIntensity:\t\n")
+        self.CIlabel1.grid(row=0,column=0,sticky=NW)
+        self.CIlabel1.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
+        self.CIlabel2 = ttk.Label(self.CIframe,text="({}, {})\n0\n".format(np.int(self.Ctr_X),np.int(self.Ctr_Y)))
+        self.CIlabel2.grid(row=0,column=1,ipadx=5,sticky=NW)
+        self.CIlabel2.config(font=(self.fontname,self.fontsize),width = 10,justify=LEFT,relief=FLAT)
+        self.CIButton1 = ttk.Button(self.CIframe,command=self.set_as_center,text='Set As Center',cursor='hand2')
+        self.CIButton1.grid(row=0,column=2,sticky=W+E+N)
+        self.CIlabel3 = ttk.Label(self.CIframe,text="Start (X,Y):\t\nEnd (X,Y):\t\nWith:\t")
+        self.CIlabel3.grid(row=1,column=0,sticky=NW)
+        self.CIlabel3.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
+        self.CIlabel4 = ttk.Label(self.CIframe,text="(0, 0)\t\n(0,0)\t\n1\t")
+        self.CIlabel4.grid(row=1,column=1,ipadx=5,sticky=NW)
+        self.CIlabel4.config(font=(self.fontname,self.fontsize),width = 10,justify=LEFT,relief=FLAT)
+        self.CIButton2 = ttk.Button(self.CIframe,command=self.choose_this_region,text='Choose This Region',cursor='hand2')
+        self.CIButton2.grid(row=1,column=2,sticky=W+E+N)
+
+        self.CMIBottomFrame = ttk.Frame(self.master)
+        self.CMIBottomFrame.grid(row=2,column=19+2,sticky=E)
+
         #create a Label for "Cursor Motion Information"
-        self.CMIlabel = ttk.Label(self.master,text='x={}, y={}'.format(self.Mouse_X,self.Mouse_Y))
-        self.CMIlabel.grid(row=2,column=19+2,sticky=E)
-        self.CMIlabel.config(font=(self.fontname,self.fontsize),justify=RIGHT)
+        self.CMIlabel = ttk.Label(self.CMIBottomFrame,text='  x={}, y={}'.format(self.Mouse_X,self.Mouse_Y))
+        self.CMIlabel.grid(row=0,column=2,sticky=E)
+        self.CMIlabel.config(font=(self.fontname,self.fontsize),justify=RIGHT,width=30)
 
         #create a canvas for the line scan
         self.LineScanCanvas = tk.Canvas(self.InfoFrame,bd=2,cursor='crosshair',relief=RIDGE)
@@ -335,7 +419,189 @@ class RHEED_GUI(ttk.Frame):
         self.show_image()
         self.choose_mode()
 
+    def Fit(self):
+        win=tk.Toplevel()
+        win.wm_title('Fit')
+        FitFrame = ttk.Frame(win)
+        FitFrame.grid(row=0,column=0)
+
+        SettingFrame=ttk.LabelFrame(FitFrame,text='Parameters')
+        SettingFrame.grid(row=0,column=0)
+
+        MODE1 = [('Peak Type',0,self.PeakFunction,('Gaussian','Lorentzian','Voigt')),('Number of Peaks',1,self.NumberOfPeaks,('1','3','5','7','9','11')),('Background Type',2,self.BackGroundType,('Linear','Gaussian'))]
+        for text,row,textvariable,values in MODE1:
+            FitLabel = ttk.Label(SettingFrame,cursor='left_ptr',text=text,padding = '0.02i',width=20)
+            FitLabel.grid(row=row,column=0,sticky=W)
+            FitEntry = ttk.Combobox(SettingFrame,cursor="xterm",width=20,justify=LEFT,textvariable = textvariable,values=values)
+            FitEntry.grid(row=row,column=1,sticky=W)
+
+        MODE2 = [('Bonds Width',3,self.Bonds),('Tolerance',4,self.Tolerance)]
+        for text,row,textvariable in MODE2:
+            FitLabel = ttk.Label(SettingFrame,cursor='left_ptr',text=text,padding = '0.02i',width=20)
+            FitLabel.grid(row=row,column=0,sticky=W)
+            FitEntry = ttk.Entry(SettingFrame,cursor="xterm",width=20,justify=LEFT,textvariable = textvariable)
+            FitEntry.grid(row=row,column=1,sticky=W)
+
+        ButtonFrame = ttk.Frame(FitFrame,cursor ='left_ptr',relief=FLAT,padding='0.1i')
+        ButtonFrame.grid(row=1,column=0)
+        StartButton = ttk.Button(ButtonFrame,text='Start',command=win.destroy)
+        StartButton.grid(row=0,column=0)
+        CancelButton = ttk.Button(ButtonFrame,text='Cancel',command=win.destroy)
+        CancelButton.grid(row=0,column=1)
+
+        ParametersFrame = ttk.Frame(win)
+        ParametersFrame.grid(row=0,column=1)
+
+        ParametersLabelFrame = ttk.LabelFrame(ParametersFrame,text='Choosing Peak Centers')
+        ParametersLabelFrame.grid(row=0,column=0)
+
+        ButtonFrame = ttk.Frame(ParametersFrame,cursor ='left_ptr',relief=FLAT,padding='0.1i')
+        ButtonFrame.grid(row=1,column=0)
+        StartButton = ttk.Button(ButtonFrame,text='OK')
+        StartButton.grid(row=0,column=0)
+        CancelButton = ttk.Button(ButtonFrame,text='Cancel')
+        CancelButton.grid(row=0,column=1)
+
+        win.focus_force()
+        win.grab_set()
+
+    def TwoDimMapping(self):
+        win=tk.Toplevel()
+        win.wm_title('2D Mapping')
+        TwoDimFrame = ttk.Frame(win)
+        TwoDimFrame.grid(row=0,column=0)
+
+        SettingFrame=ttk.LabelFrame(TwoDimFrame,text='Configuration')
+        SettingFrame.grid(row=0,column=0,sticky=W+E)
+
+
+        MODE1 = [('Start Image Index',0,self.StartIndex),('End Image Index',1,self.EndIndex)]
+        for text,row,textvariable in MODE1:
+            TwoDimLabel = ttk.Label(SettingFrame,cursor='left_ptr',text=text,padding = '0.02i',width=25)
+            TwoDimLabel.grid(row=row,column=0,sticky=W)
+            TwoDimEntry = ttk.Entry(SettingFrame,cursor="xterm",width=20,justify=LEFT,textvariable = textvariable)
+            TwoDimEntry.grid(row=row,column=1,sticky=W)
+
+        STLabel = ttk.Label(SettingFrame,cursor='left_ptr',text='Straight Through Spot:',padding='0.05i',width=25)
+        STLabel.grid(row=2,column=0,sticky=W)
+        TwoDimRadioButton1 = ttk.Radiobutton(SettingFrame,cursor='hand2',text='Fixed',variable=self.STMode,value='Fixed')
+        TwoDimRadioButton1.grid(row=2,column=1,sticky=W+E)
+
+        TwoDimRadioButton2 = ttk.Radiobutton(SettingFrame,cursor='hand2',text='Dynamic',variable=self.STMode,value='Dynamic')
+        TwoDimRadioButton2.grid(row=2,column=2,sticky=W+E)
+
+        PlotFrame=ttk.LabelFrame(TwoDimFrame,text='Plot Properties')
+        PlotFrame.grid(row=1,column=0)
+
+        MODE2 = [('Colormap',0,self.ColorMap,('jet','rainbow','hot'))]
+        for text,row,textvariable,values in MODE2:
+            TwoDimLabel = ttk.Label(PlotFrame,cursor='left_ptr',text=text,padding = '0.02i',width=20)
+            TwoDimLabel.grid(row=row,column=0,sticky=W)
+            TwoDimEntry = ttk.Combobox(PlotFrame,cursor="xterm",width=20,justify=LEFT,textvariable = textvariable,values=values)
+            TwoDimEntry.grid(row=row,column=1,sticky=W)
+
+        self.BgLevelLabel = ttk.Label(PlotFrame,cursor='left_ptr',text='Background Level ({})'.format(self.BackgroundLevel),padding ='0.02i',width=30)
+        self.BgLevelLabel.grid(row=1,column=0,sticky=W)
+        Scale = ttk.Scale(PlotFrame,command = self.set_bg_level, variable=self.BackgroundLevel, value=0,cursor="hand2",length=200,orient=HORIZONTAL,from_=0,to=100)
+        Scale.grid(row=1,column=1,sticky=W)
+
+        self.CutoffLabel = ttk.Label(PlotFrame,cursor='left_ptr',text='Cutoff Level ({})'.format(self.CutoffLevel),padding ='0.02i',width=30)
+        self.CutoffLabel.grid(row=2,column=0,sticky=W)
+        Scale = ttk.Scale(PlotFrame,command = self.set_cutoff_level, variable=self.CutoffLevel, value=100,cursor="hand2",length=200,orient=HORIZONTAL,from_=0,to=100)
+        Scale.grid(row=2,column=1,sticky=W)
+
+        self.ContourLevelsLabel = ttk.Label(PlotFrame,cursor='left_ptr',text='Number of Contour Levels ({})'.format(self.ContourLevelNumber),padding ='0.02i',width=30)
+        self.ContourLevelsLabel.grid(row=3,column=0,sticky=W)
+        Scale = ttk.Scale(PlotFrame,command = self.set_number_of_contour_levels, variable=self.ContourLevelNumber, value=40,cursor="hand2",length=200,orient=HORIZONTAL,from_=0,to=100)
+        Scale.grid(row=3,column=1,sticky=W)
+
+        ButtonFrame = ttk.Frame(TwoDimFrame,cursor ='left_ptr',relief=FLAT,padding='0.1i')
+        ButtonFrame.grid(row=2,column=0)
+        StartButton = ttk.Button(ButtonFrame,text='Start',command=self.get_2D_map)
+        StartButton.grid(row=0,column=0)
+        CancelButton = ttk.Button(ButtonFrame,text='Cancel',command=win.destroy)
+        CancelButton.grid(row=0,column=1)
+        QuitButton = ttk.Button(ButtonFrame,text='Quit',command=win.destroy)
+        QuitButton.grid(row=0,column=2)
+
+        win.focus_force()
+        win.grab_set()
+
+    def ThreeDimMapping(self):
+        return
+
     '''Primary Action Functions'''
+
+    def set_bg_level(self,evt):
+        self.BackgroundLevel = int(float(evt))
+        self.BgLevelLabel['text'] ='Background Level ({})'.format(self.BackgroundLevel)
+        return
+
+    def set_cutoff_level(self,evt):
+        self.CutoffLevel = int(float(evt))
+        self.CutoffLabel['text'] ='Cutoff Level ({})'.format(self.CutoffLevel)
+        return
+
+    def set_number_of_contour_levels(self,evt):
+        self.ContourLevelNumber = int(float(evt))
+        self.ContourLevelsLabel['text'] ='Number of Contour Levels ({})'.format(self.ContourLevelNumber)
+        return
+
+    def get_2D_map(self):
+        image_list = []
+        map_2D=np.array([0,0,0])
+        path = os.path.join(os.path.dirname(self.DefaultPath),'*.nef')
+        #self.CMIProgressBar.start()
+        #create a percentage indicator
+        self.CMIPercentage = ttk.Label(self.CMIBottomFrame,text='{}%    '.format(self.Progress.get()))
+        self.CMIPercentage.grid(row=0,column=1,sticky=W)
+        #create a progress bar
+        self.CMIProgressBar = ttk.Progressbar(self.CMIBottomFrame,length=180,variable = self.Progress,value='0',mode='determinate',orient=HORIZONTAL)
+        self.CMIProgressBar.grid(row=0,column=0,sticky=W)
+        for filename in glob.glob(path):
+            image_list.append(filename)
+        for nimg in range(int(float(self.StartIndex.get())),int(float(self.EndIndex.get()))+1):
+            self.img = self.read_image(image_list[nimg])
+            if self.RegionWidth==1:
+                R,I = self.get_line_scan(self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY)
+                RC = (R-R[np.argmax(I)])/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
+                Phi = np.full(len(R),nimg*1.8)
+                for iphi in range(0,np.argmax(I)):
+                    Phi[iphi]=nimg*1.8+180
+                if np.argmax(I)<(len(R)-1)/2:
+                    map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+                else:
+                    map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
+            else:
+                self.IntegralHalfWidth = int(int(self.RegionWidth)*self.ZoomFactor)
+                R,I = self.get_line_integral(self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY)
+                RC = (R-R[np.argmax(I)])/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
+                Phi = np.full(len(R),nimg*1.8)
+                for iphi in range(0,np.argmax(I)):
+                    Phi[iphi]=nimg*1.8+180
+                if np.argmax(I)<(len(R)-1)/2:
+                    map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+                else:
+                    map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
+            self.Progress.set(int((nimg+1-int(float(self.StartIndex.get())))*(100/(int(float(self.EndIndex.get()))-int(float(self.StartIndex.get()))+1))))
+            self.CMIPercentage['text'] ='{}%    '.format(self.Progress.get())
+            self.CMIPercentage.update_idletasks()
+            self.CMIProgressBar.update_idletasks()
+            #self.CMIProgressBar['value'] = percentage
+
+        map_2D_polar = np.delete(map_2D,0,0)
+        map_2D_cart = np.empty(map_2D_polar.shape)
+        map_2D_cart[:,2] = map_2D_polar[:,2]
+        map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*math.pi/180)
+        map_2D_cart[:,1] = map_2D_polar[:,0]*np.sin((map_2D_polar[:,1])*math.pi/180)
+        #self.CMIProgressBar.stop()
+
+        np.savetxt('./2D mapping.txt',map_2D_polar,fmt='%4.3f')
+        self.CMIPercentage.destroy()
+        self.CMIProgressBar.destroy()
+        messagebox.showinfo(title="2D Mapping", default="ok",message="2D Mapping Completed!")
+        return
+
     def make_image(self):
         self.img = self.read_image(self.DefaultPath)
         self.image = Image.new('L',(self.img.shape[1],self.img.shape[0]))
@@ -359,6 +625,7 @@ class RHEED_GUI(ttk.Frame):
 
     def adjust_reset(self):
         self.Brightness.set(30)
+        self.UserBlack.set(50)
         self.EnableAutoWB.set(0)
         self.img = self.read_image(self.DefaultPath)
         self.image = Image.new('L',(self.img.shape[1],self.img.shape[0]))
@@ -367,6 +634,7 @@ class RHEED_GUI(ttk.Frame):
         self.image.frombytes(self.outpil)
         self.show_image()
         self.AdjustLabel1['text'] = 'Brightness ({})'.format(round(self.Brightness.get()/100,2))
+        self.AdjustLabel2['text'] = 'Black Level ({})'.format(self.UserBlack.get())
         try:
             self.line_scan_update()
         except:
@@ -454,6 +722,10 @@ class RHEED_GUI(ttk.Frame):
     def brightness_update(self,evt):
         self.CurrentBrightness = round(float(evt)/100,2)
         self.AdjustLabel1['text'] = 'Brightness ({})'.format(self.CurrentBrightness)
+
+    def user_black_update(self,evt):
+        self.CurrentBlackLevel = int(float(evt))
+        self.AdjustLabel2['text'] = 'Black Level ({})'.format(self.CurrentBlackLevel)
 
     def tree_update(self,event):
         tree = event.widget
@@ -612,20 +884,54 @@ class RHEED_GUI(ttk.Frame):
 
     def profile_update(self):
         if self.EnableCanvasLines==1:
+            self.mode.set('LI')
+            self.choose_mode()
             try:
                 self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+                self.SaveRegionWidth.append(self.IntegralWidth.get())
+                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
                 x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
-                self.canvas.delete(self.RectOnCanvas)
+                try:
+                    self.canvas.delete(self.LineOnCanvas)
+                except:
+                    pass
+                try:
+                    self.canvas.delete(self.RectOnCanvas)
+                except:
+                    pass
                 self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
             except:
                 pass
+            self.line_scan_update()
+
+    def press_up(self,event):
+        if self.EnableCanvasLines==1:
             try:
+                self.SaveLineStartX.append(self.SaveLineStartX[-1])
+                self.SaveLineStartY.append(self.SaveLineStartY[-1]-1)
+                self.SaveLineEndX.append(self.SaveLineEndX[-1])
+                self.SaveLineEndY.append(self.SaveLineEndY[-1]-1)
+                self.SaveLineStartX0.append(self.SaveLineStartX0[-1])
+                self.SaveLineStartY0.append(self.SaveLineStartY0[-1]-1)
+                self.SaveLineEndX0.append(self.SaveLineEndX0[-1]-1)
+                self.SaveLineEndY0.append(self.SaveLineEndY0[-1]-1)
                 self.line_scan_update()
+                if self.mode.get() == 'LS':
+                    self.canvas.delete(self.LineOnCanvas)
+                    self.LineOnCanvas = self.canvas.create_line((self.SaveLineStartX0[-1],self.SaveLineStartY0[-1]),(self.SaveLineEndX0[-1],self.SaveLineEndY0[-1]),fill='yellow',width=2)
+                elif self.mode.get() == 'LI':
+                    x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
+                    self.canvas.delete(self.RectOnCanvas)
+                    self.RectOnCanvas = self.canvas.create_polygon(x0,y0-1,x1,y1-1,x2,y2-1,x3,y3-1,outline='yellow',fill='',width=2)
+                else:
+                    pass
             except:
                 pass
 
     def profile_reset(self):
         self.IntegralWidth.set(20)
+        self.SaveRegionWidth.append(self.IntegralWidth.get())
+        self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
         self.PFRadius.set(5.)
         self.ChiRange.set(60.)
         self.ProfileLabel3['text'] = 'Radius ({} \u00C5\u207B\u00B9)'.format(np.round(self.PFRadius.get(),2))
@@ -635,18 +941,18 @@ class RHEED_GUI(ttk.Frame):
             try:
                 self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
                 x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
-                self.canvas.delete(self.RectOnCanvas)
+                try:
+                    self.canvas.delete(self.LineOnCanvas)
+                except:
+                    pass
+                try:
+                    self.canvas.delete(self.RectOnCanvas)
+                except:
+                    pass
                 self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
             except:
                 pass
-                try:
-                    self.line_scan_update()
-                except:
-                    pass
-
-
-
-
+            self.line_scan_update()
 
     '''Secondary Action Functions'''
 
@@ -664,7 +970,43 @@ class RHEED_GUI(ttk.Frame):
         return
 
     def menu_preference_default(self):
-        return
+        self.menu_default_win=tk.Toplevel()
+        self.menu_default_win.wm_title('Default Settings')
+        DefaultFrame = ttk.Frame(self.menu_default_win)
+        DefaultFrame.grid(row=0,column=0)
+
+        SettingFrame=ttk.LabelFrame(DefaultFrame,text='Parameters')
+        SettingFrame.grid(row=0,column=0)
+
+        MODE1 = [('Image Shift X:',0,self.HorizontalShift),('Image Shift Y:',1,self.VerticalShift)]
+        for text,row,textvariable in MODE1:
+            DefaultLabel = ttk.Label(SettingFrame,cursor='left_ptr',text=text,padding = '0.02i',width=20)
+            DefaultLabel.grid(row=row,column=0,sticky=W)
+            DefaultEntry = ttk.Entry(SettingFrame,cursor="xterm",width=20,justify=LEFT,textvariable = textvariable)
+            DefaultEntry.grid(row=row,column=1,sticky=W)
+
+        ButtonFrame = ttk.Frame(DefaultFrame,cursor ='left_ptr',relief=FLAT,padding='0.1i')
+        ButtonFrame.grid(row=1,column=0)
+        SaveButton = ttk.Button(ButtonFrame,text='Save',command=self.save_default_settings)
+        SaveButton.grid(row=0,column=0)
+        CancelButton = ttk.Button(ButtonFrame,text='Quit',command=self.menu_default_win.destroy)
+        CancelButton.grid(row=0,column=1)
+
+        self.menu_default_win.focus_force()
+        self.menu_default_win.grab_set()
+
+    def save_default_settings(self):
+        self.HS,self.VS = self.HorizontalShift.get(),self.VerticalShift.get()
+        self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
+        self.img = self.read_image(self.DefaultPath)
+        self.image = Image.new('L',(self.img.shape[1],self.img.shape[0]))
+        self.uint16 = np.uint8(self.img/256)
+        self.outpil = self.uint16.astype(self.uint16.dtype.newbyteorder("L")).tobytes()
+        self.image.frombytes(self.outpil)
+        self.show_image()
+        self.delete_line()
+        self.delete_calibration()
+
 
     def menu_help_about(self):
         messagebox.showinfo(title="About", default="ok",message="PyRHEED 1.0.0   By Yu Xiang\n\nContact: yux1991@gmail.com")
@@ -761,8 +1103,17 @@ class RHEED_GUI(ttk.Frame):
         return '{} bytes'.format(size)
 
     def get_center(self):
-        #print(int(self.Ctr_X),int(self.Ctr_Y))
         return int(self.Ctr_X),int(self.Ctr_Y)
+
+    def set_as_center(self):
+        self.XOffset,self.YOffset = self.Ctr_X,self.Ctr_Y
+
+    def choose_this_region(self):
+        try:
+            self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY = self.SaveLineStartX[-1],self.SaveLineStartY[-1],self.SaveLineEndX[-1],self.SaveLineEndY[-1]
+            self.RegionWidth = self.SaveRegionWidth[-1]
+        except:
+            pass
 
     def scroll_y(self, *args, **kwargs):
         ''' Scroll canvas vertically and redraw the image '''
@@ -808,6 +1159,73 @@ class RHEED_GUI(ttk.Frame):
             self.SaveLineStartY0.append(self.LineStartY0)
             self.LineEndX0 = (self.LineEndX0-self.xx[-1])*self.scale+self.xx[-1]
             self.LineEndY0 = (self.LineEndY0-self.yy[-1])*self.scale+self.yy[-1]
+            self.SaveLineEndX0.append(self.LineEndX0)
+            self.SaveLineEndY0.append(self.LineEndY0)
+        except:
+            pass
+        self.ZFtext.delete(1.0,END)
+        self.ZoomFactor = np.prod(self.scalehisto)
+        self.ZFtext.insert(1.0,'x {}'.format(np.round(self.ZoomFactor*self.ZoomFactor,3)))
+        self.show_image()
+
+    def zoom_in(self):
+        bbox = self.canvas.bbox(self.container)  # get image area
+        xx = 0
+        yy = 0
+        self.xx.append(xx)
+        self.yy.append(yy)
+        self.scale = 1.0
+        i = min(self.image_crop[3]-self.image_crop[2], self.image_crop[1]-self.image_crop[0])
+        if int(i * self.imscale) < 30:
+            self.xx.pop()
+            self.yy.pop()
+            return  # image is less than 30 pixels
+        self.imscale /= self.delta
+        self.scale   /= self.delta
+
+        self.scalehisto.append(self.scale)
+        self.canvas.scale('all', self.xx[-1], self.yy[-1], self.scale, self.scale)  # rescale all canvas objects
+        try:
+            self.LineStartX0 = (self.LineStartX0-self.xx[-1])*self.scale+self.xx[-1]
+            self.LineStartY0 = (self.LineStartY0-self.yy[-1])*self.scale+self.yy[-1]
+            self.SaveLineStartX0.append(self.LineStartX0)
+            self.SaveLineStartY0.append(self.LineStartY0)
+            self.LineEndX0 = (self.LineEndX0-self.xx[-1])*self.scale+self.xx[-1]
+            self.LineEndY0 = (self.LineEndY0-self.yy[-1])*self.scale+self.yy[-1]
+            self.SaveLineEndX0.append(self.LineEndX0)
+            self.SaveLineEndY0.append(self.LineEndY0)
+        except:
+            pass
+        self.ZFtext.delete(1.0,END)
+        self.ZoomFactor = np.prod(self.scalehisto)
+        self.ZFtext.insert(1.0,'x {}'.format(np.round(self.ZoomFactor*self.ZoomFactor,3)))
+        self.show_image()
+
+    def zoom_out(self):
+        bbox = self.canvas.bbox(self.container)  # get image area
+        xx = 0#int((bbox[2]+bbox[0])/2)
+        yy = 0#int((bbox[3]+bbox[1])/2)
+        self.xx.append(xx)
+        self.yy.append(yy)
+        self.scale = 1.0
+        i = min(self.canvas.winfo_width(), self.canvas.winfo_height())
+        if i < self.imscale:
+            self.xx.pop()
+            self.yy.pop()
+            return  # image is less than 30 pixels
+        self.imscale *= self.delta
+        self.scale   *= self.delta
+        self.scalehisto.append(self.scale)
+        self.canvas.scale('all', self.xx[-1], self.yy[-1], self.scale, self.scale)  # rescale all canvas objects
+        try:
+            self.LineStartX0 = (self.LineStartX0-self.xx[-1])*self.scale+self.xx[-1]
+            self.LineStartY0 = (self.LineStartY0-self.yy[-1])*self.scale+self.yy[-1]
+            self.SaveLineStartX0.append(self.LineStartX0)
+            self.SaveLineStartY0.append(self.LineStartY0)
+            self.LineEndX0 = (self.LineEndX0-self.xx[-1])*self.scale+self.xx[-1]
+            self.LineEndY0 = (self.LineEndY0-self.yy[-1])*self.scale+self.yy[-1]
+            self.SaveLineEndX0.append(self.LineEndX0)
+            self.SaveLineEndY0.append(self.LineEndY0)
         except:
             pass
         self.ZFtext.delete(1.0,END)
@@ -843,7 +1261,7 @@ class RHEED_GUI(ttk.Frame):
         if bbox1[0] < x1 < bbox1[2] and bbox1[1] < y1 < bbox1[3]:pass
         else: return  # Show mouse motion only inside image area
         self.Mouse_X,self.Mouse_Y = self.convert_coords(x1,y1)
-        self.CMIlabel['text']='x={}, y={}'.format(np.int(self.Mouse_X),np.int(self.Mouse_Y))
+        self.CMIlabel['text']='  x={}, y={}'.format(np.int(self.Mouse_X),np.int(self.Mouse_Y))
 
     def line_scan_canvas_mouse_coords(self,event):
 
@@ -858,7 +1276,7 @@ class RHEED_GUI(ttk.Frame):
                 self.LineScanCanvas['cursor']='left_ptr'
                 return  # Show mouse motion only inside image area
             self.Mouse_X,self.Mouse_Y = (x2-bx1)*(self.LinePlotRangeX[1]-self.LinePlotRangeX[0])/(bx2-bx1)+self.LinePlotRangeX[0],(by2-y2)*(self.LinePlotRangeY[1]-self.LinePlotRangeY[0])/(by2-by1)+self.LinePlotRangeY[0]
-            self.CMIlabel['text']='K= {}, Int.= {}'.format(np.round(self.Mouse_X,2),np.round(self.Mouse_Y,2))
+            self.CMIlabel['text']='  K= {}, Int.= {}'.format(np.round(self.Mouse_X,2),np.round(self.Mouse_Y,2))
             self.LineScanCanvas['cursor']='crosshair'
         except:
             self.LineScanCanvas['cursor']='left_ptr'
@@ -923,7 +1341,7 @@ class RHEED_GUI(ttk.Frame):
         self.LinePlotRangeY = LinePlotAx.get_ylim()
         self.delete_line()
         self.LineScanFigure = self.show_line_scan(self.LinePlot)
-        self.CMIlabel['text']='x={}, y={}, length ={} \u00C5\u207B\u00B9'.format(np.int(self.LineEndX),np.int(self.LineEndY),np.round(LineScanRadius[-1]/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2))
+        self.CMIlabel['text']='  x={}, y={}, length ={} \u00C5\u207B\u00B9'.format(np.int(self.LineEndX),np.int(self.LineEndY),np.round(LineScanRadius[-1]/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2))
         self.LineOnCanvas = self.canvas.create_line((self.LineStartX0,self.LineStartY0),(self.LineEndX0,self.LineEndY0),fill='yellow',width=2)
         self.ScanStatus = 1
 
@@ -942,6 +1360,10 @@ class RHEED_GUI(ttk.Frame):
             self.SaveLineStartY.append(self.LineStartY)
             self.SaveLineEndX.append(self.LineEndX)
             self.SaveLineEndY.append(self.LineEndY)
+            self.SaveLineEndX0.append(self.LineEndX0)
+            self.SaveLineEndY0.append(self.LineEndY0)
+            self.SaveRegionWidth.append(1)
+            self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),1)
             self.LineStartX,self.LineStartY = 0,0
             self.LineEndX,self.LineEndY = 0,0
 
@@ -977,7 +1399,7 @@ class RHEED_GUI(ttk.Frame):
         self.LinePlotRangeY = LinePlotAx.get_ylim()
         self.delete_line()
         self.LineScanFigure = self.show_line_scan(self.LinePlot)
-        self.CMIlabel['text']='x={}, y={}, length = {} \u00C5\u207B\u00B9'.format(np.int(self.LineEndX),np.int(self.LineEndY),np.round(LineScanRadius[-1]/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2))
+        self.CMIlabel['text']='  x={}, y={}, length = {} \u00C5\u207B\u00B9'.format(np.int(self.LineEndX),np.int(self.LineEndY),np.round(LineScanRadius[-1]/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2))
         self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
         self.ScanStatus = 1
 
@@ -995,6 +1417,10 @@ class RHEED_GUI(ttk.Frame):
             self.SaveLineStartY.append(self.LineStartY)
             self.SaveLineEndX.append(self.LineEndX)
             self.SaveLineEndY.append(self.LineEndY)
+            self.SaveLineEndX0.append(self.LineEndX0)
+            self.SaveLineEndY0.append(self.LineEndY0)
+            self.SaveRegionWidth.append(self.IntegralWidth.get())
+            self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
             self.LineStartX,self.LineStartY = 0,0
             self.LineEndX,self.LineEndY = 0,0
 
@@ -1131,7 +1557,7 @@ class RHEED_GUI(ttk.Frame):
         #create an array that stores all image pathes
         img_raw = rawpy.imread(img_path)
         #Demosaicing
-        img_rgb = img_raw.postprocess(demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD,output_bps = 16,use_auto_wb = self.EnableAutoWB.get(),bright=self.Brightness.get()/100)
+        img_rgb = img_raw.postprocess(demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD,output_bps = 16,use_auto_wb = self.EnableAutoWB.get(),bright=self.Brightness.get()/100,user_black=self.UserBlack.get())
         #Convert to grayvalue images
         img_bw = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
         #Crop the image
@@ -1323,68 +1749,44 @@ class RHEED_GUI(ttk.Frame):
 
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Gaussian Fit functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ fit functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def gaussian(x,height, center,FWHM,offset):
+    def linear(x,center, slope,offset):
+        return slope*(x-center) + offset
 
-            #---------------------- Input list ------------------------------------
-            #       x: the X variable
-            #
-            #       height: the height of the Gaussian function
-            #
-            #       center: the center of the Gaussian function
-            #
-            #       FWHM: the full width at half maximum of the Gaussian function
-            #
-            #---------------------- Output list -----------------------------------
-            #       gaussian: the gaussian function
-            #
-            #----------------------------------------------------------------------
+    def gaussian(x,height,center,FWHM,offset):
+        return height/(FWHM*math.sqrt(math.pi/(4*math.log(2))))*np.exp(-4*math.log(2)*(x - center)**2/(FWHM**2))+offset
 
+    def lorentzian(x,gamma,center,offset):
+        return gamma/np.pi/((x - center)**2+gamma**2) + offset
 
-            return height/(FWHM*math.sqrt(math.pi/(4*math.log(2))))*np.exp(-4*math.log(2)*(x - center)**2/(FWHM**2))+offset
+    def voigt(x,alpha,center,gamma,offset):
+        sigma = alpha/np.sqrt(2*np.log(2))
+        return np.real(wofz(((x-center)+1j*gamma)/sigma/np.sqrt(2)))/sigma/np.sqrt(2*np.pi)
+
+    def three_gaussians(x,H1,H2,H3,C1,C2,C3,W1,W2,W3,offset):
+        return (gaussian(x,H1,C1,W1,offset=0)+
+                    gaussian(x,H2,C2,W2,offset=0)+
+                    gaussian(x,H3,C3,W3,offset=0)+offset)
 
     def five_gaussians(x,H1,H2,H3,H4,H5,C1,C2,C3,C4,C5,W1,W2,W3,W4,W5,offset):
-
-            #---------------------- Input list ------------------------------------
-            #       x: the X variable
-            #
-            #       H1~H5: the five-element array that stores the heights of the Gaussian function
-            #
-            #       C1~C5: the five-element array that stores the centers of the Gaussian function
-            #
-            #       W1~W5: the five-element array that stores the full width at half maximums of the Gaussian function
-            #
-            #---------------------- Output list -----------------------------------
-            #       five_gaussians: the function that adds five Gaussian functions
-            #                       together
-            #
-            #----------------------------------------------------------------------
-
-            return (gaussian(x,H1,C1,W1,offset=0)+
+        return (gaussian(x,H1,C1,W1,offset=0)+
                     gaussian(x,H2,C2,W2,offset=0)+
                     gaussian(x,H3,C3,W3,offset=0)+
                     gaussian(x,H4,C4,W5,offset=0)+
                     gaussian(x,H5,C5,W5,offset=0)+offset)
 
+    def seven_gaussians(x,H1,H2,H3,H4,H5,H6,H7,C1,C2,C3,C4,C5,C6,C7,W1,W2,W3,W4,W5,W6,W7,offset):
+        return (gaussian(x,H1,C1,W1,offset=0)+
+                    gaussian(x,H2,C2,W2,offset=0)+
+                    gaussian(x,H3,C3,W3,offset=0)+
+                    gaussian(x,H4,C4,W4,offset=0)+
+                    gaussian(x,H5,C5,W5,offset=0)+
+                    gaussian(x,H6,C6,W6,offset=0)+
+                    gaussian(x,H7,C7,W7,offset=0)+offset)
+
     def nine_gaussians(x,H1,H2,H3,H4,H5,H6,H7,H8,H9,C1,C2,C3,C4,C5,C6,C7,C8,C9,W1,W2,W3,W4,W5,W6,W7,W8,W9,offset):
-
-            #---------------------- Input list ------------------------------------
-            #       x: the X variable
-            #
-            #       H1~H9: the nine-element array that stores the heights of the Gaussian function
-            #
-            #       C1~C9: the nine-element array that stores the centers of the Gaussian function
-            #
-            #       W1~W9: the nine-element array that stores the full width at half maximums of the Gaussian function
-            #
-            #---------------------- Output list -----------------------------------
-            #       nine_gaussians: the function that adds seven Gaussian functions
-            #                       together
-            #
-            #----------------------------------------------------------------------
-
-            return (gaussian(x,H1,C1,W1,offset=0)+
+        return (gaussian(x,H1,C1,W1,offset=0)+
                     gaussian(x,H2,C2,W2,offset=0)+
                     gaussian(x,H3,C3,W3,offset=0)+
                     gaussian(x,H4,C4,W4,offset=0)+
@@ -1394,26 +1796,8 @@ class RHEED_GUI(ttk.Frame):
                     gaussian(x,H8,C8,W8,offset=0)+
                     gaussian(x,H9,C9,W9,offset=0)+offset)
 
-    def nine_gaussians_bg(x,H1,H2,H3,H4,H5,H6,H7,H8,H9,Hbg,C1,C2,C3,C4,C5,C6,C7,C8,C9,Cbg,W1,W2,W3,W4,W5,W6,W7,W8,W9,Wbg,offset):
-
-            #---------------------- Input list ------------------------------------
-            #       x: the X variable
-            #
-            #       H1~H9: the nine-element array that stores the heights of the Gaussian function
-            #
-            #       C1~C9: the nine-element array that stores the centers of the Gaussian function
-            #
-            #       W1~W9: the nine-element array that stores the full width at half maximums of the Gaussian function
-            #
-            #       Hbg,Cbg,Wbg, height, center position and the full width at half maximums of the Gaussian background
-            #
-            #---------------------- Output list -----------------------------------
-            #       nine_gaussians: the function that adds seven Gaussian functions
-            #                       together
-            #
-            #----------------------------------------------------------------------
-
-            return (gaussian(x,H1,C1,W1,offset=0)+
+    def eleven_gaussians(x,H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,H11,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,W1,W2,W3,W4,W5,W6,W7,W8,W9,W10,W11,offset):
+        return (gaussian(x,H1,C1,W1,offset=0)+
                     gaussian(x,H2,C2,W2,offset=0)+
                     gaussian(x,H3,C3,W3,offset=0)+
                     gaussian(x,H4,C4,W4,offset=0)+
@@ -1422,7 +1806,98 @@ class RHEED_GUI(ttk.Frame):
                     gaussian(x,H7,C7,W7,offset=0)+
                     gaussian(x,H8,C8,W8,offset=0)+
                     gaussian(x,H9,C9,W9,offset=0)+
-                    gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+                    gaussian(x,H10,C10,W10,offset=0)+
+                    gaussian(x,H11,C11,W11,offset=0)+offset)
+
+    def three_lorentzians(x,G1,G2,G3,C1,C2,C3,offset):
+        return (lorentzian(x,G1,C1,offset=0)+
+                    lorentzian(x,G2,C2,offset=0)+
+                    lorentzian(x,G3,C3,offset=0)+offset)
+
+    def five_lorentzians(x,G1,G2,G3,G4,G5,C1,C2,C3,C4,C5,offset):
+        return (lorentzian(x,G1,C1,offset=0)+
+                    lorentzian(x,G2,C2,offset=0)+
+                    lorentzian(x,G3,C3,offset=0)+
+                    lorentzian(x,G4,C4,offset=0)+
+                    lorentzian(x,G5,C5,offset=0)+offset)
+
+    def seven_lorentzians(x,G1,G2,G3,G4,G5,G6,G7,C1,C2,C3,C4,C5,C6,C7,offset):
+        return (lorentzian(x,G1,C1,offset=0)+
+                    lorentzian(x,G2,C2,offset=0)+
+                    lorentzian(x,G3,C3,offset=0)+
+                    lorentzian(x,G4,C4,offset=0)+
+                    lorentzian(x,G5,C5,offset=0)+
+                    lorentzian(x,G6,C6,offset=0)+
+                    lorentzian(x,G7,C7,offset=0)+offset)
+
+    def nine_lorentzians(x,G1,G2,G3,G4,G5,G6,G7,G8,G9,C1,C2,C3,C4,C5,C6,C7,C8,C9,offset):
+        return (lorentzian(x,G1,C1,offset=0)+
+                    lorentzian(x,G2,C2,offset=0)+
+                    lorentzian(x,G3,C3,offset=0)+
+                    lorentzian(x,G4,C4,offset=0)+
+                    lorentzian(x,G5,C5,offset=0)+
+                    lorentzian(x,G6,C6,offset=0)+
+                    lorentzian(x,G7,C7,offset=0)+
+                    lorentzian(x,G8,C8,offset=0)+
+                    lorentzian(x,G9,C9,offset=0)+offset)
+
+    def eleven_lorentzians(x,G1,G2,G3,G4,G5,G6,G7,G8,G9,G10,G11,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,offset):
+        return (lorentzian(x,G1,C1,offset=0)+
+                    lorentzian(x,G2,C2,offset=0)+
+                    lorentzian(x,G3,C3,offset=0)+
+                    lorentzian(x,G4,C4,offset=0)+
+                    lorentzian(x,G5,C5,offset=0)+
+                    lorentzian(x,G6,C6,offset=0)+
+                    lorentzian(x,G7,C7,offset=0)+
+                    lorentzian(x,G8,C8,offset=0)+
+                    lorentzian(x,G9,C9,offset=0)+
+                    lorentzian(x,G10,C10,offset=0)+
+                    lorentzian(x,G11,C11,offset=0)+offset)
+
+    def three_voigts(x,A1,A2,A3,C1,C2,C3,G1,G2,G3,offset):
+        return (voigt(x,A1,C1,G1,offset=0)+
+                    voigt(x,A2,C2,G2,offset=0)+
+                    voigt(x,A3,C3,G3,offset=0)+offset)
+
+    def five_voigts(x,A1,A2,A3,A4,A5,C1,C2,C3,C4,C5,G1,G2,G3,G4,G5,offset):
+        return (voigt(x,A1,C1,G1,offset=0)+
+                    voigt(x,A2,C2,G2,offset=0)+
+                    voigt(x,A3,C3,G3,offset=0)+
+                    voigt(x,A4,C4,G4,offset=0)+
+                    voigt(x,A5,C5,G5,offset=0)+offset)
+
+    def seven_voigts(x,A1,A2,A3,A4,A5,A6,A7,C1,C2,C3,C4,C5,C6,C7,G1,G2,G3,G4,G5,G6,G7,offset):
+        return (voigt(x,A1,C1,G1,offset=0)+
+                    voigt(x,A2,C2,G2,offset=0)+
+                    voigt(x,A3,C3,G3,offset=0)+
+                    voigt(x,A4,C4,G4,offset=0)+
+                    voigt(x,A5,C5,G5,offset=0)+
+                    voigt(x,A6,C6,G6,offset=0)+
+                    voigt(x,A7,C7,G7,offset=0)+offset)
+
+    def nine_voigts(x,A1,A2,A3,A4,A5,A6,A7,A8,A9,C1,C2,C3,C4,C5,C6,C7,C8,C9,G1,G2,G3,G4,G5,G6,G7,G8,G9,offset):
+        return (voigt(x,A1,C1,G1,offset=0)+
+                    voigt(x,A2,C2,G2,offset=0)+
+                    voigt(x,A3,C3,G3,offset=0)+
+                    voigt(x,A4,C4,G4,offset=0)+
+                    voigt(x,A5,C5,G5,offset=0)+
+                    voigt(x,A6,C6,G6,offset=0)+
+                    voigt(x,A7,C7,G7,offset=0)+
+                    voigt(x,A8,C8,G8,offset=0)+
+                    voigt(x,A9,C9,G9,offset=0)+offset)
+
+    def eleven_voigts(x,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,G1,G2,G3,G4,G5,G6,G7,G8,G9,G10,G11,offset):
+        return (voigt(x,A1,C1,G1,offset=0)+
+                    voigt(x,A2,C2,G2,offset=0)+
+                    voigt(x,A3,C3,G3,offset=0)+
+                    voigt(x,A4,C4,G4,offset=0)+
+                    voigt(x,A5,C5,G5,offset=0)+
+                    voigt(x,A6,C6,G6,offset=0)+
+                    voigt(x,A7,C7,G7,offset=0)+
+                    voigt(x,A8,C8,G8,offset=0)+
+                    voigt(x,A9,C9,G9,offset=0)+
+                    voigt(x,A10,C10,G10,offset=0)+
+                    voigt(x,A11,C11,G11,offset=0)+offset)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1430,10 +1905,8 @@ class RHEED_GUI(ttk.Frame):
 def main():
         root = Tk()
         root.title('RHEED pattern')
-        #root.geometry('{}x{}'.format(img.shape[1]//2,img.shape[0]//2))
         root.state("zoomed")
         RHEED = RHEED_GUI(root)
         root.mainloop()
 if __name__ == '__main__':
-        #execute only if run as a script
         main()
