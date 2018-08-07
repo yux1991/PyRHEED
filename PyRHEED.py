@@ -44,6 +44,7 @@ class RHEED_GUI(ttk.Frame):
     def __init__(self, mainframe):
 
         self.DefaultPath = 'C:/RHEED/01192017 multilayer graphene on Ni/20 keV/Img0000.nef'
+        self.CurrentFilePath = self.DefaultPath
         self.IconPath = './icons/'
         self.Ctr_X,self.Ctr_Y,self.Mouse_X,self.Mouse_Y=0,0,0,0
         self.scale = 1.0
@@ -111,6 +112,8 @@ class RHEED_GUI(ttk.Frame):
         self.STMode.set('Fixed')
         self.LineScanAxesPosition = [0.2,0.2,0.75,0.7]
         self.EnableCanvasLines = 0
+        self.LineOrRect = StringVar()
+        self.LineOrRect.set('None')
         self.EnableCalibration =0
         self.EnableCanvasLabel =0
         self.fontname = 'Helvetica'
@@ -125,6 +128,7 @@ class RHEED_GUI(ttk.Frame):
         self.HorizontalShift.set(0)
         self.XOffset,self.YOffset=0,0
         self.HS,self.VS = 0,0
+        self.MoveStep =5
         self.Progress = IntVar()
         self.Progress.set(0)
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
@@ -209,10 +213,10 @@ class RHEED_GUI(ttk.Frame):
             self.ToolButton = ttk.Button(self.ToolBarFrame,image=icon,command=command,cursor='hand2')
             self.ToolButton.grid(row=0,column=col,sticky=NW)
 
-        self.ToolButton = ttk.Button(self.ToolBarFrame,text='2D',command=self.TwoDimMapping,cursor='hand2',width=4)
-        self.ToolButton.grid(row=0,column=4,sticky=N+S+W+E)
-        self.ToolButton = ttk.Button(self.ToolBarFrame,text='3D',command=self.ThreeDimMapping,cursor='hand2',width=4)
-        self.ToolButton.grid(row=0,column=5,sticky=N+S+W+E)
+        self.ToolButton2D = ttk.Button(self.ToolBarFrame,text='2D',command=self.TwoDimMapping,cursor='hand2',width=4)
+        self.ToolButton2D.grid(row=0,column=4,sticky=N+S+W+E)
+        self.ToolButton3D = ttk.Button(self.ToolBarFrame,text='3D',command=self.ThreeDimMapping,cursor='hand2',width=4)
+        self.ToolButton3D.grid(row=0,column=5,sticky=N+S+W+E)
 
         for icon,mode,col in ToolBarModes2:
             self.ToolButton = tk.Radiobutton(self.ToolBarFrame,command=self.choose_mode,image=icon,indicatoron=0,variable=self.mode,value=mode,cursor="hand2")
@@ -234,11 +238,14 @@ class RHEED_GUI(ttk.Frame):
         self.master.rowconfigure(1, weight=1)
         self.master.columnconfigure(0, weight=1)
         # Bind events to the Canvas
-        self.canvas.bind('<Configure>', self.canvas_configure)  # canvas is resized
+        self.canvas.bind('<Configure>', self.canvas_configure_show_image)  # canvas is resized
         self.canvas.bind('<MouseWheel>', self.wheel)  # with Windows and MacOS, but not Linux
         self.canvas.bind('<Double-Button-1>',self.click_coords)
         self.canvas.bind('<Motion>',self.canvas_mouse_coords)
         mainframe.bind('<Up>',self.press_up)
+        mainframe.bind('<Down>',self.press_down)
+        mainframe.bind('<Left>',self.press_left)
+        mainframe.bind('<Right>',self.press_right)
         #self.bind_all("<1>",lambda event:event.widget.focus_set())
         # Put image into container rectangle and use it to set proper coordinates to the image
         self.container = self.canvas.create_rectangle(0, 0,self.image_crop[3]-self.image_crop[2], self.image_crop[1]-self.image_crop[0], width=0)
@@ -408,9 +415,9 @@ class RHEED_GUI(ttk.Frame):
         self.LineScanCanvas.bind('<Motion>',self.line_scan_canvas_mouse_coords)
 
         #create a Text widget for "Zoom Factor"
-        self.ZFtext = Text(self.master)
-        self.ZoomFactor = np.prod(self.scalehisto)*np.prod(self.scalehisto)
-        self.ZFtext.insert(1.0,'x {}'.format(np.round(self.ZoomFactor,3)))
+        self.ZFtext = Text(self.master,takefocus=0)
+        self.ZoomFactor = np.prod(self.scalehisto)
+        self.ZFtext.insert(1.0,'x {}'.format(np.round(self.ZoomFactor*self.ZoomFactor,3)))
         self.ZFtext.grid(row=1,column=0,sticky=NW)
         self.ZFtext.config(font=(self.fontname,self.fontsize+4),bg='black',fg='red',height=1,width=6,relief=FLAT)
 
@@ -466,13 +473,25 @@ class RHEED_GUI(ttk.Frame):
         win.grab_set()
 
     def TwoDimMapping(self):
-        win=tk.Toplevel()
-        win.wm_title('2D Mapping')
-        TwoDimFrame = ttk.Frame(win)
+        self.win=tk.Toplevel()
+        self.win.wm_title('2D Mapping')
+        self.ToolButton2D.config(state='disabled')
+        TwoDimFrame = ttk.Frame(self.win)
         TwoDimFrame.grid(row=0,column=0)
 
+        self.save_2D_mapping_path = os.path.join(os.path.dirname(self.CurrentFilePath),'2D Mapping.txt')
+
+        ChooseDirFrame = ttk.LabelFrame(TwoDimFrame,text='Save Destination')
+        ChooseDirFrame.grid(row=0,column=0,sticky=W+E)
+
+        ChooseDirButton = ttk.Button(ChooseDirFrame,text='Choose',command=self.choose_2D_mapping_save_dir)
+        ChooseDirButton.grid(row=0,column=1,sticky=W+E)
+        self.ShowDir = ttk.Label(ChooseDirFrame,text='The destination is:\n'+self.save_2D_mapping_path,padding='0.05i',width=50,wraplength=300)
+        self.ShowDir.grid(row=0,column=0,sticky=W+E)
+
+
         SettingFrame=ttk.LabelFrame(TwoDimFrame,text='Configuration')
-        SettingFrame.grid(row=0,column=0,sticky=W+E)
+        SettingFrame.grid(row=1,column=0,sticky=W+E)
 
 
         MODE1 = [('Start Image Index',0,self.StartIndex),('End Image Index',1,self.EndIndex)]
@@ -491,7 +510,7 @@ class RHEED_GUI(ttk.Frame):
         TwoDimRadioButton2.grid(row=2,column=2,sticky=W+E)
 
         PlotFrame=ttk.LabelFrame(TwoDimFrame,text='Plot Properties')
-        PlotFrame.grid(row=1,column=0)
+        PlotFrame.grid(row=2,column=0)
 
         MODE2 = [('Colormap',0,self.ColorMap,('jet','rainbow','hot'))]
         for text,row,textvariable,values in MODE2:
@@ -516,16 +535,23 @@ class RHEED_GUI(ttk.Frame):
         Scale.grid(row=3,column=1,sticky=W)
 
         ButtonFrame = ttk.Frame(TwoDimFrame,cursor ='left_ptr',relief=FLAT,padding='0.1i')
-        ButtonFrame.grid(row=2,column=0)
+        ButtonFrame.grid(row=3,column=0)
         StartButton = ttk.Button(ButtonFrame,text='Start',command=self.get_2D_map)
         StartButton.grid(row=0,column=0)
-        CancelButton = ttk.Button(ButtonFrame,text='Cancel',command=win.destroy)
+        CancelButton = ttk.Button(ButtonFrame,text='Cancel',command=self.Cancel)
         CancelButton.grid(row=0,column=1)
-        QuitButton = ttk.Button(ButtonFrame,text='Quit',command=win.destroy)
+        QuitButton = ttk.Button(ButtonFrame,text='Quit',command=self.Quit)
         QuitButton.grid(row=0,column=2)
 
-        win.focus_force()
-        win.grab_set()
+        self.win.attributes('-topmost',TRUE)
+
+    def Cancel(self):
+        self.ToolButton2D.config(state='normal')
+        self.win.destroy()
+
+    def Quit(self):
+        self.ToolButton2D.config(state='normal')
+        self.win.destroy()
 
     def ThreeDimMapping(self):
         return
@@ -551,56 +577,66 @@ class RHEED_GUI(ttk.Frame):
         image_list = []
         map_2D=np.array([0,0,0])
         path = os.path.join(os.path.dirname(self.DefaultPath),'*.nef')
-        #self.CMIProgressBar.start()
-        #create a percentage indicator
-        self.CMIPercentage = ttk.Label(self.CMIBottomFrame,text='{}%    '.format(self.Progress.get()))
-        self.CMIPercentage.grid(row=0,column=1,sticky=W)
-        #create a progress bar
-        self.CMIProgressBar = ttk.Progressbar(self.CMIBottomFrame,length=180,variable = self.Progress,value='0',mode='determinate',orient=HORIZONTAL)
-        self.CMIProgressBar.grid(row=0,column=0,sticky=W)
-        for filename in glob.glob(path):
-            image_list.append(filename)
-        for nimg in range(int(float(self.StartIndex.get())),int(float(self.EndIndex.get()))+1):
-            self.img = self.read_image(image_list[nimg])
-            if self.RegionWidth==1:
-                R,I = self.get_line_scan(self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY)
-                RC = (R-R[np.argmax(I)])/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
-                Phi = np.full(len(R),nimg*1.8)
-                for iphi in range(0,np.argmax(I)):
-                    Phi[iphi]=nimg*1.8+180
-                if np.argmax(I)<(len(R)-1)/2:
-                    map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+        try:
+            test = self.RegionWidth
+            #create a percentage indicator
+            self.CMIPercentage = ttk.Label(self.CMIBottomFrame,text='{}%    '.format(self.Progress.get()))
+            self.CMIPercentage.grid(row=0,column=1,sticky=W)
+            #create a progress bar
+            self.CMIProgressBar = ttk.Progressbar(self.CMIBottomFrame,length=180,variable = self.Progress,value='0',mode='determinate',orient=HORIZONTAL)
+            self.CMIProgressBar.grid(row=0,column=0,sticky=W)
+            for filename in glob.glob(path):
+                image_list.append(filename)
+            for nimg in range(int(float(self.StartIndex.get())),int(float(self.EndIndex.get()))+1):
+                self.img = self.read_image(image_list[nimg])
+                if self.RegionWidth==1:
+                    R,I = self.get_line_scan(self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY)
+                    RC = (R-R[np.argmax(I)])/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
+                    Phi = np.full(len(R),nimg*1.8)
+                    for iphi in range(0,np.argmax(I)):
+                        Phi[iphi]=nimg*1.8+180
+                    if np.argmax(I)<(len(R)-1)/2:
+                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+                    else:
+                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
                 else:
-                    map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
-            else:
-                self.IntegralHalfWidth = int(int(self.RegionWidth)*self.ZoomFactor)
-                R,I = self.get_line_integral(self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY)
-                RC = (R-R[np.argmax(I)])/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
-                Phi = np.full(len(R),nimg*1.8)
-                for iphi in range(0,np.argmax(I)):
-                    Phi[iphi]=nimg*1.8+180
-                if np.argmax(I)<(len(R)-1)/2:
-                    map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
-                else:
-                    map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
-            self.Progress.set(int((nimg+1-int(float(self.StartIndex.get())))*(100/(int(float(self.EndIndex.get()))-int(float(self.StartIndex.get()))+1))))
-            self.CMIPercentage['text'] ='{}%    '.format(self.Progress.get())
-            self.CMIPercentage.update_idletasks()
-            self.CMIProgressBar.update_idletasks()
-            #self.CMIProgressBar['value'] = percentage
+                    if int(int(self.RegionWidth)*self.ZoomFactor) == 0:
+                        self.IntegralHalfWidth = 1
+                    else:
+                        self.IntegralHalfWidth = int(int(self.RegionWidth)*self.ZoomFactor)
+                    R,I = self.get_line_integral(self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY)
+                    RC = (R-R[np.argmax(I)])/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
+                    Phi = np.full(len(R),nimg*1.8)
+                    for iphi in range(0,np.argmax(I)):
+                        Phi[iphi]=nimg*1.8+180
+                    if np.argmax(I)<(len(R)-1)/2:
+                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+                    else:
+                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
+                self.Progress.set(int((nimg+1-int(float(self.StartIndex.get())))*(100/(int(float(self.EndIndex.get()))-int(float(self.StartIndex.get()))+1))))
+                self.CMIPercentage['text'] ='{}%    '.format(self.Progress.get())
+                self.CMIPercentage.update_idletasks()
+                self.CMIProgressBar.update_idletasks()
+                #self.CMIProgressBar['value'] = percentage
 
-        map_2D_polar = np.delete(map_2D,0,0)
-        map_2D_cart = np.empty(map_2D_polar.shape)
-        map_2D_cart[:,2] = map_2D_polar[:,2]
-        map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*math.pi/180)
-        map_2D_cart[:,1] = map_2D_polar[:,0]*np.sin((map_2D_polar[:,1])*math.pi/180)
-        #self.CMIProgressBar.stop()
+            map_2D_polar = np.delete(map_2D,0,0)
+            map_2D_cart = np.empty(map_2D_polar.shape)
+            map_2D_cart[:,2] = map_2D_polar[:,2]
+            map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*math.pi/180)
+            map_2D_cart[:,1] = map_2D_polar[:,0]*np.sin((map_2D_polar[:,1])*math.pi/180)
+            #self.CMIProgressBar.stop()
 
-        np.savetxt('./2D mapping.txt',map_2D_polar,fmt='%4.3f')
-        self.CMIPercentage.destroy()
-        self.CMIProgressBar.destroy()
-        messagebox.showinfo(title="2D Mapping", default="ok",message="2D Mapping Completed!")
-        return
+            np.savetxt(self.save_2D_mapping_path,map_2D_polar,fmt='%4.3f')
+            self.CMIPercentage.destroy()
+            self.CMIProgressBar.destroy()
+            messagebox.showinfo(title="2D Mapping", default="ok",message="2D Mapping Completed!")
+        except:
+            messagebox.showinfo(title="Error", default="ok",message="Please choose region!")
+            return
+
+    def choose_2D_mapping_save_dir(self):
+        self.save_2D_mapping_path = filedialog.asksaveasfilename(title="Save As",initialfile='2D Mapping.txt',filetypes=(("TXT (*.txt)","*.txt"),("All Files (*.*)","*.*")))
+        self.ShowDir['text']='The destination is:\n'+self.save_2D_mapping_path
 
     def make_image(self):
         self.img = self.read_image(self.DefaultPath)
@@ -854,12 +890,14 @@ class RHEED_GUI(ttk.Frame):
         try:
             self.canvas.delete(self.LineOnCanvas)
             self.EnableCanvasLines = 0
+            self.LineOrRect.set('None')
             self.LineScanCanvas.delete('all')
         except:
             pass
         try:
             self.canvas.delete(self.RectOnCanvas)
             self.EnableCanvasLines = 0
+            self.LineOrRect.set('None')
             self.LineScanCanvas.delete('all')
         except:
             pass
@@ -887,7 +925,10 @@ class RHEED_GUI(ttk.Frame):
             self.mode.set('LI')
             self.choose_mode()
             try:
-                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+                if int(int(self.IntegralWidth.get())*self.ZoomFactor) == 0:
+                    self.IntegralHalfWidth = 1
+                else:
+                    self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
                 self.SaveRegionWidth.append(self.IntegralWidth.get())
                 self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
                 x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
@@ -900,33 +941,147 @@ class RHEED_GUI(ttk.Frame):
                 except:
                     pass
                 self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+                self.LineOrRect.set('Rect')
             except:
                 pass
             self.line_scan_update()
 
     def press_up(self,event):
         if self.EnableCanvasLines==1:
+            if int(int(self.IntegralWidth.get())*self.ZoomFactor) == 0:
+                self.IntegralHalfWidth = 1
+            else:
+                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
             try:
                 self.SaveLineStartX.append(self.SaveLineStartX[-1])
-                self.SaveLineStartY.append(self.SaveLineStartY[-1]-1)
+                self.SaveLineStartY.append(self.SaveLineStartY[-1]-1*self.MoveStep)
                 self.SaveLineEndX.append(self.SaveLineEndX[-1])
-                self.SaveLineEndY.append(self.SaveLineEndY[-1]-1)
+                self.SaveLineEndY.append(self.SaveLineEndY[-1]-1*self.MoveStep)
                 self.SaveLineStartX0.append(self.SaveLineStartX0[-1])
-                self.SaveLineStartY0.append(self.SaveLineStartY0[-1]-1)
-                self.SaveLineEndX0.append(self.SaveLineEndX0[-1]-1)
-                self.SaveLineEndY0.append(self.SaveLineEndY0[-1]-1)
+                self.SaveLineStartY0.append(self.SaveLineStartY0[-1]-self.ZoomFactor*self.MoveStep)
+                self.SaveLineEndX0.append(self.SaveLineEndX0[-1])
+                self.SaveLineEndY0.append(self.SaveLineEndY0[-1]-self.ZoomFactor*self.MoveStep)
+                self.LineStartX0 = self.SaveLineStartX0[-1]
+                self.LineStartY0 = self.SaveLineStartY0[-1]
+                self.LineEndX0 = self.SaveLineEndX0[-1]
+                self.LineEndY0 = self.SaveLineEndY0[-1]
                 self.line_scan_update()
-                if self.mode.get() == 'LS':
+                if self.LineOrRect.get() == 'Line':
                     self.canvas.delete(self.LineOnCanvas)
                     self.LineOnCanvas = self.canvas.create_line((self.SaveLineStartX0[-1],self.SaveLineStartY0[-1]),(self.SaveLineEndX0[-1],self.SaveLineEndY0[-1]),fill='yellow',width=2)
-                elif self.mode.get() == 'LI':
+                elif self.LineOrRect.get() == 'Rect':
                     x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
                     self.canvas.delete(self.RectOnCanvas)
-                    self.RectOnCanvas = self.canvas.create_polygon(x0,y0-1,x1,y1-1,x2,y2-1,x3,y3-1,outline='yellow',fill='',width=2)
+                    self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
                 else:
                     pass
+                self.canvas.update_idletasks()
+                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
             except:
                 pass
+
+    def press_down(self,event):
+        if self.EnableCanvasLines==1:
+            if int(int(self.IntegralWidth.get())*self.ZoomFactor) == 0:
+                self.IntegralHalfWidth = 1
+            else:
+                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+            try:
+                self.SaveLineStartX.append(self.SaveLineStartX[-1])
+                self.SaveLineStartY.append(self.SaveLineStartY[-1]+1*self.MoveStep)
+                self.SaveLineEndX.append(self.SaveLineEndX[-1])
+                self.SaveLineEndY.append(self.SaveLineEndY[-1]+1*self.MoveStep)
+                self.SaveLineStartX0.append(self.SaveLineStartX0[-1])
+                self.SaveLineStartY0.append(self.SaveLineStartY0[-1]+self.ZoomFactor*self.MoveStep)
+                self.SaveLineEndX0.append(self.SaveLineEndX0[-1])
+                self.SaveLineEndY0.append(self.SaveLineEndY0[-1]+self.ZoomFactor*self.MoveStep)
+                self.LineStartX0 = self.SaveLineStartX0[-1]
+                self.LineStartY0 = self.SaveLineStartY0[-1]
+                self.LineEndX0 = self.SaveLineEndX0[-1]
+                self.LineEndY0 = self.SaveLineEndY0[-1]
+                self.line_scan_update()
+                if self.LineOrRect.get() == 'Line':
+                    self.canvas.delete(self.LineOnCanvas)
+                    self.LineOnCanvas = self.canvas.create_line((self.SaveLineStartX0[-1],self.SaveLineStartY0[-1]),(self.SaveLineEndX0[-1],self.SaveLineEndY0[-1]),fill='yellow',width=2)
+                elif self.LineOrRect.get() == 'Rect':
+                    x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
+                    self.canvas.delete(self.RectOnCanvas)
+                    self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+                else:
+                    pass
+                self.canvas.update_idletasks()
+                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+            except:
+                pass
+
+    def press_left(self,event):
+        if self.EnableCanvasLines==1:
+            if int(int(self.IntegralWidth.get())*self.ZoomFactor) == 0:
+                self.IntegralHalfWidth = 1
+            else:
+                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+            try:
+                self.SaveLineStartX.append(self.SaveLineStartX[-1]-1*self.MoveStep)
+                self.SaveLineStartY.append(self.SaveLineStartY[-1])
+                self.SaveLineEndX.append(self.SaveLineEndX[-1]-1*self.MoveStep)
+                self.SaveLineEndY.append(self.SaveLineEndY[-1])
+                self.SaveLineStartX0.append(self.SaveLineStartX0[-1]-self.ZoomFactor*self.MoveStep)
+                self.SaveLineStartY0.append(self.SaveLineStartY0[-1])
+                self.SaveLineEndX0.append(self.SaveLineEndX0[-1]-self.ZoomFactor*self.MoveStep)
+                self.SaveLineEndY0.append(self.SaveLineEndY0[-1])
+                self.LineStartX0 = self.SaveLineStartX0[-1]
+                self.LineStartY0 = self.SaveLineStartY0[-1]
+                self.LineEndX0 = self.SaveLineEndX0[-1]
+                self.LineEndY0 = self.SaveLineEndY0[-1]
+                self.line_scan_update()
+                if self.LineOrRect.get() == 'Line':
+                    self.canvas.delete(self.LineOnCanvas)
+                    self.LineOnCanvas = self.canvas.create_line((self.SaveLineStartX0[-1],self.SaveLineStartY0[-1]),(self.SaveLineEndX0[-1],self.SaveLineEndY0[-1]),fill='yellow',width=2)
+                elif self.LineOrRect.get() == 'Rect':
+                    x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
+                    self.canvas.delete(self.RectOnCanvas)
+                    self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+                else:
+                    pass
+                self.canvas.update_idletasks()
+                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+            except:
+                pass
+
+    def press_right(self,event):
+        if self.EnableCanvasLines==1:
+            if int(int(self.IntegralWidth.get())*self.ZoomFactor) == 0:
+                self.IntegralHalfWidth = 1
+            else:
+                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+            try:
+                self.SaveLineStartX.append(self.SaveLineStartX[-1]+1*self.MoveStep)
+                self.SaveLineStartY.append(self.SaveLineStartY[-1])
+                self.SaveLineEndX.append(self.SaveLineEndX[-1]+1*self.MoveStep)
+                self.SaveLineEndY.append(self.SaveLineEndY[-1])
+                self.SaveLineStartX0.append(self.SaveLineStartX0[-1]+self.ZoomFactor*self.MoveStep)
+                self.SaveLineStartY0.append(self.SaveLineStartY0[-1])
+                self.SaveLineEndX0.append(self.SaveLineEndX0[-1]+self.ZoomFactor*self.MoveStep)
+                self.SaveLineEndY0.append(self.SaveLineEndY0[-1])
+                self.LineStartX0 = self.SaveLineStartX0[-1]
+                self.LineStartY0 = self.SaveLineStartY0[-1]
+                self.LineEndX0 = self.SaveLineEndX0[-1]
+                self.LineEndY0 = self.SaveLineEndY0[-1]
+                self.line_scan_update()
+                if self.LineOrRect.get() == 'Line':
+                    self.canvas.delete(self.LineOnCanvas)
+                    self.LineOnCanvas = self.canvas.create_line((self.SaveLineStartX0[-1],self.SaveLineStartY0[-1]),(self.SaveLineEndX0[-1],self.SaveLineEndY0[-1]),fill='yellow',width=2)
+                elif self.LineOrRect.get() == 'Rect':
+                    x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
+                    self.canvas.delete(self.RectOnCanvas)
+                    self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+                else:
+                    pass
+                self.canvas.update_idletasks()
+                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+            except:
+                pass
+
 
     def profile_reset(self):
         self.IntegralWidth.set(20)
@@ -939,7 +1094,10 @@ class RHEED_GUI(ttk.Frame):
         self.ProfileLabel1['text'] = 'Integral Width ({} pixel)'.format(self.IntegralWidth.get())
         if self.EnableCanvasLines==1:
             try:
-                self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+                if int(int(self.IntegralWidth.get())*self.ZoomFactor) == 0:
+                    self.IntegralHalfWidth = 1
+                else:
+                    self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
                 x0,y0,x1,y1,x2,y2,x3,y3 = self.get_rectangle_position()
                 try:
                     self.canvas.delete(self.LineOnCanvas)
@@ -1170,8 +1328,8 @@ class RHEED_GUI(ttk.Frame):
 
     def zoom_in(self):
         bbox = self.canvas.bbox(self.container)  # get image area
-        xx = 0
-        yy = 0
+        xx = int((bbox[2]+bbox[0])/2)
+        yy = int((bbox[3]+bbox[1])/2)
         self.xx.append(xx)
         self.yy.append(yy)
         self.scale = 1.0
@@ -1203,8 +1361,8 @@ class RHEED_GUI(ttk.Frame):
 
     def zoom_out(self):
         bbox = self.canvas.bbox(self.container)  # get image area
-        xx = 0#int((bbox[2]+bbox[0])/2)
-        yy = 0#int((bbox[3]+bbox[1])/2)
+        xx = int((bbox[2]+bbox[0])/2)
+        yy = int((bbox[3]+bbox[1])/2)
         self.xx.append(xx)
         self.yy.append(yy)
         self.scale = 1.0
@@ -1251,6 +1409,14 @@ class RHEED_GUI(ttk.Frame):
             bbox[3] = bbox1[3]
         self.canvas.configure(scrollregion=bbox)  # set scroll region
         return bbox,bbox1,bbox2
+
+    def canvas_configure_show_image(self,event=NONE):
+        try:
+            self.show_image()
+        except:
+            pass
+
+
 
     def canvas_mouse_coords(self,event):
 
@@ -1344,6 +1510,7 @@ class RHEED_GUI(ttk.Frame):
         self.CMIlabel['text']='  x={}, y={}, length ={} \u00C5\u207B\u00B9'.format(np.int(self.LineEndX),np.int(self.LineEndY),np.round(LineScanRadius[-1]/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2))
         self.LineOnCanvas = self.canvas.create_line((self.LineStartX0,self.LineStartY0),(self.LineEndX0,self.LineEndY0),fill='yellow',width=2)
         self.ScanStatus = 1
+        self.LineOrRect.set('Line')
 
 
     def scan_end(self,event):
@@ -1382,7 +1549,10 @@ class RHEED_GUI(ttk.Frame):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         self.LineEndX0,self.LineEndY0 = x,y
-        self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
+        if int(int(self.IntegralWidth.get())*self.ZoomFactor) == 0:
+            self.IntegralHalfWidth = 1
+        else:
+            self.IntegralHalfWidth = int(int(self.IntegralWidth.get())*self.ZoomFactor)
         bbox = self.canvas.bbox(self.container)  # get image area
         if bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]: pass  # Ok! Inside the image
         else: return  # Show line integral only inside image area
@@ -1401,6 +1571,7 @@ class RHEED_GUI(ttk.Frame):
         self.LineScanFigure = self.show_line_scan(self.LinePlot)
         self.CMIlabel['text']='  x={}, y={}, length = {} \u00C5\u207B\u00B9'.format(np.int(self.LineEndX),np.int(self.LineEndY),np.round(LineScanRadius[-1]/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2))
         self.RectOnCanvas = self.canvas.create_polygon(x0,y0,x1,y1,x2,y2,x3,y3,outline='yellow',fill='',width=2)
+        self.LineOrRect.set('Rect')
         self.ScanStatus = 1
 
     def integrate_end(self,event):
@@ -1427,7 +1598,7 @@ class RHEED_GUI(ttk.Frame):
     def line_scan_update(self):
         if self.EnableCanvasLines == 0:
             return
-        if self.mode.get() == 'LS':
+        if self.LineOrRect.get() == 'Line':
             LineScanRadius,LineScanIntensities = self.get_line_scan(self.SaveLineStartX[-1],self.SaveLineStartY[-1],self.SaveLineEndX[-1],self.SaveLineEndY[-1])
             self.LinePlot = matplotlib.figure.Figure(figsize=(self.LineScanCanvas.winfo_width()/self.dpi,self.LineScanCanvas.winfo_height()/self.dpi))
             LinePlotAx = self.LinePlot.add_axes(self.LineScanAxesPosition)
@@ -1438,7 +1609,8 @@ class RHEED_GUI(ttk.Frame):
             self.LinePlotRangeX = LinePlotAx.get_xlim()
             self.LinePlotRangeY = LinePlotAx.get_ylim()
             self.LineScanFigure = self.show_line_scan(self.LinePlot)
-        elif self.mode.get()== 'LI':
+            self.LineOrRect.set('Line')
+        elif self.LineOrRect.get()== 'Rect':
             LineScanRadius,LineScanIntensities = self.get_line_integral(self.SaveLineStartX[-1],self.SaveLineStartY[-1],self.SaveLineEndX[-1],self.SaveLineEndY[-1])
             self.LinePlot = matplotlib.figure.Figure(figsize=(self.LineScanCanvas.winfo_width()/self.dpi,self.LineScanCanvas.winfo_height()/self.dpi))
             LinePlotAx = self.LinePlot.add_axes(self.LineScanAxesPosition)
@@ -1449,6 +1621,7 @@ class RHEED_GUI(ttk.Frame):
             self.LinePlotRangeX = LinePlotAx.get_xlim()
             self.LinePlotRangeY = LinePlotAx.get_ylim()
             self.LineScanFigure = self.show_line_scan(self.LinePlot)
+            self.LineOrRect.set('Rect')
 
     def get_rectangle_position(self):
         x0,y0,x1,y1,x2,y2,x3,y3 = 0,0,0,0,0,0,0,0
