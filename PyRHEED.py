@@ -97,6 +97,12 @@ class RHEED_GUI(ttk.Frame):
         self.IntegralWidth = IntVar()
         self.IntegralWidth.set(10)
         self.SaveRegionWidth = array('l')
+        self.StartEntryText = StringVar()
+        self.StartEntryText.set("0, 0")
+        self.EndEntryText = StringVar()
+        self.EndEntryText.set("0, 0")
+        self.WidthEntryText = StringVar()
+        self.WidthEntryText.set("1")
         self.ChiRange = IntVar()
         self.ChiRange.set(60)
         self.PFTilt = DoubleVar()
@@ -387,24 +393,44 @@ class RHEED_GUI(ttk.Frame):
         self.nb.add(self.Profileframe,text="Profile Options")
 
         #create a LabelFrame for "Cursor Information"
-        self.CIframe = ttk.LabelFrame(self.InfoFrame,text='Cursor Information',labelanchor=NW)
-        self.CIframe.grid(row=2,ipadx=5,pady=5,column=0,sticky=N+E+S+W)
-        self.CIlabel1 = ttk.Label(self.CIframe,text="Choosed (X,Y):\t\nIntensity:\t\n")
-        self.CIlabel1.grid(row=0,column=0,sticky=NW)
-        self.CIlabel1.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
-        self.CIlabel2 = ttk.Label(self.CIframe,text="({}, {})\n0\n".format(np.int(self.Ctr_X),np.int(self.Ctr_Y)))
-        self.CIlabel2.grid(row=0,column=1,ipadx=5,sticky=NW)
-        self.CIlabel2.config(font=(self.fontname,self.fontsize),width = 10,justify=LEFT,relief=FLAT)
-        self.CIButton1 = ttk.Button(self.CIframe,command=self.set_as_center,text='Set As Center',cursor='hand2')
-        self.CIButton1.grid(row=0,column=2,sticky=W+E+N)
-        self.CIlabel3 = ttk.Label(self.CIframe,text="Start (X,Y):\t\nEnd (X,Y):\t\nWith:\t")
-        self.CIlabel3.grid(row=1,column=0,sticky=NW)
-        self.CIlabel3.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
-        self.CIlabel4 = ttk.Label(self.CIframe,text="(0, 0)\t\n(0,0)\t\n1\t")
-        self.CIlabel4.grid(row=1,column=1,ipadx=5,sticky=NW)
-        self.CIlabel4.config(font=(self.fontname,self.fontsize),width = 10,justify=LEFT,relief=FLAT)
-        self.CIButton2 = ttk.Button(self.CIframe,command=self.choose_this_region,text='Choose This Region',cursor='hand2')
-        self.CIButton2.grid(row=1,column=2,sticky=W+E+N)
+        self.CIlabelframe = ttk.LabelFrame(self.InfoFrame,text='Cursor Information',labelanchor=NW)
+        self.CIlabelframe.grid(row=2,ipadx=5,pady=5,column=0,sticky=N+E+S+W)
+        self.CIframe = ttk.Frame(self.CIlabelframe,padding='0.05i')
+        self.CIframe.grid(row=0,column=0,sticky=W+E)
+        self.CIButtonframe = ttk.Frame(self.CIlabelframe,padding='0.1i')
+        self.CIButtonframe.grid(row=0,column=1,sticky=W+E)
+        self.ChoosedSpotLabel = ttk.Label(self.CIframe,text="Choosed (X,Y):\t\nIntensity:\t\n")
+        self.ChoosedSpotLabel.grid(row=0,column=0,sticky=NW)
+        self.ChoosedSpotLabel.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
+        self.ChoosedSpotEntry = ttk.Label(self.CIframe,text="({}, {})\n0\n".format(np.int(self.Ctr_X),np.int(self.Ctr_Y)))
+        self.ChoosedSpotEntry.grid(row=0,column=1,ipadx=5,sticky=NW)
+        self.ChoosedSpotEntry.config(font=(self.fontname,self.fontsize),width = 10,justify=LEFT,relief=FLAT)
+        self.CIButton1 = ttk.Button(self.CIButtonframe,command=self.set_as_center,text='Set As Center',cursor='hand2')
+        self.CIButton1.grid(row=0,column=0,sticky=W+E+N+S)
+        self.StartLabel = ttk.Label(self.CIframe,text="Start (X,Y):")
+        self.StartLabel.grid(row=1,column=0,sticky=NW)
+        self.StartLabel.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
+        self.EndLabel = ttk.Label(self.CIframe,text="End (X,Y):")
+        self.EndLabel.grid(row=2,column=0,sticky=NW)
+        self.EndLabel.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
+        self.WidthLabel = ttk.Label(self.CIframe,text="Width:")
+        self.WidthLabel.grid(row=3,column=0,sticky=NW)
+        self.WidthLabel.config(font=(self.fontname,self.fontsize),justify=LEFT,relief=FLAT)
+        self.StartEntry = ttk.Entry(self.CIframe,textvariable=self.StartEntryText)
+        self.StartEntry.grid(row=1,column=1,ipadx=5,sticky=NW)
+        self.StartEntry.config(font=(self.fontname,self.fontsize),width = 10,justify=LEFT)
+        self.EndEntry = ttk.Entry(self.CIframe,textvariable=self.EndEntryText)
+        self.EndEntry.grid(row=2,column=1,ipadx=5,sticky=NW)
+        self.EndEntry.config(font=(self.fontname,self.fontsize),width = 10,justify=LEFT)
+        self.WidthEntry = ttk.Entry(self.CIframe,textvariable=self.WidthEntryText)
+        self.WidthEntry.grid(row=3,column=1,ipadx=5,sticky=NW)
+        self.WidthEntry.config(font=(self.fontname,self.fontsize),width = 10,justify=LEFT)
+        self.CIGapText = ttk.Label(self.CIButtonframe,text='\n')
+        self.CIGapText.grid(row=1,column=0,sticky=W+E+N+S)
+        self.CIButton2 = ttk.Button(self.CIButtonframe,command=self.choose_this_region,text='Choose This Region',cursor='hand2')
+        self.CIButton2.grid(row=2,column=0,sticky=W+E+N+S)
+        self.CIGapText = ttk.Label(self.CIButtonframe,text='\n')
+        self.CIGapText.grid(row=3,column=0,sticky=W+E+N+S)
 
         self.CMIBottomFrame = ttk.Frame(self.master)
         self.CMIBottomFrame.grid(row=2,column=19+2,sticky=E)
@@ -880,7 +906,7 @@ class RHEED_GUI(ttk.Frame):
 
         self.Ctr_X,self.Ctr_Y = self.convert_coords(x,y)
         self.CanvasCtr_X,self.CanvasCtr_Y = x,y
-        self.CIlabel2['text']="({}, {})\n{}".format(np.int(self.Ctr_X),np.int(self.Ctr_Y),np.round(self.img[np.int(self.Ctr_Y),np.int(self.Ctr_X)]/65535,3))
+        self.ChoosedSpotEntry['text']="({}, {})\n{}".format(np.int(self.Ctr_X),np.int(self.Ctr_Y),np.round(self.img[np.int(self.Ctr_Y),np.int(self.Ctr_X)]/65535,3))
 
         if self.mode.get() == 'PF':
             self.plot_arc()
@@ -920,6 +946,7 @@ class RHEED_GUI(ttk.Frame):
             self.plot_arc()
 
     def integral_width_update(self,evt):
+        self.WidthEntryText.set('{}'.format(self.IntegralWidth.get()))
         try:
             self.IntegralWidthLabel['text']='Integral Half Width ({} \u00C5\u207B\u00B9)'.format(np.round(self.IntegralWidth.get()/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2))
         except:
@@ -1012,7 +1039,9 @@ class RHEED_GUI(ttk.Frame):
                 else:
                     pass
                 self.canvas.update_idletasks()
-                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+                self.StartEntryText.set("{}, {}".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1])))
+                self.EndEntryText.set("{}, {}".format(np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1])))
+                self.WidthEntryText.set("{}".format(np.int(self.SaveRegionWidth[-1])))
             except:
                 pass
         elif self.LineOrRect.get() == 'Arc':
@@ -1053,7 +1082,9 @@ class RHEED_GUI(ttk.Frame):
                 else:
                     pass
                 self.canvas.update_idletasks()
-                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+                self.StartEntryText.set("{}, {}".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1])))
+                self.EndEntryText.set("{}, {}".format(np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1])))
+                self.WidthEntryText.set("{}".format(np.int(self.SaveRegionWidth[-1])))
             except:
                 pass
         elif self.LineOrRect.get() == 'Arc':
@@ -1094,7 +1125,9 @@ class RHEED_GUI(ttk.Frame):
                 else:
                     pass
                 self.canvas.update_idletasks()
-                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+                self.StartEntryText.set("{}, {}".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1])))
+                self.EndEntryText.set("{}, {}".format(np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1])))
+                self.WidthEntryText.set("{}".format(np.int(self.SaveRegionWidth[-1])))
             except:
                 pass
         elif self.LineOrRect.get() == 'Arc':
@@ -1135,7 +1168,9 @@ class RHEED_GUI(ttk.Frame):
                 else:
                     pass
                 self.canvas.update_idletasks()
-                self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+                self.StartEntryText.set("{}, {}".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1])))
+                self.EndEntryText.set("{}, {}".format(np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1])))
+                self.WidthEntryText.set("{}".format(np.int(self.SaveRegionWidth[-1])))
             except:
                 pass
         elif self.LineOrRect.get() == 'Arc':
@@ -1150,7 +1185,9 @@ class RHEED_GUI(ttk.Frame):
         self.IntegralWidth.set(10)
         self.SaveRegionWidth.append(self.IntegralWidth.get())
         try:
-            self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+            self.StartEntryText.set("{}, {}".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1])))
+            self.EndEntryText.set("{}, {}".format(np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1])))
+            self.WidthEntryText.set("{}".format(np.int(self.SaveRegionWidth[-1])))
         except:
             pass
         self.PFRadius.set(200.)
@@ -1280,7 +1317,7 @@ class RHEED_GUI(ttk.Frame):
         self.LineOrRect.set('Arc')
 
     def get_chi_scan(self):
-        self.ChiStep.set(200/self.PFRadius.get())
+        self.ChiStep.set(50/self.PFRadius.get())
         if int(self.ChiRange.get()/self.ChiStep.get())>2:
             ChiTotalSteps = int(self.ChiRange.get()/self.ChiStep.get())
         else:
@@ -1314,8 +1351,8 @@ class RHEED_GUI(ttk.Frame):
                        (j-self.Ctr_X)/np.sqrt((i-self.Ctr_Y)**2+(j-self.Ctr_X)**2) > np.cos(ChiAngle[k+1]*np.pi/180):
                            ChiScan[k] += self.img[i,j]
                            cit+=1
-            if cit == 0:
-                ChiProfile[k] = 0
+            if cit == 0 and k>0:
+                ChiProfile[k] = ChiProfile[k-1]
             else:
                 ChiProfile[k] = float(ChiScan[k])/float(cit)
 
@@ -1333,6 +1370,9 @@ class RHEED_GUI(ttk.Frame):
             self.canvas.bind('<B1-Motion>',self.move_to)
             self.canvas.bind('<ButtonRelease-1>',self.move_end)
             self.canvas.bind('<Button-3>',self.delete_line)
+            self.StartEntry.state(['!disabled','selected'])
+            self.EndEntry.state(['!disabled','selected'])
+            self.WidthEntry.state(['!disabled','selected'])
             self.IntegralWidthScale.state(['disabled'])
             self.ChiRangeScale.state(['disabled'])
             self.RadiusScale.state(['disabled'])
@@ -1345,6 +1385,9 @@ class RHEED_GUI(ttk.Frame):
             self.canvas.bind('<Alt-B1-Motion>',self.move_to)
             self.canvas.bind('<Alt-ButtonRelease-1>',self.move_end)
             self.canvas.bind('<Button-3>',self.delete_line)
+            self.StartEntry.state(['!disabled','selected'])
+            self.EndEntry.state(['!disabled','selected'])
+            self.WidthEntry.state(['!disabled','selected'])
             self.IntegralWidthScale.state(['!disabled','selected'])
             self.ChiRangeScale.state(['disabled'])
             self.RadiusScale.state(['disabled'])
@@ -1358,6 +1401,9 @@ class RHEED_GUI(ttk.Frame):
             self.canvas.bind('<Alt-B1-Motion>',self.move_to)
             self.canvas.bind('<Alt-ButtonRelease-1>',self.move_end)
             self.canvas.bind('<Button-3>',self.delete_line)
+            self.StartEntry.state(['!disabled','selected'])
+            self.EndEntry.state(['!disabled','selected'])
+            self.WidthEntry.state(['!disabled','selected'])
             self.IntegralWidthScale.state(['!disabled','selected'])
             self.ChiRangeScale.state(['disabled'])
             self.RadiusScale.state(['disabled'])
@@ -1368,6 +1414,9 @@ class RHEED_GUI(ttk.Frame):
             self.canvas.bind('<B1-Motion>',self.move_to)
             self.canvas.bind('<ButtonRelease-1>',self.move_end)
             self.canvas.bind('<Button-3>',self.delete_line)
+            self.StartEntry.state(['disabled'])
+            self.EndEntry.state(['disabled'])
+            self.WidthEntry.state(['disabled'])
             self.IntegralWidthScale.state(['!disabled','selected'])
             self.ChiRangeScale.state(['!disabled','selected'])
             self.RadiusScale.state(['!disabled','selected'])
@@ -1453,11 +1502,31 @@ class RHEED_GUI(ttk.Frame):
         self.XOffset,self.YOffset = self.Ctr_X,self.Ctr_Y
 
     def choose_this_region(self):
+        self.SaveLineStartX.append(int(self.StartEntryText.get().split(',')[0]))
+        self.SaveLineStartY.append(int(self.StartEntryText.get().split(',')[1]))
+        self.SaveLineEndX.append(int(self.EndEntryText.get().split(',')[0]))
+        self.SaveLineEndY.append(int(self.EndEntryText.get().split(',')[1]))
+        self.IntegralWidth.set(int(self.WidthEntryText.get()))
+        #print(self.SaveLineStartX[-1],self.SaveLineStartY[-1],self.SaveLineEndX[-1],self.SaveLineEndY[-1])
+        Startx0,Starty0 = self.inverse_convert_coords(self.SaveLineStartX[-1],self.SaveLineStartY[-1])
+        Endx0,Endy0 = self.inverse_convert_coords(self.SaveLineEndX[-1],self.SaveLineEndY[-1])
+        #print(Startx0,Starty0,Endx0,Endy0)
+        self.SaveLineStartX0.append(Startx0)
+        self.SaveLineStartY0.append(Starty0)
+        self.SaveLineEndX0.append(Endx0)
+        self.SaveLineEndY0.append(Endy0)
+        self.LineStartX0 = self.SaveLineStartX0[-1]
+        self.LineStartY0 = self.SaveLineStartY0[-1]
+        self.LineEndX0 = self.SaveLineEndX0[-1]
+        self.LineEndY0 = self.SaveLineEndY0[-1]
         try:
             self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY = self.SaveLineStartX[-1],self.SaveLineStartY[-1],self.SaveLineEndX[-1],self.SaveLineEndY[-1]
             self.RegionWidth = self.SaveRegionWidth[-1]
         except:
             pass
+        self.EnableCanvasLines == 1
+        self.plot_rectangle()
+        self.line_scan_update()
 
     def scroll_y(self, *args, **kwargs):
         ''' Scroll canvas vertically and redraw the image '''
@@ -1646,16 +1715,30 @@ class RHEED_GUI(ttk.Frame):
         #This is the function that converts the coordinates back to its native coordinates on the RHEED pattern
         Xn=[]
         Yn=[]
-        n1 = len(self.xx)+1
-        n2 = len(self.scalehisto)+1
-        for i in range(n1):
+        n = len(self.xx)
+        for i in range(n+1):
             Xn.append(0)
             Yn.append(0)
-        Xn[n1-1],Yn[n1-1]=x,y
-        for j in range(n1-1,0,-1):
+        Xn[n],Yn[n]=x,y
+        for j in range(n,0,-1):
             Xn[j-1]=(Xn[j]-self.xx[j-1])/self.scalehisto[j-1]+self.xx[j-1]
             Yn[j-1]=(Yn[j]-self.yy[j-1])/self.scalehisto[j-1]+self.yy[j-1]
         return Xn[0],Yn[0]
+
+    def inverse_convert_coords(self,x,y):
+
+        #This is the function that converts the coordinates back to its native coordinates on the RHEED pattern
+        Xn=[]
+        Yn=[]
+        n = len(self.xx)
+        for i in range(n+1):
+            Xn.append(0)
+            Yn.append(0)
+        Xn[0],Yn[0]=x,y
+        for j in range(0,n,1):
+            Xn[j+1]=(Xn[j]-self.xx[j])*self.scalehisto[j]+self.xx[j]
+            Yn[j+1]=(Yn[j]-self.yy[j])*self.scalehisto[j]+self.yy[j]
+        return Xn[n],Yn[n]
 
     def move_from(self, event):
         ''' Remember previous coordinates for scrolling with the mouse '''
@@ -1723,7 +1806,9 @@ class RHEED_GUI(ttk.Frame):
             self.SaveLineEndX0.append(self.LineEndX0)
             self.SaveLineEndY0.append(self.LineEndY0)
             self.SaveRegionWidth.append(1)
-            self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),1)
+            self.StartEntryText.set("{}, {}".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1])))
+            self.EndEntryText.set("{}, {}".format(np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1])))
+            self.WidthEntryText.set("{}".format(np.int(self.SaveRegionWidth[-1])))
             self.LineStartX,self.LineStartY = 0,0
             self.LineEndX,self.LineEndY = 0,0
 
@@ -1784,7 +1869,9 @@ class RHEED_GUI(ttk.Frame):
             self.SaveLineEndX0.append(self.LineEndX0)
             self.SaveLineEndY0.append(self.LineEndY0)
             self.SaveRegionWidth.append(self.IntegralWidth.get())
-            self.CIlabel4['text']="({}, {})\t\n({},{})\t\n{}\t".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1]),np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1]),np.int(self.SaveRegionWidth[-1]))
+            self.StartEntryText.set("{}, {}".format(np.int(self.SaveLineStartX[-1]),np.int(self.SaveLineStartY[-1])))
+            self.EndEntryText.set("{}, {}".format(np.int(self.SaveLineEndX[-1]),np.int(self.SaveLineEndY[-1])))
+            self.WidthEntryText.set("{}".format(np.int(self.SaveRegionWidth[-1])))
             self.LineStartX,self.LineStartY = 0,0
             self.LineEndX,self.LineEndY = 0,0
 
