@@ -7,8 +7,10 @@
 import numpy as np
 import tkinter as tk
 from tkinter import *
-from TkMain import *
-from TkInfoPanel import *
+from tkinter import ttk
+import TkMenu
+import TkCanvas
+import TkInfoPanel
 import configparser
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -20,10 +22,16 @@ def main():
     root.state('zoomed')
     config = configparser.ConfigParser()
     config.read('./configuration.ini')
-    MainDefault = dict(config['MainDefault'].items())
+    MenuDefault = dict(config['MenuDefault'].items())
     InfoPanelDefault = dict(config['InfoPanelDefault'].items())
-    main_window = TkMain(root,MainDefault)
-    info_panel = TkInfoPanel(main_window,InfoPanelDefault)
+    menu = TkMenu.menu(root,MenuDefault)
+    root.rowconfigure(1,weight=1)
+    root.columnconfigure(0,weight=1)
+    pan = ttk.PanedWindow(root,orient=HORIZONTAL)
+    pan.grid(row=1,column=0,sticky=N+S+E+W)
+    canvas = TkCanvas.canvas(pan,MenuDefault)
+    info_panel = TkInfoPanel.info_panel(root,pan,InfoPanelDefault)
+    root.title('PyRHEED: ~/'+menu.get_default_file_name())
     root.mainloop()
 
 if __name__ == '__main__':

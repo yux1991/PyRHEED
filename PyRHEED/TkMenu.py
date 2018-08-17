@@ -1,7 +1,3 @@
-#This module is used to construct the GUI
-#Last updated by Yu Xiang at 08/12/2018
-#This code is written in Python 3.6.6 (32 bit)
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Standard Libraries ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 import numpy as np
@@ -10,31 +6,32 @@ import math
 import matplotlib.backends.tkagg as tkagg
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import matplotlib.cm as cm
-import tkinter as tk
 from tkinter import *
+import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
-from tkinter import messagebox
 from PIL import Image, ImageTk,ImageOps,ImageDraw,ImageFont
 from array import array
 from io import BytesIO
 from matplotlib.mathtext import math_to_image
 from matplotlib.font_manager import FontProperties
 from configuration import *
+from io import *
+import TkInfoPanel
+import TkCanvas
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-class TkMain(ttk.Frame):
+class menu(object):
     """This class creates the main widget, the menu and the tool bars"""
 
     #class variables
-
     """the initialization method for this class"""
-    def __init__(self,mainframe,Defaults):
+    def __init__(self,master,Defaults):
 
         #instance variables
         self.DefaultPath=Defaults['image_path']
+        self.CurrentFilePath=self.DefaultPath
         self.IconPath=Defaults['icon_path']
         self.VS,self.HS=int(Defaults['vertical_shift']),int(Defaults['horizontal_shift'])
         self.DefaultFileName = os.path.basename(self.DefaultPath)
@@ -47,8 +44,8 @@ class TkMain(ttk.Frame):
         self.scalehisto.append(1)
 
         """initialization of the menu"""
-        ttk.Frame.__init__(self,master=mainframe)
-        self.master.title('PyRHEED: ~/'+self.DefaultFileName)
+        self.master = ttk.Frame(master,relief=FLAT)
+        self.master.grid(row=0,column=0,sticky=NW)
         top=self.master.winfo_toplevel()
         MenuBar=tk.Menu(top)
         top['menu']=MenuBar
@@ -122,34 +119,6 @@ class TkMain(ttk.Frame):
             ToolButton = tk.Radiobutton(ToolBarFrame,command=self.__choose_mode__,image=icon,indicatoron=0,variable=self.ActionMode,value=mode, cursor="hand2")
             ToolButton.grid(row=0,column=col,sticky=NW)
 
-        '''Initialize the canvas widget with two scrollbars'''
-        # Vertical and horizontal scrollbars for canvas
-        vbar = ttk.Scrollbar(self.master, orient='vertical')
-        hbar = ttk.Scrollbar(self.master, orient='horizontal')
-        vbar.grid(row=1, column=1, sticky='ns')
-        hbar.grid(row=2, column=0, sticky='we')
-        # Create canvas and put image on it
-        self.MainCanvas = tk.Canvas(self.master, cursor = 'crosshair',relief=RIDGE, highlightthickness=0,xscrollcommand=hbar.set, yscrollcommand=vbar.set)
-        self.MainCanvas.grid(row=1, column=0, sticky='nswe')
-        self.MainCanvas.update()  # wait till canvas is created
-        vbar.configure(command=self.__scroll_y__)  # bind scrollbars to the canvas
-        hbar.configure(command=self.__scroll_x__)
-        # Make the canvas expandable
-        self.master.rowconfigure(1, weight=1)
-        self.master.columnconfigure(0, weight=1)
-        # Bind events to the Canvas
-        self.MainCanvas.bind('<Configure>', self.__canvas_configure_show_image__)  # canvas is resized
-        self.MainCanvas.bind('<MouseWheel>', self.__wheel__)  # with Windows and MacOS, but not Linux
-        self.MainCanvas.bind('<Double-Button-1>',self.__click_coords__)
-        self.MainCanvas.bind('<Motion>',self.__canvas_mouse_coords__)
-        mainframe.bind('<Up>',self.__press_up__)
-        mainframe.bind('<Down>',self.__press_down__)
-        mainframe.bind('<Left>',self.__press_left__)
-        mainframe.bind('<Right>',self.__press_right__)
-        # Put image into container rectangle and use it to set proper coordinates to the image
-        ImageContainer = self.MainCanvas.create_rectangle(0, 0,self.image_crop[3]-self.image_crop[2], self.image_crop[1]-self.image_crop[0], width=0)
-
-
     """the private methods in this class"""
     def __menu_file_new__():
         return
@@ -170,36 +139,6 @@ class TkMain(ttk.Frame):
         return
 
     def __choose_mode__():
-        return
-
-    def __scroll_x__(self,*args,**kwargs):
-        return
-
-    def __scroll_y__(self,*args,**kwargs):
-        return
-
-    def __canvas_configure_show_image__(self,event=NONE):
-        return
-
-    def __wheel__(self,event):
-        return
-
-    def __click_coords__(self,event):
-        return
-
-    def __canvas_mouse_coords__(self,event):
-        return
-
-    def __press_up__(self,event):
-        return
-
-    def __press_down__(self,event):
-        return
-
-    def __press_left__(self,event):
-        return
-
-    def __press_right__(self,event):
         return
 
     def __zoom_in__(self,event):
@@ -226,3 +165,6 @@ class TkMain(ttk.Frame):
 
     def choose_file():
         return
+
+    def get_default_file_name(self):
+        return self.DefaultFileName

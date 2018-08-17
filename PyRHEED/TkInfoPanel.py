@@ -1,7 +1,3 @@
-#This program is used to analyze and simulate the RHEED pattern
-#Last updated by Yu Xiang at 08/11/2018
-#This code is written in Python 3.6.6 (32 bit)
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Standard Libraries ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 import numpy as np
@@ -10,23 +6,23 @@ import math
 import matplotlib.cm as cm
 import tkinter as tk
 from tkinter import *
+import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
-from tkinter import messagebox
 from PIL import Image, ImageTk,ImageOps,ImageDraw,ImageFont
 from array import array
 from io import BytesIO
 from matplotlib.mathtext import math_to_image
 from matplotlib.font_manager import FontProperties
 from scipy.special import wofz
-from TkMain import *
+import TkMenu
+import TkCanvas
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-class TkInfoPanel(TkMain):
+class info_panel(object):
 
-    def __init__(self,main_window,Defaults):
+    def __init__(self,root,master,Defaults):
 
         """instance variables"""
         self.Sensitivity = StringVar()
@@ -59,27 +55,41 @@ class TkInfoPanel(TkMain):
         self.EndEntryText.set("0, 0")
         self.WidthEntryText = StringVar()
         self.WidthEntryText.set("1")
+        self.Ctr_X,self.Ctr_Y,self.Mouse_X,self.Mouse_Y = 0,0,0,0
+        self.scalehisto=1
 
         '''Initialize the information panel on the right hand side of the canvas'''
         #create InfoFrame to display informations
-        self.InfoFrame = ttk.Frame(main_window.master, relief=FLAT,padding="0.05i")
-        self.InfoFrame.grid(row=1,column=19+2,sticky=N+E+S+W)
-        FileBrowserLabelFrame = ttk.LabelFrame(self.InfoFrame,text="Browse File",labelanchor=NW)
+        self.master = tk.PanedWindow(master,orient=VERTICAL)
+        self.master.rowconfigure(0,weight=1)
+        self.master.columnconfigure(0,weight=1)
+        self.master.rowconfigure(1,weight=1)
+        self.BrowserFrame = ttk.Frame(self.master,relief=FLAT)
+        self.BrowserFrame.grid(row=0,column=0,sticky=E+W)
+        self.BrowserFrame.rowconfigure(0,weight=1)
+        self.BrowserFrame.columnconfigure(0,weight=1)
+        self.InfoFrame = ttk.Frame(self.master,relief=FLAT)
+        self.InfoFrame.grid(row=1,column=0,sticky=E+W)
+        self.InfoFrame.rowconfigure(2,weight=1)
+        self.InfoFrame.columnconfigure(0,weight=1)
+        FileBrowserLabelFrame = ttk.LabelFrame(self.BrowserFrame,text="Browse File",labelanchor=NW)
         FileBrowserLabelFrame.grid(row=0,column=0,sticky=N+E+W+S)
-        FileBrowserButtonFrame = ttk.Frame(FileBrowserLabelFrame,padding="0.05i")
+        FileBrowserLabelFrame.rowconfigure(1,weight=1)
+        FileBrowserLabelFrame.columnconfigure(0,weight=1)
+        FileBrowserButtonFrame = ttk.Frame(FileBrowserLabelFrame)
         FileBrowserButtonFrame.grid(row=0,column=0,sticky=N+E+W+S)
-        ChooseWorkingDirectory = ttk.Button(FileBrowserButtonFrame,command=TkMain.choose_file,text='Choose File',width=20,cursor='hand2')
+        ChooseWorkingDirectory = ttk.Button(FileBrowserButtonFrame,command=self.choose_file,text='Choose File',width=20,cursor='hand2')
         ChooseWorkingDirectory.grid(row=0,column=0,sticky=EW)
-        SavePlainImage = ttk.Button(FileBrowserButtonFrame,command=TkMain.save_as_plain_image,text='Save Plain Image',width=20,cursor='hand2')
+        SavePlainImage = ttk.Button(FileBrowserButtonFrame,command=self.save_as_plain_image,text='Save Plain Image',width=20,cursor='hand2')
         SavePlainImage.grid(row=0,column=1,sticky=EW)
-        SaveAnnotatedImage = ttk.Button(FileBrowserButtonFrame,command=TkMain.save_as_annotated_image,text='Save Annotated Image',width=20, cursor='hand2')
+        SaveAnnotatedImage = ttk.Button(FileBrowserButtonFrame,command=self.save_as_annotated_image,text='Save Annotated Image',width=20, cursor='hand2')
         SaveAnnotatedImage.grid(row=0,column=2,sticky=EW)
         FileBrowserVSB = ttk.Scrollbar(FileBrowserLabelFrame,orient='vertical')
         FileBrowserHSB = ttk.Scrollbar(FileBrowserLabelFrame,orient='horizontal')
-        FileBrowser = ttk.Treeview(FileBrowserLabelFrame,columns = ('fullpath','type','date','size'),displaycolumns=('date','size'), cursor='left_ptr',height=8,selectmode='browse',yscrollcommand=lambda f,l: self.__autoscroll__(FileBrowserVSB,f,l),xscrollcommand=lambda f,l:self.__autoscroll__(FileBrowserHSB,f,l))
+        FileBrowser = ttk.Treeview(FileBrowserLabelFrame,columns = ('fullpath','type','date','size'),displaycolumns=('date','size'), cursor='left_ptr',selectmode='browse',yscrollcommand=lambda f,l: self.__autoscroll__(FileBrowserVSB,f,l),xscrollcommand=lambda f,l:self.__autoscroll__(FileBrowserHSB,f,l))
         FileBrowser.grid(row=1,column=0,sticky=N+E+W+S)
-        FileBrowserVSB.grid(row=1,column=1,sticky=NS)
-        FileBrowserHSB.grid(row=2,column=0,sticky=EW)
+        FileBrowserVSB.grid(row=1,column=1,sticky=N+S)
+        FileBrowserHSB.grid(row=2,column=0,sticky=E+W)
         FileBrowserVSB['command']=FileBrowser.yview
         FileBrowserHSB['command']=FileBrowser.xview
         FileBrowserHeadings= [('#0','Current Directory Structure'),('date','Date'),('size','Size')]
@@ -94,14 +104,21 @@ class TkInfoPanel(TkMain):
 
         #create a Notebook widget
         NoteBook = ttk.Notebook(self.InfoFrame,cursor = 'hand2')
-        NoteBook.grid(row=1,column=0,sticky=N+W+E+S)
+        NoteBook.grid(row=0,column=0,sticky=N+W+E+S)
 
         #create a Frame for "Parameters"
         Paraframe = ttk.Frame(NoteBook,relief=FLAT,padding='0.05i')
         Paraframe.grid(row=0,column=0,sticky=N+E+S+W)
+        Paraframe.rowconfigure(0,weight=1)
+        Paraframe.columnconfigure(0,weight=1)
         OkayCommand = Paraframe.register(self.__entry_is_okay__)
         ParaEntryFrame = ttk.Frame(Paraframe,relief=FLAT)
-        ParaEntryFrame.grid(row=0,column=0)
+        ParaEntryFrame.grid(row=0,column=0,sticky=W+E)
+        ParaEntryFrame.rowconfigure(0,weight=1)
+        ParaEntryFrame.rowconfigure(1,weight=1)
+        ParaEntryFrame.rowconfigure(2,weight=1)
+        ParaEntryFrame.rowconfigure(3,weight=1)
+        ParaEntryFrame.columnconfigure(1,weight=1)
         self.ParaLabel1=self.latex2image('Sensitivity ($pixel/\sqrt{keV}$):')
         self.ParaLabel2=self.latex2image('Electron energy ($kev$):')
         self.ParaLabel3=self.latex2image('Azimuth ($\degree$):')
@@ -109,9 +126,9 @@ class TkInfoPanel(TkMain):
         ParaModes=[(self.ParaLabel1,0,self.Sensitivity),(self.ParaLabel2,1,self.ElectronEnergy),(self.ParaLabel3,2,self.Azimuth),(self.ParaLabel4,3, self.ScaleBarLength)]
         for LatexImage,row,textvariable in ParaModes:
             ParaLabel = ttk.Label(ParaEntryFrame,cursor='left_ptr',image=LatexImage,width=35)
-            ParaLabel.grid(row=row,column=0,sticky=W)
+            ParaLabel.grid(row=row,column=0,sticky=W+E)
             ParaEntry = ttk.Entry(ParaEntryFrame,cursor='xterm',width=20,justify=LEFT,textvariable=textvariable)
-            ParaEntry.grid(row=row,column=1,sticky=W,padx=10)
+            ParaEntry.grid(row=row,column=1,sticky=W+E,padx=10)
 
         ButtonModes=[('Label',0,self.__label__),('Calibrate',1,self.__calibrate__),('Clear',2,self.__delete_calibration__)]
         ParaButtonFrame = ttk.Frame(Paraframe,cursor ='left_ptr',relief=FLAT,)
@@ -123,16 +140,21 @@ class TkInfoPanel(TkMain):
         #create a Frame for "Image Adjust"
         Adjustframe = ttk.Frame(NoteBook,relief=FLAT,padding='0.05i')
         Adjustframe.grid(row=0,column=0,sticky=N+E+S+W)
+        Adjustframe.rowconfigure(0,weight=1)
+        Adjustframe.columnconfigure(0,weight=1)
         AdjustEntryFrame = ttk.Frame(Adjustframe,relief=FLAT)
-        AdjustEntryFrame.grid(row=0,column=0)
+        AdjustEntryFrame.grid(row=0,column=0,sticky=W+E)
+        AdjustEntryFrame.rowconfigure(0,weight=1)
+        AdjustEntryFrame.rowconfigure(1,weight=1)
+        AdjustEntryFrame.columnconfigure(1,weight=1)
         BrightnessLabel = ttk.Label(AdjustEntryFrame,cursor='left_ptr',text='Brightness ({})'.format(self.CurrentBrightness),width=20)
         BrightnessLabel.grid(row=0,column=0,sticky=W)
         BrightnessScale = ttk.Scale(AdjustEntryFrame,command = self.__brightness_update__,variable=self.Brightness,value=0.5,cursor="hand2",length=290,orient=HORIZONTAL,from_=0,to=100)
-        BrightnessScale.grid(row=0,column=1,sticky=W)
+        BrightnessScale.grid(row=0,column=1,sticky=W+E)
         BlackLevelLabel = ttk.Label(AdjustEntryFrame,cursor='left_ptr',text='Black Level ({})'.format(self.CurrentBlackLevel),width=20)
         BlackLevelLabel.grid(row=1,column=0,sticky=W)
         BlackLevelScale = ttk.Scale(AdjustEntryFrame,command = self.__user_black_update__,variable=self.UserBlack,value=50,cursor="hand2",length=290,orient=HORIZONTAL,from_=0,to=655)
-        BlackLevelScale.grid(row=1,column=1,sticky=W)
+        BlackLevelScale.grid(row=1,column=1,sticky=W+E)
         AutoWBLabel = ttk.Label(AdjustEntryFrame,cursor='left_ptr',text='Auto White Balance',width=20)
         AutoWBLabel.grid(row=2,column=0,sticky=W)
         WBCheckbutton = ttk.Checkbutton(AdjustEntryFrame,cursor="hand2",variable = self.EnableAutoWB)
@@ -146,25 +168,32 @@ class TkInfoPanel(TkMain):
 
         #create a Frame for "Profile Type"
         ProfileTypeFrame = ttk.Frame(NoteBook,relief=FLAT,padding='0.05i')
-        ProfileTypeFrame.grid(row=0,column=0,sticky=W)
+        ProfileTypeFrame.grid(row=0,column=0,sticky=W+E)
+        ProfileTypeFrame.rowconfigure(0,weight=1)
+        ProfileTypeFrame.columnconfigure(0,weight=1)
         Profileframe = ttk.Frame(ProfileTypeFrame,relief=FLAT)
-        Profileframe.grid(row=0,column=0,sticky=W)
+        Profileframe.grid(row=0,column=0,sticky=W+E)
+        Profileframe.rowconfigure(1,weight=1)
+        Profileframe.rowconfigure(2,weight=1)
+        Profileframe.rowconfigure(3,weight=1)
+        Profileframe.rowconfigure(4,weight=1)
+        Profileframe.columnconfigure(1,weight=1)
         IntegralWidthLabel = ttk.Label(Profileframe,cursor='left_ptr',text='Half Width ({} \u00C5\u207B\u00B9)'.format(np.round(self.IntegralWidth.get()/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2)),width=20)
         IntegralWidthLabel.grid(row=1,column=0,sticky=W)
         IntegralWidthScale = ttk.Scale(Profileframe,cursor="hand2",command=self.__integral_width_update__,length=290, orient=HORIZONTAL,from_=1,to=100, variable = self.IntegralWidth,value=10)
-        IntegralWidthScale.grid(row=1,column=1,sticky=W)
+        IntegralWidthScale.grid(row=1,column=1,sticky=W+E)
         ChiRangeLabel = ttk.Label(Profileframe,cursor='left_ptr',text='Chi Range ({}\u00B0)'.format(self.ChiRange.get()),width=20)
         ChiRangeLabel.grid(row=2,column=0,sticky=W)
         ChiRangeScale = ttk.Scale(Profileframe,cursor="hand2",command=self.__PFChiRange_update__,length=290, orient=HORIZONTAL,from_=1,to=180,variable = self.ChiRange,value=60)
-        ChiRangeScale.grid(row=2,column=1,sticky=W)
+        ChiRangeScale.grid(row=2,column=1,sticky=W+E)
         RadiusLabel = ttk.Label(Profileframe,cursor='left_ptr',text='Radius ({} \u00C5\u207B\u00B9)'.format(np.round(self.PFRadius.get()/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get()))),2)),width=20)
         RadiusLabel.grid(row=3,column=0,sticky=W)
         RadiusScale = ttk.Scale(Profileframe,command=self.__PFRadius_update__,cursor="hand2",length=290,orient=HORIZONTAL,from_=50,to=1000,variable = self.PFRadius,value=200.)
-        RadiusScale.grid(row=3,column=1,sticky=W)
+        RadiusScale.grid(row=3,column=1,sticky=W+E)
         TiltLabel = ttk.Label(Profileframe,cursor='left_ptr',text='Tilt Angle ({}\u00B0)'.format(np.round(self.PFTilt.get(),1)),width=20)
         TiltLabel.grid(row=4,column=0,sticky=W)
         TiltScale = ttk.Scale(Profileframe,command=self.__PFTilt_update__,cursor="hand2",length=290,orient=HORIZONTAL,from_=-15,to=15,variable =self.PFTilt,value=0.)
-        TiltScale.grid(row=4,column=1,sticky=W)
+        TiltScale.grid(row=4,column=1,sticky=W+E)
         ButtonFrame = ttk.Frame(ProfileTypeFrame)
         ButtonFrame.grid(row=1,column=0)
         ApplyProfile = ttk.Button(ButtonFrame,cursor='hand2',text='Apply',command=self.profile_update)
@@ -179,16 +208,23 @@ class TkInfoPanel(TkMain):
 
         #create a LabelFrame for "Cursor Information"
         CIlabelframe = ttk.LabelFrame(self.InfoFrame,text='Cursor Information',labelanchor=NW)
-        CIlabelframe.grid(row=2,ipadx=5,pady=5,column=0,sticky=N+E+S+W)
+        CIlabelframe.grid(row=1,ipadx=5,pady=5,column=0,sticky=N+E+S+W)
+        CIlabelframe.rowconfigure(0,weight=1)
+        CIlabelframe.columnconfigure(0,weight=1)
         CIframe = ttk.Frame(CIlabelframe,padding='0.05i')
         CIframe.grid(row=0,column=0,sticky=W+E)
+        CIframe.rowconfigure(0,weight=1)
+        CIframe.rowconfigure(1,weight=1)
+        CIframe.rowconfigure(2,weight=1)
+        CIframe.rowconfigure(3,weight=1)
+        CIframe.columnconfigure(1,weight=1)
         CIButtonframe = ttk.Frame(CIlabelframe,padding='0.1i')
         CIButtonframe.grid(row=0,column=1,sticky=W+E)
         ChoosedSpotLabel = ttk.Label(CIframe,text="Choosed (X,Y):\t\nIntensity:\t\n")
         ChoosedSpotLabel.grid(row=0,column=0,sticky=NW)
         ChoosedSpotLabel.config(justify=LEFT,relief=FLAT)
-        ChoosedSpotEntry = ttk.Label(CIframe,text="({}, {})\n0\n".format(np.int(main_window.Ctr_X),np.int(main_window.Ctr_Y)))
-        ChoosedSpotEntry.grid(row=0,column=1,ipadx=5,sticky=NW)
+        ChoosedSpotEntry = ttk.Label(CIframe,text="({}, {})\n0\n".format(np.int(self.Ctr_X),np.int(self.Ctr_Y)))
+        ChoosedSpotEntry.grid(row=0,column=1,ipadx=5,sticky=W+E)
         ChoosedSpotEntry.config(width = 10,justify=LEFT,relief=FLAT)
         CIButton1 = ttk.Button(CIButtonframe,command=self.__set_as_center__,text='Set As Center',cursor='hand2')
         CIButton1.grid(row=0,column=0,sticky=N+S+E+W,padx=10,pady=13)
@@ -202,32 +238,30 @@ class TkInfoPanel(TkMain):
         WidthLabel.grid(row=3,column=0,sticky=NW)
         WidthLabel.config(justify=LEFT,relief=FLAT)
         StartEntry = ttk.Entry(CIframe,textvariable=self.StartEntryText)
-        StartEntry.grid(row=1,column=1,ipadx=5,sticky=NW)
+        StartEntry.grid(row=1,column=1,ipadx=5,sticky=W+E)
         StartEntry.config(width = 20,justify=LEFT)
         EndEntry = ttk.Entry(CIframe,textvariable=self.EndEntryText)
-        EndEntry.grid(row=2,column=1,ipadx=5,sticky=NW)
+        EndEntry.grid(row=2,column=1,ipadx=5,sticky=W+E)
         EndEntry.config(width = 20,justify=LEFT)
         WidthEntry = ttk.Entry(CIframe,textvariable=self.WidthEntryText)
-        WidthEntry.grid(row=3,column=1,ipadx=5,sticky=NW)
+        WidthEntry.grid(row=3,column=1,ipadx=5,sticky=W+E)
         WidthEntry.config(width = 20,justify=LEFT)
         CIButton2 = ttk.Button(CIButtonframe,command=self.choose_this_region,text='Choose This Region',cursor='hand2')
         CIButton2.grid(row=1,column=0,sticky=N+S+E+W,padx=10,pady=25)
 
-        CMIBottomFrame = ttk.Frame(main_window.master)
-        CMIBottomFrame.grid(row=2,column=19+2,sticky=E)
-        CMIlabel = ttk.Label(CMIBottomFrame,text='  x={}, y={}'.format(main_window.Mouse_X,main_window.Mouse_Y))
-        CMIlabel.grid(row=0,column=2,sticky=E)
-        CMIlabel.config(justify=RIGHT,width=30)
         self.LineScanCanvas = tk.Canvas(self.InfoFrame,bd=2,cursor='crosshair',relief=RIDGE)
-        self.LineScanCanvas.grid(row=4,column=0,sticky=N+W+E+S)
+        self.LineScanCanvas.grid(row=2,column=0,sticky=N+W+E+S)
         self.LineScanCanvas.update()
         self.LineScanCanvas.bind('<Motion>',self.__line_scan_canvas_mouse_coords__)
-        ZFtext = Text(main_window.master,takefocus=0)
-        self.ZoomFactor = np.prod(main_window.scalehisto)
-        ZFtext.insert(1.0,'x {}'.format(np.round(self.ZoomFactor*self.ZoomFactor,3)))
-        ZFtext.grid(row=1,column=0,sticky=NW)
-        ZFtext.config(bg='black',fg='red',height=1,width=6,relief=FLAT)
 
+        CMIBottomFrame = ttk.Frame(root)
+        CMIBottomFrame.grid(row=2,column=0,sticky=E+S)
+        CMIlabel = ttk.Label(CMIBottomFrame,text='  x={}, y={}'.format(self.Mouse_X,self.Mouse_Y))
+        CMIlabel.grid(row=0,column=0,sticky=E)
+        CMIlabel.config(justify=RIGHT,width=30)
+        self.master.add(self.BrowserFrame,stretch='always')
+        self.master.add(self.InfoFrame,stretch='always')
+        master.add(self.master,weight=1)
     """the private methods in this class"""
 
     def __autoscroll__(self,sbar,first,last):
@@ -308,4 +342,13 @@ class TkInfoPanel(TkMain):
         return
 
     def choose_this_region():
+        return
+
+    def choose_file():
+        return
+
+    def save_as_annotated_image():
+        return
+
+    def save_as_plain_image():
         return

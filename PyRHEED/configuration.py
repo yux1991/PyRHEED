@@ -4,7 +4,7 @@
 
 import configparser
 config = configparser.ConfigParser()
-config['MainDefault'] = {'image_path':'C:/RHEED/01192017 multilayer graphene on Ni/20 keV/Img0000.nef',\
+config['MenuDefault'] = {'image_path':'C:/RHEED/01192017 multilayer graphene on Ni/20 keV/Img0000.nef',\
                          'icon_path':'./icons/',\
                          'vertical_shift':0,\
                          'horizontal_shift':0}
