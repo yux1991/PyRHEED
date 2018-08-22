@@ -78,20 +78,20 @@ class info_panel(object):
         FileBrowserLabelFrame.columnconfigure(0,weight=1)
         FileBrowserButtonFrame = ttk.Frame(FileBrowserLabelFrame)
         FileBrowserButtonFrame.grid(row=0,column=0,sticky=N+E+W+S)
-        ChooseWorkingDirectory = ttk.Button(FileBrowserButtonFrame,command=self.choose_file,text='Choose File',width=20,cursor='hand2')
+        ChooseWorkingDirectory = ttk.Button(FileBrowserButtonFrame,command=lambda path: self.choose_file(path),text='Choose File',width=20,cursor='hand2')
         ChooseWorkingDirectory.grid(row=0,column=0,sticky=EW)
         SavePlainImage = ttk.Button(FileBrowserButtonFrame,command=self.save_as_plain_image,text='Save Plain Image',width=20,cursor='hand2')
         SavePlainImage.grid(row=0,column=1,sticky=EW)
         SaveAnnotatedImage = ttk.Button(FileBrowserButtonFrame,command=self.save_as_annotated_image,text='Save Annotated Image',width=20, cursor='hand2')
         SaveAnnotatedImage.grid(row=0,column=2,sticky=EW)
         FileBrowserVSB = ttk.Scrollbar(FileBrowserLabelFrame,orient='vertical')
-        FileBrowserHSB = ttk.Scrollbar(FileBrowserLabelFrame,orient='horizontal')
-        FileBrowser = ttk.Treeview(FileBrowserLabelFrame,columns = ('fullpath','type','date','size'),displaycolumns=('date','size'), cursor='left_ptr',selectmode='browse',yscrollcommand=lambda f,l: self.__autoscroll__(FileBrowserVSB,f,l),xscrollcommand=lambda f,l:self.__autoscroll__(FileBrowserHSB,f,l))
+        #FileBrowserHSB = ttk.Scrollbar(FileBrowserLabelFrame,orient='horizontal')
+        FileBrowser = ttk.Treeview(FileBrowserLabelFrame,columns = ('fullpath','type','date','size'),displaycolumns=('date','size'), cursor='left_ptr',selectmode='browse',yscrollcommand=lambda f,l: self.__autoscroll__(FileBrowserVSB,f,l))
         FileBrowser.grid(row=1,column=0,sticky=N+E+W+S)
         FileBrowserVSB.grid(row=1,column=1,sticky=N+S)
-        FileBrowserHSB.grid(row=2,column=0,sticky=E+W)
+        #ÎFileBrowserHSB.grid(row=2,column=0,sticky=E+W)
         FileBrowserVSB['command']=FileBrowser.yview
-        FileBrowserHSB['command']=FileBrowser.xview
+        #FileBrowserHSB['command']=FileBrowser.xview
         FileBrowserHeadings= [('#0','Current Directory Structure'),('date','Date'),('size','Size')]
         for iid,text in FileBrowserHeadings:
             FileBrowser.heading(iid,text=text,anchor=W)
@@ -344,8 +344,25 @@ class info_panel(object):
     def choose_this_region():
         return
 
-    def choose_file():
-        return
+    def choose_file(path):
+        try:
+            initialdir,filename = os.path.split(path)
+        except:
+            initialdir = ''
+            pass
+        path=filedialog.askopenfilename(initialdir=initialdir,filetypes=(("Raw File (*.nef)","*.nef"),("All Files (*.*)","*.*")),title='Choose File')
+        if path =='':pass
+        else:
+            self.FileBrowser.delete(self.FileBrowser.get_children(''))
+            self.populate_roots(self.FileBrowser)
+            self.DefaultPath = self.CurrentFilePath
+            self.DefaultFileName = os.path.basename(self.DefaultPath)
+            self.master.title('PyRHEED /'+self.DefaultFileName)
+            self.img = self.read_image(self.DefaultPath)
+            self.convert_image()
+            self.show_image()
+            self.delete_line()
+            self.delete_calibration()
 
     def save_as_annotated_image():
         return
