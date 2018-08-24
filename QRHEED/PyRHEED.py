@@ -608,6 +608,7 @@ class RHEED_GUI(ttk.Frame):
     def get_2D_map(self):
         image_list = []
         map_2D=np.array([0,0,0])
+        map_2D2=np.array([0,0,0])
         path = os.path.join(os.path.dirname(self.DefaultPath),'*.nef')
         try:
             test = self.RegionWidth
@@ -624,13 +625,16 @@ class RHEED_GUI(ttk.Frame):
                 if self.RegionWidth==1:
                     R,I = self.get_line_scan(self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY)
                     RC = (R-R[np.argmax(I)])/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
-                    Phi = np.full(len(R),nimg*1.8)
+                    Phi1 = np.full(len(R),nimg*1.8)
+                    Phi2 = np.full(len(R),nimg*1.8)
                     for iphi in range(0,np.argmax(I)):
-                        Phi[iphi]=nimg*1.8+180
+                        Phi1[iphi]=nimg*1.8+180
                     if np.argmax(I)<(len(R)-1)/2:
-                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi1[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+                        map_2D2 = np.vstack((map_2D2,np.vstack((RC[0:(2*np.argmax(I)+1)],Phi2[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
                     else:
-                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
+                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi1[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
+                        map_2D2 = np.vstack((map_2D2,np.vstack((RC[(2*np.argmax(I)-len(R)-1):-1],Phi2[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
                 else:
                     if int(int(self.RegionWidth)*self.ZoomFactor) == 0:
                         self.IntegralHalfWidth = 1
@@ -638,25 +642,29 @@ class RHEED_GUI(ttk.Frame):
                         self.IntegralHalfWidth = int(int(self.RegionWidth)*self.ZoomFactor)
                     R,I = self.get_line_integral(self.RegionStartX,self.RegionStartY,self.RegionEndX,self.RegionEndY)
                     RC = (R-R[np.argmax(I)])/(float(self.Sensitivity.get())/np.sqrt(float(self.ElectronEnergy.get())))
-                    Phi = np.full(len(R),nimg*1.8)
+                    Phi1 = np.full(len(R),nimg*1.8)
+                    Phi2 = np.full(len(R),nimg*1.8)
                     for iphi in range(0,np.argmax(I)):
-                        Phi[iphi]=nimg*1.8+180
+                        Phi1[iphi]=nimg*1.8+180
                     if np.argmax(I)<(len(R)-1)/2:
-                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[0:(2*np.argmax(I)+1)]),Phi1[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
+                        map_2D2 = np.vstack((map_2D2,np.vstack((RC[0:(2*np.argmax(I)+1)],Phi2[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)])).T))
                     else:
-                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
+                        map_2D = np.vstack((map_2D,np.vstack((abs(RC[(2*np.argmax(I)-len(R)-1):-1]),Phi1[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
+                        map_2D2 = np.vstack((map_2D2,np.vstack((RC[(2*np.argmax(I)-len(R)-1):-1],Phi2[(2*np.argmax(I)-len(R)-1):-1],I[(2*np.argmax(I)-len(R)-1):-1]/I[np.argmax(I)])).T))
                 self.Progress.set(int((nimg+1-int(float(self.StartIndex.get())))*(100/(int(float(self.EndIndex.get()))-int(float(self.StartIndex.get()))+1))))
                 self.CMIPercentage['text'] ='{}%    '.format(self.Progress.get())
                 self.CMIPercentage.update_idletasks()
                 self.CMIProgressBar.update_idletasks()
 
             map_2D_polar = np.delete(map_2D,0,0)
+            map_2D_polar2 = np.delete(map_2D2,0,0)
             map_2D_cart = np.empty(map_2D_polar.shape)
             map_2D_cart[:,2] = map_2D_polar[:,2]
             map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*math.pi/180)
             map_2D_cart[:,1] = map_2D_polar[:,0]*np.sin((map_2D_polar[:,1])*math.pi/180)
 
-            np.savetxt(self.save_2D_mapping_path,map_2D_polar,fmt='%4.3f')
+            np.savetxt(self.save_2D_mapping_path,map_2D_polar2,fmt='%4.3f')
             self.CMIPercentage.destroy()
             self.CMIProgressBar.destroy()
             messagebox.showinfo(title="2D Mapping", default="ok",message="2D Mapping Completed!")
