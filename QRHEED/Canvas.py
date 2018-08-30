@@ -1,4 +1,4 @@
-from MainWindow import *
+from Window import *
 
 class Canvas(QtWidgets.QGraphicsView):
     photoMouseMovement = QtCore.pyqtSignal(QtCore.QPoint)
@@ -70,5 +70,6 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def mouseMoveEvent(self, event):
         if self._photo.isUnderMouse():
-            self.photoMouseMovement.emit(QtCore.QPoint(event.pos()))
+            position = self.mapToScene(event.pos())
+            self.photoMouseMovement.emit(position.toPoint())
         super(Canvas, self).mouseMoveEvent(event)
