@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtWidgets
 
 class Cursor(QtWidgets.QWidget):
 
@@ -21,6 +21,15 @@ class Cursor(QtWidgets.QWidget):
         endXYEdit = QtWidgets.QLineEdit('{},{}'.format(0,0))
         widthLabel = QtWidgets.QLabel('Width')
         widthEdit = QtWidgets.QLineEdit('{}'.format(1))
+
+        setAsCenterButton = QtWidgets.QPushButton('Set As Center')
+        chooseButton = QtWidgets.QPushButton('Choose Region')
+        setAsCenterButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        chooseButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        buttonGrid = QtWidgets.QGridLayout()
+        buttonGrid.addWidget(setAsCenterButton,0,0)
+        buttonGrid.addWidget(chooseButton,0,1)
+
         cursorInfoBoxGrid.addWidget(choosedXYLabel,0,0)
         cursorInfoBoxGrid.addWidget(choosedXYEdit,0,1)
         cursorInfoBoxGrid.addWidget(intensityLabel,1,0)
@@ -31,10 +40,12 @@ class Cursor(QtWidgets.QWidget):
         cursorInfoBoxGrid.addWidget(endXYEdit,3,1)
         cursorInfoBoxGrid.addWidget(widthLabel,4,0)
         cursorInfoBoxGrid.addWidget(widthEdit,4,1)
+        cursorInfoBoxGrid.addLayout(buttonGrid,5,0,1,2)
         cursorInfoBox.setLayout(cursorInfoBoxGrid)
 
         UIgrid = QtWidgets.QGridLayout()
         UIgrid.addWidget(cursorInfoBox,0,0)
+        UIgrid.setContentsMargins(0,0,0,0)
         self.setLayout(UIgrid)
         self.show()
 

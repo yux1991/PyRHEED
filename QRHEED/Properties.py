@@ -11,13 +11,13 @@ class Properties(QtWidgets.QWidget):
         #Parameters page
         parametersPage = QtWidgets.QWidget()
         parametersGrid = QtWidgets.QGridLayout(parametersPage)
-        sensitivityLabel = QtWidgets.QLabel('Sensitivity (pixel/sqrt(keV)')
+        sensitivityLabel = QtWidgets.QLabel('Sensitivity (pixel/sqrt[keV])')
         sensitivityEdit = QtWidgets.QLineEdit('361.13')
         energyLabel = QtWidgets.QLabel('Electron Energy (keV)')
         energyEdit = QtWidgets.QLineEdit('20')
-        azimuthLabel = QtWidgets.QLabel('Azimuth()')
+        azimuthLabel = QtWidgets.QLabel('Azimuth(\u00B0)')
         azimuthEdit = QtWidgets.QLineEdit('0')
-        scaleBarLabel = QtWidgets.QLabel('Scale Bar Length (Angstrom)')
+        scaleBarLabel = QtWidgets.QLabel('Scale Bar Length (\u212B)')
         scaleBarEdit = QtWidgets.QLineEdit('5')
         labelButton = QtWidgets.QPushButton('Label')
         calibrateButton = QtWidgets.QPushButton('Calibrate')
@@ -71,13 +71,13 @@ class Properties(QtWidgets.QWidget):
         #profile options page
         profileOptionsPage = QtWidgets.QWidget()
         profileOptionsGrid = QtWidgets.QGridLayout(profileOptionsPage)
-        integralHalfWidthLabel = QtWidgets.QLabel('Integral Half Width ({})'.format(0.12))
+        integralHalfWidthLabel = QtWidgets.QLabel('Integral Half Width ({} \u212B\u207B\u00B9)'.format(0.12))
         integralHalfWidthSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        chiRangeLabel = QtWidgets.QLabel('Chi Range ({})'.format(60))
+        chiRangeLabel = QtWidgets.QLabel('Chi Range ({}\u00B0)'.format(60))
         chiRangeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        radiusLabel = QtWidgets.QLabel('Radius ({})'.format(2.48))
+        radiusLabel = QtWidgets.QLabel('Radius ({} \u212B\u207B\u00B9)'.format(2.48))
         radiusSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        tiltAngleLabel = QtWidgets.QLabel('Tilt Angle ({})'.format(0))
+        tiltAngleLabel = QtWidgets.QLabel('Tilt Angle ({}\u00B0)'.format(0))
         tiltAngleSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
 
 
@@ -103,6 +103,7 @@ class Properties(QtWidgets.QWidget):
 
         UIgrid = QtWidgets.QGridLayout()
         UIgrid.addWidget(tab,0,0)
+        UIgrid.setContentsMargins(0,0,0,0)
         self.setLayout(UIgrid)
         self.show()
 

@@ -6,13 +6,12 @@ class Profile(QtWidgets.QGraphicsView):
         super(Profile,self).__init__(parent)
         self.initUI()
 
-
     def initUI(self):
         self._scene = QtWidgets.QGraphicsScene(self)
         self._photo = QtWidgets.QGraphicsPixmapItem()
         self._scene.addItem(self._photo)
         self.setScene(self._scene)
-        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor('white')))
+        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor('darkGray')))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         profileImg = QtGui.QImage()
         profilePixmap = QtGui.QPixmap()

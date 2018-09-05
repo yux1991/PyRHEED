@@ -7,7 +7,7 @@ class Canvas(QtWidgets.QGraphicsView):
         super(Canvas, self).__init__(parent)
         self._zoom = 0
         self._empty = True
-        self.max_zoom_factor = 16
+        self.max_zoom_factor = 21
         self._scene = QtWidgets.QGraphicsScene(self)
         self._photo = QtWidgets.QGraphicsPixmapItem()
         self._scene.addItem(self._photo)
@@ -35,11 +35,20 @@ class Canvas(QtWidgets.QGraphicsView):
                              viewrect.height() / scenerect.height())
                 self.scale(factor, factor)
 
+    def fitCanvas(self):
+        if self.hasPhoto():
+            self.setUpdatesEnabled(False)
+            self.fitInView()
+            QtCore.QCoreApplication.processEvents()
+            self.fitInView()
+            self.setUpdatesEnabled(True)
+            self._zoom = 0
+
     def setPhoto(self, pixmap=None):
         self._zoom = 0
         if pixmap and not pixmap.isNull():
             self._empty = False
-            self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
             self._photo.setPixmap(pixmap)
         else:
             self._empty = True
@@ -49,6 +58,7 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def wheelEvent(self, event):
         if self.hasPhoto():
+            self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
             if event.angleDelta().y() > 0:
                 factor = 1.25
                 self._zoom += 1
@@ -62,11 +72,43 @@ class Canvas(QtWidgets.QGraphicsView):
             else:
                 self._zoom = self.max_zoom_factor
 
-    def toggleDragMode(self):
-        if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
-            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
-        elif not self._photo.pixmap().isNull():
-            self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+    def zoomIn(self):
+        if self.hasPhoto():
+            self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            factor = 1.25
+            self._zoom += 1
+            if self._zoom > -self.max_zoom_factor and self._zoom < self.max_zoom_factor:
+                self.scale(factor, factor)
+            elif self._zoom <=-self.max_zoom_factor:
+                self._zoom = -self.max_zoom_factor
+            else:
+                self._zoom = self.max_zoom_factor
+
+    def zoomOut(self):
+        if self.hasPhoto():
+            self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            factor = 0.8
+            self._zoom -= 1
+            if self._zoom > -self.max_zoom_factor and self._zoom < self.max_zoom_factor:
+                self.scale(factor, factor)
+            elif self._zoom <=-self.max_zoom_factor:
+                self._zoom = -self.max_zoom_factor
+            else:
+                self._zoom = self.max_zoom_factor
+
+    def toggleMode(self,cursormode):
+        if not self._photo.pixmap().isNull():
+            if cursormode == "line":
+                self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+                self.setCursor(QtCore.Qt.CrossCursor)
+            if cursormode == "rectangle":
+                self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+                self.setCursor(QtCore.Qt.CrossCursor)
+            if cursormode == "arc":
+                self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+                self.setCursor(QtCore.Qt.CrossCursor)
+            if cursormode == "pan":
+                self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
 
     def mouseMoveEvent(self, event):
         if self._photo.isUnderMouse():
