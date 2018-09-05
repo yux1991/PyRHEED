@@ -36,7 +36,4 @@ class Browser(QtWidgets.QWidget):
     def treeUpdate(self,path):
         dir = os.path.dirname(path)
         self.model.setRootPath(dir)
-        self.tree.setModel(self.model)
         self.tree.setRootIndex(self.model.index(dir))
-        self.tree.update()
-        self.show()
