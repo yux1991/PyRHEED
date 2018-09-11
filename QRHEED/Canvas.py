@@ -7,18 +7,25 @@ class Canvas(QtWidgets.QGraphicsView):
     photoMouseMovement = QtCore.pyqtSignal(QtCore.QPoint)
     photoMousePress = QtCore.pyqtSignal(QtCore.QPoint)
     photoMouseRelease = QtCore.pyqtSignal(QtCore.QPoint)
+    photoMouseDoubleClick = QtCore.pyqtSignal(QtCore.QPoint)
+    plotLineScan = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
+    plotIntegral = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float)
+    plotChiScan = QtCore.pyqtSignal(QtCore.QPointF,float,float,float,float)
 
     def __init__(self, parent):
         super(Canvas, self).__init__(parent)
         self._mode = "pan"
+        self.canvasObject = "none"
         self._drawingLine = False
         self._drawingRect = False
         self._drawingArc = False
+        self._mouseIsPressed = False
+        self._mouseIsMoved = False
         self._zoom = 0
         self._empty = True
-        self._width = 20
-        self._span = 60
-        self._tilt = 0
+        self.width = 16.15
+        self.span = 60
+        self.tilt = 0
         self.max_zoom_factor = 21
         self._scene = QtWidgets.QGraphicsScene(self)
         self._photo = QtWidgets.QGraphicsPixmapItem()
@@ -58,7 +65,6 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def setPhoto(self, pixmap=None):
         self._zoom = 0
-        self.clearCanvas()
         if pixmap and not pixmap.isNull():
             self._empty = False
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
@@ -67,7 +73,6 @@ class Canvas(QtWidgets.QGraphicsView):
             self._empty = True
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
             self._photo.setPixmap(QtGui.QPixmap())
-        self.fitInView()
 
     def wheelEvent(self, event):
         if self.hasPhoto():
@@ -80,14 +85,15 @@ class Canvas(QtWidgets.QGraphicsView):
                 self._zoom -= 1
             if self._zoom > -self.max_zoom_factor and self._zoom < self.max_zoom_factor:
                 self.scale(factor, factor)
-                end = QtCore.QPointF(self.mapToScene(event.pos()))
+                self.end = QtCore.QPointF(self.mapToScene(event.pos()))
                 if self._photo.isUnderMouse():
                     if self._drawingLine:
-                        self.drawLine(self._start,end)
+                        self.drawLine(self.start,self.end)
                     elif self._drawingRect:
-                        self.drawRect(self._start,end,self._width)
+                        self.drawRect(self.start,self.end,self.width)
                     elif self._drawingArc:
-                        self.drawArc(self._start,end,self._width,self._span,self._tilt)
+                        self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
+                        self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
             elif self._zoom <=-self.max_zoom_factor:
                 self._zoom = -self.max_zoom_factor
             else:
@@ -135,18 +141,30 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
                 self._mode = "pan"
 
+    def mouseDoubleClickEvent(self, event):
+        if self._photo.isUnderMouse():
+            if event.button() == QtCore.Qt.LeftButton:
+                if not self._mode == "pan":
+                    position = self.mapToScene(event.pos())
+                    self.photoMouseDoubleClick.emit(position.toPoint())
+        super(Canvas, self).mouseDoubleClickEvent(event)
+
+
     def mousePressEvent(self, event):
         if self._photo.isUnderMouse():
             if event.button() == QtCore.Qt.LeftButton:
-                self._start = QtCore.QPointF(self.mapToScene(event.pos()))
+                if not self._mode == "pan":
+                    self.start = QtCore.QPointF(self.mapToScene(event.pos()))
                 if self._mode == "line":
                     self._drawingLine = True
                 if self._mode == "rectangle":
                     self._drawingRect = True
                 if self._mode == "arc":
                     self._drawingArc = True
-                position = self.mapToScene(event.pos())
-                self.photoMousePress.emit(position.toPoint())
+                if not self._mode =="pan":
+                    position = self.mapToScene(event.pos())
+                    self.photoMousePress.emit(position.toPoint())
+                    self._mouseIsPressed = True
             else:
                 try:
                     self.clearCanvas()
@@ -156,56 +174,67 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def mouseMoveEvent(self, event):
         if self._photo.isUnderMouse():
-            end = QtCore.QPointF(self.mapToScene(event.pos()))
+            if self._drawingLine or self._drawingArc or self._drawingRect:
+                self.end = QtCore.QPointF(self.mapToScene(event.pos()))
             if self._drawingLine:
-                self.drawLine(self._start,end)
+                self.drawLine(self.start,self.end)
             elif self._drawingRect:
-                self.drawRect(self._start,end,self._width)
+                self.drawRect(self.start,self.end,self.width)
             elif self._drawingArc:
-                self.drawArc(self._start,end,self._width,self._span,self._tilt)
+                self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
+                self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
+            if not self._mode == "pan":
+                if self._mouseIsPressed:
+                    self._mouseIsMoved = True
             position = self.mapToScene(event.pos())
             self.photoMouseMovement.emit(position.toPoint())
         super(Canvas, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         if self._photo.isUnderMouse():
-            end = QtCore.QPointF(self.mapToScene(event.pos()))
-            if self._drawingLine:
-                self.drawLine(self._start,end)
-                self._drawingLine = False
-            elif self._drawingRect:
-                self.drawRect(self._start,end,self._width)
-                self._drawingRect = False
-            elif self._drawingArc:
-                self.drawArc(self._start,end,self._width, self._span,self._tilt)
-                self._drawingArc = False
-            position = self.mapToScene(event.pos())
-            self.photoMouseRelease.emit(position.toPoint())
-        else:
-            self._drawingLine = False
-            self._drawingRect = False
-            self._drawingArc = False
+            if event.button() == QtCore.Qt.LeftButton:
+                if self._mouseIsPressed and self._mouseIsMoved:
+                    self.end = QtCore.QPointF(self.mapToScene(event.pos()))
+                    if self._drawingLine:
+                        self.drawLine(self.start,self.end)
+                    elif self._drawingRect:
+                        self.drawRect(self.start,self.end,self.width)
+                    elif self._drawingArc:
+                        self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
+                        self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
+                    position = self.mapToScene(event.pos())
+                    self.photoMouseRelease.emit(position.toPoint())
+        self._drawingLine = False
+        self._drawingRect = False
+        self._drawingArc = False
+        self._mouseIsPressed = False
+        self._mouseIsMoved = False
         super(Canvas, self).mouseReleaseEvent(event)
 
     def clearCanvas(self):
         try:
-            self._scene.removeItem(self._lineItem)
+            self._lineItem.hide()
         except:
             pass
         try:
-            self._scene.removeItem(self._rectItem)
+            self._rectItem.hide()
         except:
             pass
         try:
-            self._scene.removeItem(self._arcItem1)
-            self._scene.removeItem(self._arcItem2)
-            self._scene.removeItem(self._arcItem3)
+            self._arcItem1.hide()
+            self._arcItem2.hide()
+            self._arcItem3.hide()
         except:
             pass
+        self.canvasObject = "none"
 
     def drawLine(self,start,end):
         self.clearCanvas()
-        self._lineItem = self._scene.addLine(QtCore.QLineF(start,end),QtGui.QPen(QtCore.Qt.yellow,2))
+        self._lineItem = self._scene.addLine(QtCore.QLineF(start,end),QtGui.QPen(QtCore.Qt.yellow,1))
+        self._lineItem.show()
+        self.canvasObject = "line"
+        self.saveStart,self.saveEnd = start,end
+        self.plotLineScan.emit(start,end)
 
     def drawRect(self,start,end,width):
         self.clearCanvas()
@@ -215,29 +244,45 @@ class Canvas(QtWidgets.QGraphicsView):
         rect.append(p2)
         rect.append(p3)
         rect.append(p4)
-        self._rectItem = self._scene.addPolygon(rect,QtGui.QPen(QtCore.Qt.yellow,2))
+        self._rectItem = self._scene.addPolygon(rect,QtGui.QPen(QtCore.Qt.yellow,1))
+        self._rectItem.show()
+        self.canvasObject = "rectangle"
+        self.saveStart,self.saveEnd,self.saveWidth = start,end,width
 
-    def drawArc(self,start,end,width,span,tilt):
+    def drawArc(self,start,radius,width,span,tilt):
         self.clearCanvas()
-        PFRadius = np.sqrt((start.x()-end.x())**2+(start.y()-end.y())**2)
-        arc1x0,arc1y0,arc1x1,arc1y1 = start.x()-(PFRadius+width),start.y()-(PFRadius+width),\
-                                      start.x()+(PFRadius+width),start.y()+(PFRadius+width)
-        arc2x0,arc2y0,arc2x1,arc2y1 = start.x()-(PFRadius-width),start.y()-(PFRadius-width),\
-                                      start.x()+(PFRadius-width),start.y()+(PFRadius-width)
-        arc3x0,arc3y0,arc3x1,arc3y1 = start.x()-(PFRadius),start.y()-PFRadius,start.x()+(PFRadius),\
-                                      start.y()+(PFRadius)
+        arc1x0,arc1y0,arc1x1,arc1y1 = start.x()-(radius+width),start.y()-(radius+width),\
+                                      start.x()+(radius+width),start.y()+(radius+width)
+        arc2x0,arc2y0,arc2x1,arc2y1 = start.x()-(radius-width),start.y()-(radius-width),\
+                                      start.x()+(radius-width),start.y()+(radius-width)
+        arc3x0,arc3y0,arc3x1,arc3y1 = start.x()-(radius),start.y()-radius,start.x()+(radius),\
+                                      start.y()+(radius)
         rect1 = QtCore.QRectF(arc1x0,arc1y0,arc1x1-arc1x0,arc1y1-arc1y0)
         rect2 = QtCore.QRectF(arc2x0,arc2y0,arc2x1-arc2x0,arc2y1-arc2y0)
         rect3 = QtCore.QRectF(arc3x0,arc3y0,arc3x1-arc3x0,arc3y1-arc3y0)
-        self._arcItem3=self._scene.addEllipse(rect3,QtGui.QPen(QtCore.Qt.red,1))
+        self._arcItem3=self._scene.addEllipse(rect3,QtGui.QPen(QtCore.Qt.yellow,1))
         self._arcItem3.setStartAngle((270-span/2+tilt)*16)
         self._arcItem3.setSpanAngle((span)*16)
-        self._arcItem1=self._scene.addEllipse(rect1,QtGui.QPen(QtCore.Qt.yellow,2))
+        self._arcItem3.show()
+        self._arcItem1=self._scene.addEllipse(rect1,QtGui.QPen(QtCore.Qt.yellow,1))
         self._arcItem1.setStartAngle((270-span/2+tilt)*16)
         self._arcItem1.setSpanAngle(span*16)
-        self._arcItem2=self._scene.addEllipse(rect2,QtGui.QPen(QtCore.Qt.yellow,2))
+        self._arcItem1.show()
+        self._arcItem2=self._scene.addEllipse(rect2,QtGui.QPen(QtCore.Qt.yellow,1))
         self._arcItem2.setStartAngle((270-span/2+tilt)*16)
         self._arcItem2.setSpanAngle(span*16)
+        self._arcItem2.show()
+        self.canvasObject = "arc"
+        self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt = start,radius,width,span,tilt
+
+    def lineScanSignalEmit(self):
+        self.plotLineScan.emit(self.saveStart,self.saveEnd)
+
+    def integralSignalEmit(self):
+        self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
+
+    def chiScanSignalEmit(self):
+        self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
 
     def getRectanglePosition(self,start,end,width):
         if end.y() == start.y():
