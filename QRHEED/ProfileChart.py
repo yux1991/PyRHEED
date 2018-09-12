@@ -1,8 +1,13 @@
-from PyQt5 import QtCore, QtGui, QtChart
+from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 import numpy as np
 import math
 
 class ProfileChart(QtChart.QChartView):
+
+    progressAdvance = QtCore.pyqtSignal(int,int,int)
+    progressEnd = QtCore.pyqtSignal()
+    chartMouseMovement = QtCore.pyqtSignal(QtCore.QPointF,str)
+    chartIsPresent = False
 
     def __init__(self,parent):
         super(ProfileChart,self).__init__(parent)
@@ -17,7 +22,7 @@ class ProfileChart(QtChart.QChartView):
         chart = QtChart.QChart()
         chart.setTheme(QtChart.QChart.ChartThemeLight)
         chart.setBackgroundRoundness(0)
-        chart.setMargins(QtCore.QMargins(0,0,0,0))
+        chart.setMargins(QtCore.QMargins(5,5,5,5))
         chart.addSeries(series)
         axisX = QtChart.QValueAxis()
         axisX.setTickCount(10)
@@ -51,6 +56,7 @@ class ProfileChart(QtChart.QChartView):
             LineScanIntensities[i] = self._img[int(Ky[i]),int(Kx[i])]
         LineScanRadius = np.linspace(0,math.sqrt((x1-x0)**2+(y1-y0)**2),len(Kx))
         self.addChart(LineScanRadius/self._scaleFactor,LineScanIntensities/np.amax(np.amax(self._img)),"line")
+        self.chartIsPresent = True
 
     def integral(self,start,end,width):
         x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
@@ -59,6 +65,8 @@ class ProfileChart(QtChart.QChartView):
         Ky = np.linspace(y0,y1,K_length)
         LineScanIntensities = np.zeros(len(Kx))
         for i in range(0,len(Kx)):
+            self.progressAdvance.emit(0,len(Kx)-1,i)
+            QtWidgets.QApplication.processEvents()
             for j in range(-int(width),int(width)+1):
                 if y1 == y0:
                     image_row = np.round(Ky[i]).astype(int)+j
@@ -77,6 +85,8 @@ class ProfileChart(QtChart.QChartView):
                 LineScanIntensities[i] += self._img[image_row,image_column]
         LineScanRadius = np.linspace(0,math.sqrt((x1-x0)**2+(y1-y0)**2),len(Kx))
         self.addChart(LineScanRadius/self._scaleFactor,LineScanIntensities/2/width/np.amax(np.amax(self._img)),"rectangle")
+        self.chartIsPresent = True
+        self.progressEnd.emit()
 
     def chiScan(self,center,radius,width,chiRange,tilt,chiStep=1):
         x0,y0 = center.x(),center.y()
@@ -89,6 +99,8 @@ class ProfileChart(QtChart.QChartView):
         ChiScan = np.full(ChiTotalSteps,0)
         ChiProfile = np.full(ChiTotalSteps,0)
         for k in range(0,ChiTotalSteps):
+            self.progressAdvance.emit(0,ChiTotalSteps-1,k)
+            QtWidgets.QApplication.processEvents()
             cit = 0
             x1 = x0 + (radius+width)*np.cos(ChiAngle[k+1]*np.pi/180)
             y1 = y0 + (radius+width)*np.sin(ChiAngle[k+1]*np.pi/180)
@@ -114,3 +126,14 @@ class ProfileChart(QtChart.QChartView):
             else:
                 ChiProfile[k] = float(ChiScan[k])/float(cit)
         self.addChart(ChiAngle2[0:-1],ChiProfile/np.amax(np.amax(self._img)),"arc")
+        self.chartIsPresent = True
+        self.progressEnd.emit()
+
+    def mouseMoveEvent(self, event):
+        if self.chart().plotArea().contains(event.pos()) and self.chartIsPresent:
+            self.setCursor(QtCore.Qt.CrossCursor)
+            position = self.chart().mapToValue(event.pos())
+            self.chartMouseMovement.emit(position,"chart")
+        else:
+            self.setCursor(QtCore.Qt.ArrowCursor)
+        super(ProfileChart, self).mouseMoveEvent(event)

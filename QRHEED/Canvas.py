@@ -211,6 +211,58 @@ class Canvas(QtWidgets.QGraphicsView):
         self._mouseIsMoved = False
         super(Canvas, self).mouseReleaseEvent(event)
 
+    def keyPressEvent(self,event):
+        XStep = QtCore.QPointF(5.0,0.0)
+        YStep = QtCore.QPointF(0.0,5.0)
+        if event.key() == QtCore.Qt.Key_Up:
+            self.saveStart-=YStep
+            self.saveEnd-=YStep
+            if self.canvasObject == "line":
+                self.plotLineScan.emit(self.saveStart,self.saveEnd)
+                self.drawLine(self.saveStart,self.saveEnd)
+            elif self.canvasObject == "rectangle":
+                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
+                self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
+            elif self.canvasObject == "arc":
+                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+        elif event.key() == QtCore.Qt.Key_Down:
+            self.saveStart+=YStep
+            self.saveEnd+=YStep
+            if self.canvasObject == "line":
+                self.plotLineScan.emit(self.saveStart,self.saveEnd)
+                self.drawLine(self.saveStart,self.saveEnd)
+            elif self.canvasObject == "rectangle":
+                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
+                self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
+            elif self.canvasObject == "arc":
+                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+        elif event.key() == QtCore.Qt.Key_Left:
+            self.saveStart-=XStep
+            self.saveEnd-=XStep
+            if self.canvasObject == "line":
+                self.plotLineScan.emit(self.saveStart,self.saveEnd)
+                self.drawLine(self.saveStart,self.saveEnd)
+            elif self.canvasObject == "rectangle":
+                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
+                self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
+            elif self.canvasObject == "arc":
+                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+        elif event.key() == QtCore.Qt.Key_Right:
+            self.saveStart+=XStep
+            self.saveEnd+=XStep
+            if self.canvasObject == "line":
+                self.plotLineScan.emit(self.saveStart,self.saveEnd)
+                self.drawLine(self.saveStart,self.saveEnd)
+            elif self.canvasObject == "rectangle":
+                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
+                self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
+            elif self.canvasObject == "arc":
+                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+
     def clearCanvas(self):
         try:
             self._lineItem.hide()

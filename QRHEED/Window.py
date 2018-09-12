@@ -14,6 +14,8 @@ class Window(QtWidgets.QMainWindow):
     fileOpened = QtCore.pyqtSignal(str)
     imgCreated = QtCore.pyqtSignal(np.ndarray)
     scaleFactorChanged = QtCore.pyqtSignal(float)
+    progressAdvance = QtCore.pyqtSignal(int,int,int)
+    progressEnd = QtCore.pyqtSignal()
 
     def __init__(self):
 
@@ -69,7 +71,6 @@ class Window(QtWidgets.QMainWindow):
         self.mainSplitter.setCollapsible(0,False)
         self.mainSplitter.setCollapsible(1,False)
 
-        self.getScaleFactor()
 
         #Tool bar
         self.toolBar = QtWidgets.QToolBar(self)
@@ -112,8 +113,22 @@ class Window(QtWidgets.QMainWindow):
         self.statusBar = QtWidgets.QStatusBar(self)
         self.editPixInfo = QtWidgets.QLabel(self)
         self.editPixInfo.setAlignment(QtCore.Qt.AlignRight)
-        self.statusBar.addPermanentWidget(self.editPixInfo)
+        self.editPixInfo.setMinimumWidth(100)
+        self.messageLoadingImage = QtWidgets.QLabel("Loading image ... ",self)
+        self.messageLoadingImage.setVisible(False)
+        self.messageLoadingImage.setMinimumWidth(100)
+        self.progressBar = QtWidgets.QProgressBar(self)
+        self.progressBar.setAlignment(QtCore.Qt.AlignRight)
+        self.progressBar.setMaximumHeight(12)
+        self.progressBar.setMaximumWidth(200)
+        self.progressBar.setVisible(False)
+        self.progressBar.setOrientation(QtCore.Qt.Horizontal)
+        self.statusBar.insertPermanentWidget(3,self.messageLoadingImage)
+        self.statusBar.insertPermanentWidget(2,self.progressBar)
+        self.statusBar.insertPermanentWidget(1,self.editPixInfo)
         self.setStatusBar(self.statusBar)
+
+        #Main Window Settings
         self.setCentralWidget(self.mainSplitter)
         self.mainSplitter.setContentsMargins(2,2,0,0)
         self.setWindowTitle("QtRHEED")
@@ -128,11 +143,18 @@ class Window(QtWidgets.QMainWindow):
         self.arc.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="arc"))
         self.pan.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="pan"))
 
+        #Progress Bar Connections
+        self.progressAdvance.connect(self.progress)
+        self.progressEnd.connect(self.progressReset)
+        self.profile.progressAdvance.connect(self.progress)
+        self.profile.progressEnd.connect(self.progressReset)
+
         #Canvas Connections
         self.canvas.photoMouseMovement.connect(self.photoMouseMovement)
         self.canvas.photoMousePress.connect(self.photoMousePress)
         self.canvas.photoMouseRelease.connect(self.photoMouseRelease)
         self.canvas.photoMouseDoubleClick.connect(self.photoMouseDoubleClick)
+        #self.mainSplitter.splitterMoved.connect(self.canvas.fitCanvas)
 
         #Browser Connections
         self.fileOpened.connect(self.browser.treeUpdate)
@@ -176,6 +198,20 @@ class Window(QtWidgets.QMainWindow):
         self.canvas.plotLineScan.connect(self.profile.lineScan)
         self.canvas.plotIntegral.connect(self.profile.integral)
         self.canvas.plotChiScan.connect(self.profile.chiScan)
+        self.profile.chartMouseMovement.connect(self.photoMouseMovement)
+
+        self.getScaleFactor()
+
+    def progress(self,min,max,val):
+        self.progressBar.setVisible(True)
+        self.progressBar.setMinimum(min)
+        self.progressBar.setMaximum(max)
+        self.progressBar.setValue(val)
+
+    def progressReset(self):
+        self.progressBar.reset()
+        self.progressBar.setVisible(False)
+
 
     def getScaleFactor(self):
         self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(self.properties.energyEdit.text()))
@@ -289,26 +325,28 @@ class Window(QtWidgets.QMainWindow):
     def openImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':
             self.restoreDefaults()
-            qImg,img_array = self.read_qImage(bitDepth,path, enableAutoWB, brightness, blackLevel)
-            qPixImg = QtGui.QPixmap(qImg.size())
-            QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.MonoOnly)
-            self.canvas.setPhoto(QtGui.QPixmap(qPixImg))
+            self.loadImage(path,bitDepth,enableAutoWB,brightness,blackLevel)
             self.canvas.fitCanvas()
             self.currentPath = path
-            self._img = img_array
-            self.imgCreated.emit(self._img)
             self.fileOpened.emit(path)
             self.toggleCanvasMode("pan")
 
     def updateImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+        self.loadImage(path,bitDepth,enableAutoWB,brightness,blackLevel)
+        self.applyProfileOptions()
+
+    def loadImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+        self.messageLoadingImage.setVisible(True)
+        QtWidgets.QApplication.sendPostedEvents()
+        self.messageLoadingImage.setVisible(True)
+        QtWidgets.QApplication.sendPostedEvents()
         qImg,img_array = self.read_qImage(bitDepth,path, enableAutoWB, brightness, blackLevel)
         qPixImg = QtGui.QPixmap(qImg.size())
         QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.MonoOnly)
         self.canvas.setPhoto(QtGui.QPixmap(qPixImg))
-        self.clearCursorInfo()
         self._img = img_array
         self.imgCreated.emit(self._img)
-        self.applyProfileOptions()
+        self.messageLoadingImage.setVisible(False)
 
     def updateDrawing(self):
         if self.canvas.canvasObject == "rectangle":
@@ -320,14 +358,11 @@ class Window(QtWidgets.QMainWindow):
 
     def restoreDefaults(self):
         self.canvas.clearCanvas()
-        self.cursorInfo.choosedXYEdit.clear()
-        self.cursorInfo.startXYEdit.clear()
-        self.cursorInfo.endXYEdit.clear()
-        self.cursorInfo.widthEdit.clear()
         self.pan.setChecked(True)
         self.properties.autoWBCheckBox.setChecked(False)
         self.properties.brightnessSlider.setValue(20)
         self.properties.blackLevelSlider.setValue(50)
+        self.clearCursorInfo()
 
 
     def toggleCanvasMode(self,cursormode):
@@ -362,8 +397,11 @@ class Window(QtWidgets.QMainWindow):
         if self.canvas._drawingArc:
             self.properties.radiusSlider.setValue(100/20*self.canvas.PFRadius/self.scaleFactor)
 
-    def photoMouseMovement(self, pos):
-        self.editPixInfo.setText('x = %d, y = %d' % (pos.x(), pos.y()))
+    def photoMouseMovement(self, pos, type="canvas"):
+        if type == "canvas":
+            self.editPixInfo.setText('x = %d, y = %d' % (pos.x(), pos.y()))
+        elif type == "chart":
+            self.editPixInfo.setText('K = %3.2f, Int. = %3.2f' % (pos.x(), pos.y()))
         if self.canvas._drawingArc:
             self.properties.radiusSlider.setValue(100/20*self.canvas.PFRadius/self.scaleFactor)
 
