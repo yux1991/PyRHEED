@@ -17,7 +17,7 @@ class Properties(QtWidgets.QWidget):
         self.energyEdit = QtWidgets.QLineEdit('20')
         self.azimuthLabel = QtWidgets.QLabel('Azimuth(\u00B0)')
         self.azimuthEdit = QtWidgets.QLineEdit('0')
-        self.scaleBarLabel = QtWidgets.QLabel('Scale Bar Length (\u212B)')
+        self.scaleBarLabel = QtWidgets.QLabel('Scale Bar Length (\u212B\u207B\u00B9)')
         self.scaleBarEdit = QtWidgets.QLineEdit('5')
         self.labelButton = QtWidgets.QPushButton('Label')
         self.calibrateButton = QtWidgets.QPushButton('Calibrate')

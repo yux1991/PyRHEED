@@ -2,10 +2,10 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from Canvas import *
 from Browser import *
 from Properties import *
-#from Profile import *
 from ProfileChart import *
 from Cursor import *
 import rawpy
+import os
 import numpy as np
 
 class Window(QtWidgets.QMainWindow):
@@ -14,6 +14,8 @@ class Window(QtWidgets.QMainWindow):
     fileOpened = QtCore.pyqtSignal(str)
     imgCreated = QtCore.pyqtSignal(np.ndarray)
     scaleFactorChanged = QtCore.pyqtSignal(float)
+    labelChanged = QtCore.pyqtSignal(float,float)
+    calibrationChanged = QtCore.pyqtSignal(float,float)
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
 
@@ -22,6 +24,12 @@ class Window(QtWidgets.QMainWindow):
         super(Window, self).__init__()
         self.currentPath = ''
         self._mode = "pan"
+        self.energy = 20
+        self.azimuth = 0
+        self.scaleBarLength = 5
+        self.photoList = []
+        self.pathList = []
+        self.tabClosed = False
 
         #Menu bar
         self.menu = QtWidgets.QMenuBar()
@@ -38,7 +46,9 @@ class Window(QtWidgets.QMainWindow):
         self.img_path = 'C:/RHEED/01192017 multilayer graphene on Ni/20 keV/Img0000.nef'
 
         self.mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        self.canvas = Canvas(self)
+        self.mainTab = QtWidgets.QTabWidget()
+        self.mainTab.setContentsMargins(0,0,0,0)
+        self.mainTab.setTabsClosable(True)
         self.controlPanelFrame = QtWidgets.QWidget(self)
         self.controlPanelGrid = QtWidgets.QGridLayout(self.controlPanelFrame)
         self.controlPanelGrid.setContentsMargins(0,0,0,0)
@@ -63,7 +73,7 @@ class Window(QtWidgets.QMainWindow):
         self.controlPanelSplitter.setCollapsible(1,False)
         self.controlPanelGrid.addWidget(self.controlPanelSplitter,0,0)
 
-        self.mainSplitter.addWidget(self.canvas)
+        self.mainSplitter.addWidget(self.mainTab)
         self.mainSplitter.addWidget(self.controlPanelFrame)
         self.mainSplitter.setSizes([800,400])
         self.mainSplitter.setStretchFactor(0,1)
@@ -111,21 +121,19 @@ class Window(QtWidgets.QMainWindow):
 
         #Status bar
         self.statusBar = QtWidgets.QStatusBar(self)
-        self.editPixInfo = QtWidgets.QLabel(self)
-        self.editPixInfo.setAlignment(QtCore.Qt.AlignRight)
-        self.editPixInfo.setMinimumWidth(100)
-        self.messageLoadingImage = QtWidgets.QLabel("Loading image ... ",self)
+        self.messageLoadingImage = QtWidgets.QLabel("Processing ... ",self)
         self.messageLoadingImage.setVisible(False)
-        self.messageLoadingImage.setMinimumWidth(100)
         self.progressBar = QtWidgets.QProgressBar(self)
-        self.progressBar.setAlignment(QtCore.Qt.AlignRight)
         self.progressBar.setMaximumHeight(12)
         self.progressBar.setMaximumWidth(200)
         self.progressBar.setVisible(False)
         self.progressBar.setOrientation(QtCore.Qt.Horizontal)
-        self.statusBar.insertPermanentWidget(3,self.messageLoadingImage)
-        self.statusBar.insertPermanentWidget(2,self.progressBar)
-        self.statusBar.insertPermanentWidget(1,self.editPixInfo)
+        self.editPixInfo = QtWidgets.QLabel(self)
+        self.editPixInfo.setAlignment(QtCore.Qt.AlignRight)
+        self.editPixInfo.setMinimumWidth(150)
+        self.statusBar.addWidget(self.messageLoadingImage)
+        self.statusBar.insertPermanentWidget(1,self.progressBar)
+        self.statusBar.addPermanentWidget(self.editPixInfo)
         self.setStatusBar(self.statusBar)
 
         #Main Window Settings
@@ -133,11 +141,12 @@ class Window(QtWidgets.QMainWindow):
         self.mainSplitter.setContentsMargins(2,2,0,0)
         self.setWindowTitle("QtRHEED")
 
+        #Main Tab Connections
+        self.mainTab.currentChanged.connect(self.switchTab)
+        self.mainTab.tabCloseRequested.connect(self.closeTab)
+
         #Toolbar Connections
         self.open.triggered.connect(lambda path: self.openImage(path=self.getImgPath()))
-        self.zoomIn.triggered.connect(self.canvas.zoomIn)
-        self.zoomOut.triggered.connect(self.canvas.zoomOut)
-        self.fitCanvas.triggered.connect(self.canvas.fitCanvas)
         self.line.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="line"))
         self.rectangle.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="rectangle"))
         self.arc.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="arc"))
@@ -148,13 +157,6 @@ class Window(QtWidgets.QMainWindow):
         self.progressEnd.connect(self.progressReset)
         self.profile.progressAdvance.connect(self.progress)
         self.profile.progressEnd.connect(self.progressReset)
-
-        #Canvas Connections
-        self.canvas.photoMouseMovement.connect(self.photoMouseMovement)
-        self.canvas.photoMousePress.connect(self.photoMousePress)
-        self.canvas.photoMouseRelease.connect(self.photoMouseRelease)
-        self.canvas.photoMouseDoubleClick.connect(self.photoMouseDoubleClick)
-        #self.mainSplitter.splitterMoved.connect(self.canvas.fitCanvas)
 
         #Browser Connections
         self.fileOpened.connect(self.browser.treeUpdate)
@@ -168,7 +170,6 @@ class Window(QtWidgets.QMainWindow):
         self.properties.scaleBarEdit.textChanged.connect(self.changeScaleBar)
         self.properties.labelButton.clicked.connect(self.labelImage)
         self.properties.calibrateButton.clicked.connect(self.calibrateImage)
-        self.properties.clearButton.clicked.connect(self.clearAnnotations)
 
         #Image Adjust Page Connections
         self.properties.brightnessSlider.valueChanged.connect(self.changeBrightness)
@@ -195,9 +196,6 @@ class Window(QtWidgets.QMainWindow):
 
         #Profile Canvas Connections
         self.scaleFactorChanged.connect(self.profile.setScaleFactor)
-        self.canvas.plotLineScan.connect(self.profile.lineScan)
-        self.canvas.plotIntegral.connect(self.profile.integral)
-        self.canvas.plotChiScan.connect(self.profile.chiScan)
         self.profile.chartMouseMovement.connect(self.photoMouseMovement)
 
         self.getScaleFactor()
@@ -224,21 +222,19 @@ class Window(QtWidgets.QMainWindow):
     def changeEnergy(self,energy):
         self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(energy))
         self.scaleFactorChanged.emit(self.scaleFactor)
+        self.energy = float(energy)
 
     def changeAzimuth(self,azimuth):
-        return
+        self.azimuth = float(azimuth)
 
     def changeScaleBar(self,scaleBar):
-        return
+        self.scaleBarLength = float(scaleBar)
 
     def labelImage(self):
-        return
+        self.labelChanged.emit(self.energy,self.azimuth)
 
     def calibrateImage(self):
-        return
-
-    def clearAnnotations(self):
-        return
+        self.calibrationChanged.emit(self.scaleFactor,self.scaleBarLength)
 
     def changeBrightness(self,brightness):
         self.properties.brightnessLabel.setText('Brightness ({})'.format(brightness))
@@ -266,30 +262,33 @@ class Window(QtWidgets.QMainWindow):
             if self._mode == "rectangle" or self._mode == "arc":
                 self.cursorInfo.widthEdit.setText('{:3.2f}'.format(width/100*1))
         self.updateDrawing()
-        self.canvas.width = width/100*1 * self.scaleFactor
+        for i in range(0,self.mainTab.count()):
+            self.mainTab.widget(i).width = width/100*1 * self.scaleFactor
 
     def changeChiRange(self,chi):
         self.properties.chiRangeLabel.setText('Chi Range ({}\u00B0)'.format(chi))
         self.updateDrawing()
-        self.canvas.span = chi
+        for i in range(0,self.mainTab.count()):
+            self.mainTab.widget(i).span = chi
 
     def changeRadius(self,radius):
         self.properties.radiusLabel.setText('Radius ({:3.2f} \u212B\u207B\u00B9)'.format(radius/100*20))
-        if not self.canvas._drawingArc:
+        if not self.mainTab.currentWidget()._drawingArc:
             self.updateDrawing()
 
     def changeTiltAngle(self,tilt):
         self.properties.tiltAngleLabel.setText('Tilt Angle ({:2.1f}\u00B0)'.format(tilt/150*15))
         self.updateDrawing()
-        self.canvas.tilt = tilt/10
+        for i in range(0,self.mainTab.count()):
+            self.mainTab.widget(i).tilt = tilt/10
 
     def applyProfileOptions(self):
-        if self.canvas.canvasObject == "line":
-            self.canvas.lineScanSignalEmit()
-        if self.canvas.canvasObject == "rectangle":
-            self.canvas.integralSignalEmit()
-        if self.canvas.canvasObject == "arc":
-            self.canvas.chiScanSignalEmit()
+        if self.mainTab.currentWidget().canvasObject == "line":
+            self.mainTab.currentWidget().lineScanSignalEmit()
+        if self.mainTab.currentWidget().canvasObject == "rectangle":
+            self.mainTab.currentWidget().integralSignalEmit()
+        if self.mainTab.currentWidget().canvasObject == "arc":
+            self.mainTab.currentWidget().chiScanSignalEmit()
 
     def resetProfileOptions(self):
         self.properties.integralHalfWidthSlider.setValue(40)
@@ -324,18 +323,98 @@ class Window(QtWidgets.QMainWindow):
 
     def openImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':
-            self.restoreDefaults()
-            self.loadImage(path,bitDepth,enableAutoWB,brightness,blackLevel)
-            self.canvas.fitCanvas()
+            canvas = Canvas(self)
+            self.connectCanvas(canvas)
+            img_array = self.loadImage(canvas,path,bitDepth,enableAutoWB,brightness,blackLevel)
+            self.photoList.append(img_array)
+            self.pathList.append(path)
+            self.mainTab.addTab(canvas,os.path.basename(path))
+            self.mainTab.setCurrentIndex(self.mainTab.count()-1)
+            canvas.fitCanvas()
+            canvas.toggleMode(self._mode)
             self.currentPath = path
             self.fileOpened.emit(path)
-            self.toggleCanvasMode("pan")
+
+    def switchTab(self,index):
+        if self.mainTab.count() > 0:
+            if not self.tabClosed:
+                self._img=self.photoList[index]
+            self.currentPath=self.pathList[index]
+            self.messageLoadingImage.setText("Path of the image: "+self.currentPath)
+            self.disconnectCanvas()
+            self.reconnectCanvas(self.mainTab.currentWidget())
+            self.imgCreated.emit(self._img)
+        elif self.mainTab.count() == 0:
+            self.messageLoadingImage.clear()
+            self.disconnectCanvas()
+        if self.tabClosed:
+            self.tabClosed = False
+
+    def closeTab(self,index):
+        if index == self.mainTab.currentIndex() and not self.mainTab.count()== 1:
+            if index == self.mainTab.count()-1:
+                self._img=self.photoList[index-1]
+                self.currentPath=self.pathList[index-1]
+                self.tabClosed = True
+                self.mainTab.setCurrentIndex(index-1)
+            else:
+                self._img=self.photoList[index+1]
+                self.currentPath=self.pathList[index+1]
+                self.tabClosed = True
+                self.mainTab.setCurrentIndex(index+1)
+            self.mainTab.widget(index).destroy()
+            self.mainTab.removeTab(index)
+        elif self.mainTab.count()==1:
+            self.mainTab.clear()
+            self.tabClosed = True
+        else:
+            self.tabClosed = True
+            self.mainTab.widget(index).destroy()
+            self.mainTab.removeTab(index)
+        self.photoList.pop(index)
+        self.pathList.pop(index)
+
+    def connectCanvas(self,canvas):
+        #canvas signals
+        canvas.photoMouseMovement.connect(self.photoMouseMovement)
+        canvas.photoMousePress.connect(self.photoMousePress)
+        canvas.photoMouseRelease.connect(self.photoMouseRelease)
+        canvas.photoMouseDoubleClick.connect(self.photoMouseDoubleClick)
+        canvas.plotLineScan.connect(self.profile.lineScan)
+        canvas.plotIntegral.connect(self.profile.integral)
+        canvas.plotChiScan.connect(self.profile.chiScan)
+        #canvas slots
+        self.zoomIn.triggered.connect(canvas.zoomIn)
+        self.zoomOut.triggered.connect(canvas.zoomOut)
+        self.fitCanvas.triggered.connect(canvas.fitCanvas)
+        self.properties.clearButton.clicked.connect(canvas.clearAnnotations)
+        self.labelChanged.connect(canvas.label)
+        self.calibrationChanged.connect(canvas.calibrate)
+
+    def disconnectCanvas(self):
+        self.zoomIn.disconnect()
+        self.zoomOut.disconnect()
+        self.fitCanvas.disconnect()
+        self.properties.clearButton.disconnect()
+        self.labelChanged.disconnect()
+        self.calibrationChanged.disconnect()
+
+    def reconnectCanvas(self,canvas):
+        self.zoomIn.triggered.connect(canvas.zoomIn)
+        self.zoomOut.triggered.connect(canvas.zoomOut)
+        self.fitCanvas.triggered.connect(canvas.fitCanvas)
+        self.properties.clearButton.clicked.connect(canvas.clearAnnotations)
+        self.labelChanged.connect(canvas.label)
+        self.calibrationChanged.connect(canvas.calibrate)
 
     def updateImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
-        self.loadImage(path,bitDepth,enableAutoWB,brightness,blackLevel)
+        canvas = self.mainTab.currentWidget()
+        img_array=self.loadImage(canvas,path,bitDepth,enableAutoWB,brightness,blackLevel)
+        self.photoList[self.mainTab.currentIndex()]=img_array
         self.applyProfileOptions()
 
-    def loadImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+    def loadImage(self,canvas,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+        self.messageLoadingImage.setText("Processing ... ")
         self.messageLoadingImage.setVisible(True)
         QtWidgets.QApplication.sendPostedEvents()
         self.messageLoadingImage.setVisible(True)
@@ -343,21 +422,23 @@ class Window(QtWidgets.QMainWindow):
         qImg,img_array = self.read_qImage(bitDepth,path, enableAutoWB, brightness, blackLevel)
         qPixImg = QtGui.QPixmap(qImg.size())
         QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.MonoOnly)
-        self.canvas.setPhoto(QtGui.QPixmap(qPixImg))
+        canvas.setPhoto(QtGui.QPixmap(qPixImg))
         self._img = img_array
         self.imgCreated.emit(self._img)
-        self.messageLoadingImage.setVisible(False)
+        self.messageLoadingImage.setText("Path of the image: "+path)
+        return img_array
 
     def updateDrawing(self):
-        if self.canvas.canvasObject == "rectangle":
-            self.canvas.drawRect(self.canvas.start,self.canvas.end,self.properties.integralHalfWidthSlider.value()/100*1*self.scaleFactor)
-        if self.canvas.canvasObject == "arc":
-            self.canvas.drawArc(self.canvas.start,20/100*self.properties.radiusSlider.value()*self.scaleFactor,\
+        if self.mainTab.currentWidget().canvasObject == "rectangle":
+            self.mainTab.currentWidget().drawRect(self.mainTab.currentWidget().start,self.mainTab.currentWidget().end,self.properties.integralHalfWidthSlider.value()/100*1*self.scaleFactor)
+        if self.mainTab.currentWidget().canvasObject == "arc":
+            self.mainTab.currentWidget().drawArc(self.mainTab.currentWidget().start,20/100*self.properties.radiusSlider.value()*self.scaleFactor,\
                                 self.properties.integralHalfWidthSlider.value()/100*1*self.scaleFactor,self.properties.chiRangeSlider.value(),\
                                 self.properties.tiltAngleSlider.value()/10)
 
     def restoreDefaults(self):
-        self.canvas.clearCanvas()
+        self.mainTab.currentWidget().clearCanvas()
+        self.mainTab.currentWidget().clearAnnotations()
         self.pan.setChecked(True)
         self.properties.autoWBCheckBox.setChecked(False)
         self.properties.brightnessSlider.setValue(20)
@@ -366,7 +447,8 @@ class Window(QtWidgets.QMainWindow):
 
 
     def toggleCanvasMode(self,cursormode):
-        self.canvas.toggleMode(cursormode)
+        for i in range(0,self.mainTab.count()):
+            self.mainTab.widget(i).toggleMode(cursormode)
         if cursormode == "arc":
             self.cursorInfo.endXYLabel.setText('Length')
         else:
@@ -391,23 +473,28 @@ class Window(QtWidgets.QMainWindow):
 
     def photoMouseRelease(self, pos):
         if self._mode == "arc":
-            self.cursorInfo.endXYEdit.setText('{}'.format(int(self.canvas.PFRadius)))
+            self.cursorInfo.endXYEdit.setText('{}'.format(int(self.mainTab.currentWidget().PFRadius)))
         else:
             self.cursorInfo.endXYEdit.setText('{},{}'.format(pos.x(), pos.y()))
-        if self.canvas._drawingArc:
-            self.properties.radiusSlider.setValue(100/20*self.canvas.PFRadius/self.scaleFactor)
+        if self.mainTab.currentWidget()._drawingArc:
+            self.properties.radiusSlider.setValue(100/20*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
 
     def photoMouseMovement(self, pos, type="canvas"):
         if type == "canvas":
             self.editPixInfo.setText('x = %d, y = %d' % (pos.x(), pos.y()))
         elif type == "chart":
             self.editPixInfo.setText('K = %3.2f, Int. = %3.2f' % (pos.x(), pos.y()))
-        if self.canvas._drawingArc:
-            self.properties.radiusSlider.setValue(100/20*self.canvas.PFRadius/self.scaleFactor)
+        if self.mainTab.currentWidget()._drawingArc:
+            self.properties.radiusSlider.setValue(100/20*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
 
     def photoMouseDoubleClick(self, pos):
         self.cursorInfo.choosedXYEdit.setText('{},{}'.format(pos.x(), pos.y()))
         self.cursorInfo.intensityEdit.setText('{:3.2f}'.format(self._img[pos.y(), pos.x()]/np.amax(np.amax(self._img))))
+
+    def keyPressEvent(self,event):
+        if event.key() == QtCore.Qt.Key_Up or QtCore.Qt.Key_Down or QtCore.Qt.Key_Left or QtCore.Qt.Key_Right :
+            self.mainTab.currentWidget().setFocus()
+            self.mainTab.currentWidget().keyPressEvent(event)
 
     def read_qImage(self,bit_depth,img_path,EnableAutoWB, Brightness, UserBlack):
         img_raw = rawpy.imread(img_path)

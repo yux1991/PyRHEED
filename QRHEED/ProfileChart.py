@@ -14,15 +14,21 @@ class ProfileChart(QtChart.QChartView):
         self.setRenderHint(QtGui.QPainter.Antialiasing)
         self._img = []
         self._scaleFactor = 1
+        self.setContentsMargins(0,0,0,0)
+        chart = QtChart.QChart()
+        chart.setTheme(QtChart.QChart.ChartThemeBlueIcy)
+        chart.setBackgroundRoundness(0)
+        chart.setMargins(QtCore.QMargins(0,0,0,0))
+        self.setChart(chart)
 
     def addChart(self,radius,profile,type="line"):
         series = QtChart.QLineSeries()
         for x,y in zip(radius,profile):
             series.append(x,y)
         chart = QtChart.QChart()
-        chart.setTheme(QtChart.QChart.ChartThemeLight)
+        chart.setTheme(QtChart.QChart.ChartThemeBlueIcy)
         chart.setBackgroundRoundness(0)
-        chart.setMargins(QtCore.QMargins(5,5,5,5))
+        chart.setMargins(QtCore.QMargins(0,0,0,0))
         chart.addSeries(series)
         axisX = QtChart.QValueAxis()
         axisX.setTickCount(10)
