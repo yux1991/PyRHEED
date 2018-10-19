@@ -1,4 +1,3 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
 from Canvas import *
 from Browser import *
 from Properties import *
@@ -14,22 +13,37 @@ class Window(QtWidgets.QMainWindow):
     fileOpened = QtCore.pyqtSignal(str)
     imgCreated = QtCore.pyqtSignal(np.ndarray)
     scaleFactorChanged = QtCore.pyqtSignal(float)
+    canvasScaleFactorChanged = QtCore.pyqtSignal(float)
     labelChanged = QtCore.pyqtSignal(float,float)
     calibrationChanged = QtCore.pyqtSignal(float,float)
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self,config):
 
         super(Window, self).__init__()
         self.currentPath = ''
         self._mode = "pan"
-        self.energy = 20
-        self.azimuth = 0
-        self.scaleBarLength = 5
         self.photoList = []
         self.pathList = []
         self.tabClosed = False
+        self.config = config
+
+        #Defaults
+        windowDefault = dict(self.config['windowDefault'].items())
+        self.HS = int(windowDefault['hs'])
+        self.VS = int(windowDefault['vs'])
+        self.energy = int(windowDefault['energy'])
+        self.azimuth = int(windowDefault['azimuth'])
+        self.scaleBarLength = int(windowDefault['scalebarlength'])
+        self.chiRange = int(windowDefault['chirange'])
+        self.width = float(windowDefault['width'])
+        self.widthSliderScale = int(windowDefault['widthsliderscale'])
+        self.radius = int(windowDefault['radius'])
+        self.radiusMaximum = int(windowDefault['radiusmaximum'])
+        self.radiusSliderScale = int(windowDefault['radiussliderscale'])
+        self.tiltAngle = int(windowDefault['tiltangle'])
+        self.tiltAngleSliderScale = int(windowDefault['tiltanglesliderscale'])
 
         #Menu bar
         self.menu = QtWidgets.QMenuBar()
@@ -40,10 +54,11 @@ class Window(QtWidgets.QMainWindow):
         self.menuHelp = self.menu.addMenu("Help")
         self.setMenuBar(self.menu)
 
+        #Preference Menu
+        self.defaultSettings = self.menuPreference.addAction("Default Settings",self.configureDialog)
+
         #Center Widget
-        self.HS,self.VS = 0,0
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
-        self.img_path = 'C:/RHEED/01192017 multilayer graphene on Ni/20 keV/Img0000.nef'
 
         self.mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.mainTab = QtWidgets.QTabWidget()
@@ -57,7 +72,7 @@ class Window(QtWidgets.QMainWindow):
         self.controlPanelBottomWidget = QtWidgets.QWidget()
         self.controlPanelBottomGrid = QtWidgets.QGridLayout(self.controlPanelBottomWidget)
         self.controlPanelBottomGrid.setContentsMargins(0,0,2,0)
-        self.properties = Properties(self)
+        self.properties = Properties(self,self.config)
         self.cursorInfo = Cursor(self)
         self.profile = ProfileChart(self)
         self.controlPanelBottomGrid.addWidget(self.properties,0,0)
@@ -200,6 +215,19 @@ class Window(QtWidgets.QMainWindow):
 
         self.getScaleFactor()
 
+    def configureDialog(self):
+        dlg = QtWidgets.QDialog()
+        tab = QtWidgets.QTabWidget(dlg)
+        window = QtWidgets.QWidget()
+        properties = QtWidgets.QWidget()
+        canvas = QtWidgets.QWidget()
+        tab.addTab(window,"Window")
+        tab.addTab(properties,"Properties")
+        tab.addTab(canvas,"Canvas")
+        dlg.setWindowTitle("Default Settings")
+        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
+        dlg.exec_()
+
     def progress(self,min,max,val):
         self.progressBar.setVisible(True)
         self.progressBar.setMinimum(min)
@@ -214,14 +242,17 @@ class Window(QtWidgets.QMainWindow):
     def getScaleFactor(self):
         self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(self.properties.energyEdit.text()))
         self.scaleFactorChanged.emit(self.scaleFactor)
+        self.canvasScaleFactorChanged.emit(self.scaleFactor)
 
     def changeSensitivity(self,sensitivity):
         self.scaleFactor = float(sensitivity)/np.sqrt(float(self.properties.energyEdit.text()))
         self.scaleFactorChanged.emit(self.scaleFactor)
+        self.canvasScaleFactorChanged.emit(self.scaleFactor)
 
     def changeEnergy(self,energy):
         self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(energy))
         self.scaleFactorChanged.emit(self.scaleFactor)
+        self.canvasScaleFactorChanged.emit(self.scaleFactor)
         self.energy = float(energy)
 
     def changeAzimuth(self,azimuth):
@@ -247,7 +278,7 @@ class Window(QtWidgets.QMainWindow):
 
     def applyImageAdjusts(self):
         self.updateImage(self.currentPath,bitDepth = 16, enableAutoWB = self.properties.autoWBCheckBox.isChecked(),\
-                       brightness = self.properties.brightnessSlider.value(),blackLevel=self.properties.blackLevelSlider.value())
+                           brightness = self.properties.brightnessSlider.value(),blackLevel=self.properties.blackLevelSlider.value())
 
     def resetImageAdjusts(self):
         self.properties.autoWBCheckBox.setChecked(False)
@@ -257,13 +288,13 @@ class Window(QtWidgets.QMainWindow):
                        brightness = self.properties.brightnessSlider.value(),blackLevel=self.properties.blackLevelSlider.value())
 
     def changeWidth(self,width):
-        self.properties.integralHalfWidthLabel.setText('Integral Half Width ({:3.2f} \u212B\u207B\u00B9)'.format(width/100*1))
+        self.properties.integralHalfWidthLabel.setText('Integral Half Width ({:3.2f} \u212B\u207B\u00B9)'.format(width/self.widthSliderScale))
         if not self.cursorInfo.widthEdit.text() == "":
             if self._mode == "rectangle" or self._mode == "arc":
-                self.cursorInfo.widthEdit.setText('{:3.2f}'.format(width/100*1))
+                self.cursorInfo.widthEdit.setText('{:3.2f}'.format(width/self.widthSliderScale))
         self.updateDrawing()
         for i in range(0,self.mainTab.count()):
-            self.mainTab.widget(i).width = width/100*1 * self.scaleFactor
+            self.mainTab.widget(i).width = width/self.widthSliderScale * self.scaleFactor
 
     def changeChiRange(self,chi):
         self.properties.chiRangeLabel.setText('Chi Range ({}\u00B0)'.format(chi))
@@ -272,29 +303,31 @@ class Window(QtWidgets.QMainWindow):
             self.mainTab.widget(i).span = chi
 
     def changeRadius(self,radius):
-        self.properties.radiusLabel.setText('Radius ({:3.2f} \u212B\u207B\u00B9)'.format(radius/100*20))
-        if not self.mainTab.currentWidget()._drawingArc:
-            self.updateDrawing()
+        self.properties.radiusLabel.setText('Radius ({:3.2f} \u212B\u207B\u00B9)'.format(radius/self.radiusSliderScale))
+        if not self.mainTab.count() == 0:
+            if not self.mainTab.currentWidget()._drawingArc:
+                self.updateDrawing()
 
     def changeTiltAngle(self,tilt):
-        self.properties.tiltAngleLabel.setText('Tilt Angle ({:2.1f}\u00B0)'.format(tilt/150*15))
+        self.properties.tiltAngleLabel.setText('Tilt Angle ({:2.1f}\u00B0)'.format(tilt/self.tiltAngleSliderScale))
         self.updateDrawing()
         for i in range(0,self.mainTab.count()):
-            self.mainTab.widget(i).tilt = tilt/10
+            self.mainTab.widget(i).tilt = tilt/self.tiltAngleSliderScale
 
     def applyProfileOptions(self):
-        if self.mainTab.currentWidget().canvasObject == "line":
-            self.mainTab.currentWidget().lineScanSignalEmit()
-        if self.mainTab.currentWidget().canvasObject == "rectangle":
-            self.mainTab.currentWidget().integralSignalEmit()
-        if self.mainTab.currentWidget().canvasObject == "arc":
-            self.mainTab.currentWidget().chiScanSignalEmit()
+        if not self.mainTab.count() == 0:
+            if self.mainTab.currentWidget().canvasObject == "line":
+                self.mainTab.currentWidget().lineScanSignalEmit()
+            if self.mainTab.currentWidget().canvasObject == "rectangle":
+                self.mainTab.currentWidget().integralSignalEmit()
+            if self.mainTab.currentWidget().canvasObject == "arc":
+                self.mainTab.currentWidget().chiScanSignalEmit()
 
     def resetProfileOptions(self):
-        self.properties.integralHalfWidthSlider.setValue(40)
-        self.properties.chiRangeSlider.setValue(60)
-        self.properties.radiusSlider.setValue(25)
-        self.properties.tiltAngleSlider.setValue(0)
+        self.properties.integralHalfWidthSlider.setValue(self.width*self.widthSliderScale)
+        self.properties.chiRangeSlider.setValue(self.chiRange)
+        self.properties.radiusSlider.setValue(self.radius*self.radiusSliderScale)
+        self.properties.tiltAngleSlider.setValue(self.tiltAngle)
         self.applyProfileOptions()
 
     def editChoosedXY(self):
@@ -307,7 +340,7 @@ class Window(QtWidgets.QMainWindow):
         return
 
     def editWidth(self,width):
-        self.properties.integralHalfWidthSlider.setValue(int(width)*100/1)
+        self.properties.integralHalfWidthSlider.setValue(int(width)*self.widthSliderScale)
 
     def setAsCenter(self):
         return
@@ -318,13 +351,14 @@ class Window(QtWidgets.QMainWindow):
     def getImgPath(self):
         fileDlg = QtWidgets.QFileDialog(self)
         fileDlg.setDirectory('C:/RHEED/')
-        path = fileDlg.getOpenFileName()[0]
+        path = fileDlg.getOpenFileName(filter="NEF (*.nef);;All Files (*.*)")[0]
         return path
 
     def openImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':
-            canvas = Canvas(self)
+            canvas = Canvas(self,self.config)
             self.connectCanvas(canvas)
+            self.canvasScaleFactorChanged.emit(self.scaleFactor)
             img_array = self.loadImage(canvas,path,bitDepth,enableAutoWB,brightness,blackLevel)
             self.photoList.append(img_array)
             self.pathList.append(path)
@@ -390,6 +424,7 @@ class Window(QtWidgets.QMainWindow):
         self.properties.clearButton.clicked.connect(canvas.clearAnnotations)
         self.labelChanged.connect(canvas.label)
         self.calibrationChanged.connect(canvas.calibrate)
+        self.canvasScaleFactorChanged.connect(canvas.setScaleFactor)
 
     def disconnectCanvas(self):
         self.zoomIn.disconnect()
@@ -398,6 +433,7 @@ class Window(QtWidgets.QMainWindow):
         self.properties.clearButton.disconnect()
         self.labelChanged.disconnect()
         self.calibrationChanged.disconnect()
+        self.canvasScaleFactorChanged.disconnect()
 
     def reconnectCanvas(self,canvas):
         self.zoomIn.triggered.connect(canvas.zoomIn)
@@ -406,12 +442,14 @@ class Window(QtWidgets.QMainWindow):
         self.properties.clearButton.clicked.connect(canvas.clearAnnotations)
         self.labelChanged.connect(canvas.label)
         self.calibrationChanged.connect(canvas.calibrate)
+        self.canvasScaleFactorChanged.connect(canvas.setScaleFactor)
 
     def updateImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
-        canvas = self.mainTab.currentWidget()
-        img_array=self.loadImage(canvas,path,bitDepth,enableAutoWB,brightness,blackLevel)
-        self.photoList[self.mainTab.currentIndex()]=img_array
-        self.applyProfileOptions()
+        if not self.mainTab.count() == 0:
+            canvas = self.mainTab.currentWidget()
+            img_array=self.loadImage(canvas,path,bitDepth,enableAutoWB,brightness,blackLevel)
+            self.photoList[self.mainTab.currentIndex()]=img_array
+            self.applyProfileOptions()
 
     def loadImage(self,canvas,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         self.messageLoadingImage.setText("Processing ... ")
@@ -429,12 +467,13 @@ class Window(QtWidgets.QMainWindow):
         return img_array
 
     def updateDrawing(self):
-        if self.mainTab.currentWidget().canvasObject == "rectangle":
-            self.mainTab.currentWidget().drawRect(self.mainTab.currentWidget().start,self.mainTab.currentWidget().end,self.properties.integralHalfWidthSlider.value()/100*1*self.scaleFactor)
-        if self.mainTab.currentWidget().canvasObject == "arc":
-            self.mainTab.currentWidget().drawArc(self.mainTab.currentWidget().start,20/100*self.properties.radiusSlider.value()*self.scaleFactor,\
-                                self.properties.integralHalfWidthSlider.value()/100*1*self.scaleFactor,self.properties.chiRangeSlider.value(),\
-                                self.properties.tiltAngleSlider.value()/10)
+        if not self.mainTab.count() == 0:
+            if self.mainTab.currentWidget().canvasObject == "rectangle":
+                self.mainTab.currentWidget().drawRect(self.mainTab.currentWidget().start,self.mainTab.currentWidget().end,self.properties.integralHalfWidthSlider.value()/100*1*self.scaleFactor)
+            if self.mainTab.currentWidget().canvasObject == "arc":
+                self.mainTab.currentWidget().drawArc(self.mainTab.currentWidget().start,self.properties.radiusSlider.value()/self.radiusSliderScale*self.scaleFactor,\
+                                    self.properties.integralHalfWidthSlider.value()/self.widthSliderScale*self.scaleFactor,self.properties.chiRangeSlider.value(),\
+                                    self.properties.tiltAngleSlider.value()/self.tiltAngleSliderScale)
 
     def restoreDefaults(self):
         self.mainTab.currentWidget().clearCanvas()
@@ -467,7 +506,7 @@ class Window(QtWidgets.QMainWindow):
         self.cursorInfo.startXYEdit.setText('{},{}'.format(pos.x(), pos.y()))
         self.cursorInfo.endXYEdit.clear()
         if self._mode == "rectangle" or self._mode == "arc":
-            self.cursorInfo.widthEdit.setText('{:3.2f}'.format(self.properties.integralHalfWidthSlider.value()/100*1))
+            self.cursorInfo.widthEdit.setText('{:3.2f}'.format(self.properties.integralHalfWidthSlider.value()/self.widthSliderScale))
         elif self._mode == "line":
             self.cursorInfo.widthEdit.setText('{:3.2f}'.format(0.00))
 
@@ -477,7 +516,7 @@ class Window(QtWidgets.QMainWindow):
         else:
             self.cursorInfo.endXYEdit.setText('{},{}'.format(pos.x(), pos.y()))
         if self.mainTab.currentWidget()._drawingArc:
-            self.properties.radiusSlider.setValue(100/20*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
+            self.properties.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
 
     def photoMouseMovement(self, pos, type="canvas"):
         if type == "canvas":
@@ -485,7 +524,7 @@ class Window(QtWidgets.QMainWindow):
         elif type == "chart":
             self.editPixInfo.setText('K = %3.2f, Int. = %3.2f' % (pos.x(), pos.y()))
         if self.mainTab.currentWidget()._drawingArc:
-            self.properties.radiusSlider.setValue(100/20*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
+            self.properties.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
 
     def photoMouseDoubleClick(self, pos):
         self.cursorInfo.choosedXYEdit.setText('{},{}'.format(pos.x(), pos.y()))

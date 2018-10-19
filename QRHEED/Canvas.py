@@ -1,4 +1,4 @@
-from Window import *
+from PyQt5 import QtCore, QtGui, QtWidgets
 import numpy as np
 
 class Canvas(QtWidgets.QGraphicsView):
@@ -12,7 +12,7 @@ class Canvas(QtWidgets.QGraphicsView):
     plotIntegral = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float)
     plotChiScan = QtCore.pyqtSignal(QtCore.QPointF,float,float,float,float)
 
-    def __init__(self, parent):
+    def __init__(self, parent,config):
         super(Canvas, self).__init__(parent)
         self._mode = "pan"
         self.canvasObject = "none"
@@ -22,11 +22,17 @@ class Canvas(QtWidgets.QGraphicsView):
         self._mouseIsPressed = False
         self._mouseIsMoved = False
         self._zoom = 0
+        self._scaleFactor = 1
         self._empty = True
-        self.width = 16.15
-        self.span = 60
-        self.tilt = 0
-        self.max_zoom_factor = 21
+
+        #Defaults
+        canvasDefault = dict(config['canvasDefault'].items())
+        self.widthInAngstrom = float(canvasDefault['widthinangstrom'])
+        self.radiusMaximum = int(canvasDefault['radiusmaximum'])
+        self.span = int(canvasDefault['span'])
+        self.tilt = int(canvasDefault['tilt'])
+        self.max_zoom_factor = int(canvasDefault['max_zoom_factor'])
+
         self._scene = QtWidgets.QGraphicsScene(self)
         self._photo = QtWidgets.QGraphicsPixmapItem()
         self._scene.addItem(self._photo)
@@ -44,6 +50,11 @@ class Canvas(QtWidgets.QGraphicsView):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor('darkGray')))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
+
+
+    def setScaleFactor(self,s):
+        self._scaleFactor = s
+        self.width = self.widthInAngstrom*self._scaleFactor
 
     def hasPhoto(self):
         return not self._empty
@@ -220,7 +231,8 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.drawRect(self.start,self.end,self.width)
             elif self._drawingArc:
                 self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
-                self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
+                if not self.PFRadius > self.radiusMaximum*self._scaleFactor:
+                    self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
             if not self._mode == "pan":
                 if self._mouseIsPressed:
                     self._mouseIsMoved = True
@@ -238,8 +250,9 @@ class Canvas(QtWidgets.QGraphicsView):
                     elif self._drawingRect:
                         self.drawRect(self.start,self.end,self.width)
                     elif self._drawingArc:
-                        self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
-                        self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
+                        if not self.PFRadius > self.radiusMaximum*self._scaleFactor:
+                            self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
+                            self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
                     position = self.mapToScene(event.pos())
                     self.photoMouseRelease.emit(position.toPoint())
         self._drawingLine = False
@@ -259,10 +272,8 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
-                #self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
-                #self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
         elif event.key() == QtCore.Qt.Key_Down:
             self.saveStart+=YStep
@@ -271,10 +282,8 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
-                #self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
-                #self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
         elif event.key() == QtCore.Qt.Key_Left:
             self.saveStart-=XStep
@@ -283,10 +292,8 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
-                #self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
-                #self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
         elif event.key() == QtCore.Qt.Key_Right:
             self.saveStart+=XStep
@@ -295,10 +302,8 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
-                #self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
-                #self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
 
     def clearCanvas(self):

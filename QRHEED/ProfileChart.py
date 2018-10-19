@@ -8,6 +8,7 @@ class ProfileChart(QtChart.QChartView):
     progressEnd = QtCore.pyqtSignal()
     chartMouseMovement = QtCore.pyqtSignal(QtCore.QPointF,str)
     chartIsPresent = False
+    theme = QtChart.QChart.ChartThemeBlueIcy
 
     def __init__(self,parent):
         super(ProfileChart,self).__init__(parent)
@@ -16,7 +17,7 @@ class ProfileChart(QtChart.QChartView):
         self._scaleFactor = 1
         self.setContentsMargins(0,0,0,0)
         chart = QtChart.QChart()
-        chart.setTheme(QtChart.QChart.ChartThemeBlueIcy)
+        chart.setTheme(self.theme)
         chart.setBackgroundRoundness(0)
         chart.setMargins(QtCore.QMargins(0,0,0,0))
         self.setChart(chart)
@@ -26,7 +27,7 @@ class ProfileChart(QtChart.QChartView):
         for x,y in zip(radius,profile):
             series.append(x,y)
         chart = QtChart.QChart()
-        chart.setTheme(QtChart.QChart.ChartThemeBlueIcy)
+        chart.setTheme(self.theme)
         chart.setBackgroundRoundness(0)
         chart.setMargins(QtCore.QMargins(0,0,0,0))
         chart.addSeries(series)
