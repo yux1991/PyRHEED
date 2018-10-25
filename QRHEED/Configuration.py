@@ -1,10 +1,7 @@
 import configparser
 
 class Configuration():
-    def __init__(self):
-        self.saveDefaults()
-
-    def saveDefaults():
+    def saveDefaults(self):
         config = configparser.ConfigParser()
         config['windowDefault'] = {\
                                     'HS' : 0,\
@@ -37,15 +34,15 @@ class Configuration():
                                     'widthMinimum': 0,\
                                     'widthMaximum': 1,\
                                     'widthSliderScale': 100,\
-                                    'chiRange': 0,\
+                                    'chiRange': 60,\
                                     'chiRangeMinimum': 0,\
-                                    'chiRangeMaximum': 60,\
-                                    'radius': 20,\
+                                    'chiRangeMaximum': 180,\
+                                    'radius': 5,\
                                     'radiusMinimum': 0,\
-                                    'radiusMaximum': 100,\
+                                    'radiusMaximum': 20,\
                                     'radiusSliderScale': 10,\
                                     'tiltAngle': 0,\
-                                    'tiltAngleMinimum': 0,\
+                                    'tiltAngleMinimum': -15,\
                                     'tiltAngleMaximum': 15,\
                                     'tiltAngleSliderScale': 10\
                                     }
@@ -57,6 +54,18 @@ class Configuration():
                                     'tilt' : 0,\
                                     'max_zoom_factor' : 21\
                                     }
+
+        #0: ChartThemeLight
+        #1: ChartThemeBlueCerulean
+        #2: ChartThemeDark
+        #3: ChartThemeBrownSand
+        #4: ChartThemeBlueNcs
+        #5: ChartThemeHighContrast
+        #6: ChartThemeBlueIcey
+        #7: ChartThemeQt
+        config['chartDefault'] = {\
+                            'theme':'1'\
+                                }
 
         with open('./configuration.ini','w') as configfile:
             config.write(configfile)

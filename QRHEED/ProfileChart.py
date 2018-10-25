@@ -8,10 +8,27 @@ class ProfileChart(QtChart.QChartView):
     progressEnd = QtCore.pyqtSignal()
     chartMouseMovement = QtCore.pyqtSignal(QtCore.QPointF,str)
     chartIsPresent = False
-    theme = QtChart.QChart.ChartThemeBlueIcy
 
-    def __init__(self,parent):
+    def __init__(self,parent,config):
         super(ProfileChart,self).__init__(parent)
+        chartDefault = dict(config['chartDefault'].items())
+        if int(chartDefault['theme']) == 0:
+            self.theme = QtChart.QChart.ChartThemeLight
+        if int(chartDefault['theme']) == 1:
+            self.theme = QtChart.QChart.ChartThemeBlueCerulean
+        if int(chartDefault['theme']) == 2:
+            self.theme = QtChart.QChart.ChartThemeDark
+        if int(chartDefault['theme']) == 3:
+            self.theme = QtChart.QChart.ChartThemeBrownSand
+        if int(chartDefault['theme']) == 4:
+            self.theme = QtChart.QChart.ChartThemeBlueNcs
+        if int(chartDefault['theme']) == 5:
+            self.theme = QtChart.QChart.ChartThemeHighContrast
+        if int(chartDefault['theme']) == 6:
+            self.theme = QtChart.QChart.ChartThemeBlueIcy
+        if int(chartDefault['theme']) == 7:
+            self.theme = QtChart.QChart.ChartThemeQt
+
         self.setRenderHint(QtGui.QPainter.Antialiasing)
         self._img = []
         self._scaleFactor = 1

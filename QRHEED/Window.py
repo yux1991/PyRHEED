@@ -3,6 +3,7 @@ from Browser import *
 from Properties import *
 from ProfileChart import *
 from Cursor import *
+from Menu import *
 import rawpy
 import os
 import numpy as np
@@ -28,22 +29,26 @@ class Window(QtWidgets.QMainWindow):
         self.pathList = []
         self.tabClosed = False
         self.config = config
+        self.MenuActions = Menu()
 
         #Defaults
-        windowDefault = dict(self.config['windowDefault'].items())
-        self.HS = int(windowDefault['hs'])
-        self.VS = int(windowDefault['vs'])
-        self.energy = int(windowDefault['energy'])
-        self.azimuth = int(windowDefault['azimuth'])
-        self.scaleBarLength = int(windowDefault['scalebarlength'])
-        self.chiRange = int(windowDefault['chirange'])
-        self.width = float(windowDefault['width'])
-        self.widthSliderScale = int(windowDefault['widthsliderscale'])
-        self.radius = int(windowDefault['radius'])
-        self.radiusMaximum = int(windowDefault['radiusmaximum'])
-        self.radiusSliderScale = int(windowDefault['radiussliderscale'])
-        self.tiltAngle = int(windowDefault['tiltangle'])
-        self.tiltAngleSliderScale = int(windowDefault['tiltanglesliderscale'])
+        self.windowDefault = dict(self.config['windowDefault'].items())
+        self.propertiesDefault = dict(config['propertiesDefault'].items())
+        self.canvasDefault = dict(config['canvasDefault'].items())
+        self.chartDefault = dict(config['chartDefault'].items())
+        self.HS = int(self.windowDefault['hs'])
+        self.VS = int(self.windowDefault['vs'])
+        self.energy = int(self.windowDefault['energy'])
+        self.azimuth = int(self.windowDefault['azimuth'])
+        self.scaleBarLength = int(self.windowDefault['scalebarlength'])
+        self.chiRange = int(self.windowDefault['chirange'])
+        self.width = float(self.windowDefault['width'])
+        self.widthSliderScale = int(self.windowDefault['widthsliderscale'])
+        self.radius = int(self.windowDefault['radius'])
+        self.radiusMaximum = int(self.windowDefault['radiusmaximum'])
+        self.radiusSliderScale = int(self.windowDefault['radiussliderscale'])
+        self.tiltAngle = int(self.windowDefault['tiltangle'])
+        self.tiltAngleSliderScale = int(self.windowDefault['tiltanglesliderscale'])
 
         #Menu bar
         self.menu = QtWidgets.QMenuBar()
@@ -55,7 +60,8 @@ class Window(QtWidgets.QMainWindow):
         self.setMenuBar(self.menu)
 
         #Preference Menu
-        self.defaultSettings = self.menuPreference.addAction("Default Settings",self.configureDialog)
+        self.defaultSettings = self.menuPreference.addAction("Default Settings",\
+                                    self.MenuActions.Preference_DefaultSettings)
 
         #Center Widget
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
@@ -74,7 +80,7 @@ class Window(QtWidgets.QMainWindow):
         self.controlPanelBottomGrid.setContentsMargins(0,0,2,0)
         self.properties = Properties(self,self.config)
         self.cursorInfo = Cursor(self)
-        self.profile = ProfileChart(self)
+        self.profile = ProfileChart(self,self.config)
         self.controlPanelBottomGrid.addWidget(self.properties,0,0)
         self.controlPanelBottomGrid.addWidget(self.cursorInfo,1,0)
         self.controlPanelBottomGrid.addWidget(self.profile,2,0)
@@ -214,19 +220,6 @@ class Window(QtWidgets.QMainWindow):
         self.profile.chartMouseMovement.connect(self.photoMouseMovement)
 
         self.getScaleFactor()
-
-    def configureDialog(self):
-        dlg = QtWidgets.QDialog()
-        tab = QtWidgets.QTabWidget(dlg)
-        window = QtWidgets.QWidget()
-        properties = QtWidgets.QWidget()
-        canvas = QtWidgets.QWidget()
-        tab.addTab(window,"Window")
-        tab.addTab(properties,"Properties")
-        tab.addTab(canvas,"Canvas")
-        dlg.setWindowTitle("Default Settings")
-        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
-        dlg.exec_()
 
     def progress(self,min,max,val):
         self.progressBar.setVisible(True)

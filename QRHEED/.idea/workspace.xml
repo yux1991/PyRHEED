@@ -2,12 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="446fbdb0-87d3-4145-a77a-b725cacbd8b0" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/../Cartoon/image2cartoon.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Browser.py" beforeDir="false" afterPath="$PROJECT_DIR$/Browser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Canvas.py" beforeDir="false" afterPath="$PROJECT_DIR$/Canvas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Configuration.py" beforeDir="false" afterPath="$PROJECT_DIR$/Configuration.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ProfileChart.py" beforeDir="false" afterPath="$PROJECT_DIR$/ProfileChart.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Properties.py" beforeDir="false" afterPath="$PROJECT_DIR$/Properties.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProfileMatplotlib.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Window.py" beforeDir="false" afterPath="$PROJECT_DIR$/Window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/configuration.ini" beforeDir="false" afterPath="$PROJECT_DIR$/configuration.ini" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -20,36 +21,36 @@
     <session id="228369296">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="70" />
+          <entry key="project.closed" value="76" />
           <entry key="project.open.time.0" value="3" />
           <entry key="project.open.time.1" value="4" />
           <entry key="project.open.time.3" value="4" />
           <entry key="project.open.time.4" value="6" />
-          <entry key="project.open.time.5" value="33" />
-          <entry key="project.open.time.6" value="15" />
+          <entry key="project.open.time.5" value="34" />
+          <entry key="project.open.time.6" value="20" />
           <entry key="project.open.time.7" value="5" />
-          <entry key="project.opened" value="70" />
+          <entry key="project.opened" value="76" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="Python Console" value="32" />
-          <entry key="py" value="219158" />
+          <entry key="py" value="237944" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="219190" />
+          <entry key="Python" value="237976" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="72" />
+          <entry key="py" value="81" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="72" />
+          <entry key="Python" value="81" />
         </counts>
       </usages-collector>
     </session>
@@ -59,8 +60,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="220">
-              <caret line="10" column="41" selection-start-line="10" selection-start-column="41" selection-end-line="10" selection-end-column="41" />
+            <state relative-caret-position="110">
+              <caret line="8" column="31" selection-start-line="8" selection-start-column="31" selection-end-line="8" selection-end-column="31" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -68,16 +69,27 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Window.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="748">
-              <caret line="234" column="37" selection-start-line="234" selection-start-column="37" selection-end-line="234" selection-end-column="37" />
+            <state relative-caret-position="1936">
+              <caret line="96" column="17" selection-start-line="96" selection-start-column="17" selection-end-line="96" selection-end-column="17" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
-                <marker date="1539895156404" expanded="true" signature="10554:10990" ph="..." />
-                <marker date="1539895156404" expanded="true" signature="10986:10990" ph="..." />
-                <marker date="1539895156404" expanded="true" signature="19599:19608" ph="..." />
+                <marker date="1540315727498" expanded="true" signature="10927:10931" ph="..." />
+                <marker date="1540315727498" expanded="true" signature="19540:19549" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Menu.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="308">
+              <caret line="50" column="47" selection-start-line="50" selection-start-column="47" selection-end-line="50" selection-end-column="47" />
+              <folding>
+                <element signature="e#0#35#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -86,8 +98,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Properties.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-198">
-              <caret line="40" column="26" lean-forward="true" selection-start-line="40" selection-start-column="26" selection-end-line="40" selection-end-column="26" />
+            <state relative-caret-position="858">
+              <caret line="39" column="23" selection-start-line="39" selection-start-column="23" selection-end-line="39" selection-end-column="23" />
             </state>
           </provider>
         </entry>
@@ -95,8 +107,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Canvas.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="110">
-              <caret line="26" selection-start-line="26" selection-end-line="26" />
+            <state relative-caret-position="638">
+              <caret line="30" column="29" selection-start-line="30" selection-start-column="29" selection-end-line="30" selection-end-column="29" />
               <folding>
                 <element signature="e#0#42#0" expanded="true" />
                 <marker date="1539891718157" expanded="true" signature="4455:4560" ph="..." />
@@ -108,7 +120,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Browser.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
+            <state relative-caret-position="374">
+              <caret line="18" column="40" selection-start-line="18" selection-start-column="40" selection-end-line="18" selection-end-column="40" />
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
               </folding>
@@ -119,11 +132,11 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ProfileChart.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1564">
-              <caret line="10" column="43" selection-start-line="10" selection-start-column="43" selection-end-line="10" selection-end-column="43" />
+            <state relative-caret-position="-308">
+              <caret line="14" column="11" selection-start-line="14" selection-start-column="11" selection-end-line="14" selection-end-column="11" />
               <folding>
                 <element signature="e#0#51#0" expanded="true" />
-                <marker date="1537820983299" expanded="true" signature="772:776" ph="..." />
+                <marker date="1539969219406" expanded="true" signature="1613:1617" ph="..." />
               </folding>
             </state>
           </provider>
@@ -132,18 +145,20 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Cursor.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-789" />
+            <state relative-caret-position="-68">
+              <caret line="25" column="17" selection-start-line="25" selection-start-column="17" selection-end-line="25" selection-end-column="17" />
+            </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Configuration.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="88">
-              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+            <state relative-caret-position="66">
+              <caret line="3" selection-start-line="3" selection-end-line="3" />
               <folding>
-                <marker date="1539891944527" expanded="true" signature="67:101" ph="..." />
-                <marker date="1539891944527" expanded="true" signature="121:129" ph="..." />
+                <marker date="1540316494974" expanded="true" signature="44:48" ph="..." />
+                <marker date="1540316494974" expanded="true" signature="72:80" ph="..." />
               </folding>
             </state>
           </provider>
@@ -172,27 +187,27 @@
         <option value="$PROJECT_DIR$/PyRHEED.py" />
         <option value="$PROJECT_DIR$/main.py" />
         <option value="$PROJECT_DIR$/menu.py" />
-        <option value="$PROJECT_DIR$/Menu.py" />
         <option value="$PROJECT_DIR$/MainWindow.py" />
         <option value="$PROJECT_DIR$/Control.py" />
         <option value="$PROJECT_DIR$/Cursor.py" />
         <option value="$PROJECT_DIR$/Profile.py" />
         <option value="$PROJECT_DIR$/Profile_QChart.py" />
-        <option value="$PROJECT_DIR$/ProfileChart.py" />
         <option value="$PROJECT_DIR$/Browser.py" />
         <option value="$PROJECT_DIR$/Canvas.py" />
-        <option value="$PROJECT_DIR$/Configuration.py" />
         <option value="$PROJECT_DIR$/Properties.py" />
+        <option value="$PROJECT_DIR$/ProfileChart.py" />
         <option value="$PROJECT_DIR$/Main.py" />
         <option value="$PROJECT_DIR$/Window.py" />
+        <option value="$PROJECT_DIR$/Configuration.py" />
+        <option value="$PROJECT_DIR$/Menu.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="1700" />
-    <option name="y" value="-8" />
-    <option name="width" value="1034" />
-    <option name="height" value="805" />
+    <option name="x" value="1850" />
+    <option name="y" value="-180" />
+    <option name="width" value="1294" />
+    <option name="height" value="907" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -360,20 +375,19 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="1592" y="-8" width="1296" height="1040" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49731183" visible="true" weight="0.25596184" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49731183" visible="true" weight="0.16613673" />
       <window_info id="Structure" order="1" sideWeight="0.50268817" side_tool="true" weight="0.087987356" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.2595908" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.24503312" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32992327" />
-      <window_info anchor="bottom" id="Version Control" order="7" weight="0.32992327" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="8" visible="true" weight="0.24503312" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.3289183" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.24392936" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.32781458" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -386,7 +400,6 @@
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/paint.py" />
-    <entry file="file://$PROJECT_DIR$/Menu.py" />
     <entry file="file://$PROJECT_DIR$/MainWindow.py" />
     <entry file="file://$USER_HOME$/.PyCharmCE2018.2/system/python_stubs/-1846236318/PyQt5/QtWidgets/QWidget.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -421,24 +434,44 @@
     <entry file="file://$PROJECT_DIR$/Profile.py" />
     <entry file="file://$PROJECT_DIR$/PyRHEED.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="1440" column="34" selection-start-line="1440" selection-start-column="34" selection-end-line="1440" selection-end-column="34" />
+        <state relative-caret-position="440">
+          <caret line="236" column="17" selection-start-line="236" selection-start-column="17" selection-end-line="236" selection-end-column="17" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Browser.py">
+    <entry file="file://$PROJECT_DIR$/Main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
+        <state relative-caret-position="110">
+          <caret line="8" column="31" selection-start-line="8" selection-start-column="31" selection-end-line="8" selection-end-column="31" />
           <folding>
-            <element signature="e#0#35#0" expanded="true" />
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Window.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1936">
+          <caret line="96" column="17" selection-start-line="96" selection-start-column="17" selection-end-line="96" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+            <marker date="1540315727498" expanded="true" signature="10927:10931" ph="..." />
+            <marker date="1540315727498" expanded="true" signature="19540:19549" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Properties.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="858">
+          <caret line="39" column="23" selection-start-line="39" selection-start-column="23" selection-end-line="39" selection-end-column="23" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Canvas.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="110">
-          <caret line="26" selection-start-line="26" selection-end-line="26" />
+        <state relative-caret-position="638">
+          <caret line="30" column="29" selection-start-line="30" selection-start-column="29" selection-end-line="30" selection-end-column="29" />
           <folding>
             <element signature="e#0#42#0" expanded="true" />
             <marker date="1539891718157" expanded="true" signature="4455:4560" ph="..." />
@@ -446,59 +479,51 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Cursor.py">
+    <entry file="file://$PROJECT_DIR$/Browser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-789" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Configuration.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="88">
-          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+        <state relative-caret-position="374">
+          <caret line="18" column="40" selection-start-line="18" selection-start-column="40" selection-end-line="18" selection-end-column="40" />
           <folding>
-            <marker date="1539891944527" expanded="true" signature="67:101" ph="..." />
-            <marker date="1539891944527" expanded="true" signature="121:129" ph="..." />
+            <element signature="e#0#35#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Main.py">
+    <entry file="file://$PROJECT_DIR$/Configuration.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="10" column="41" selection-start-line="10" selection-start-column="41" selection-end-line="10" selection-end-column="41" />
+        <state relative-caret-position="66">
+          <caret line="3" selection-start-line="3" selection-end-line="3" />
           <folding>
-            <element signature="e#0#20#0" expanded="true" />
+            <marker date="1540316494974" expanded="true" signature="44:48" ph="..." />
+            <marker date="1540316494974" expanded="true" signature="72:80" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ProfileChart.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1564">
-          <caret line="10" column="43" selection-start-line="10" selection-start-column="43" selection-end-line="10" selection-end-column="43" />
+        <state relative-caret-position="-308">
+          <caret line="14" column="11" selection-start-line="14" selection-start-column="11" selection-end-line="14" selection-end-column="11" />
           <folding>
             <element signature="e#0#51#0" expanded="true" />
-            <marker date="1537820983299" expanded="true" signature="772:776" ph="..." />
+            <marker date="1539969219406" expanded="true" signature="1613:1617" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Properties.py">
+    <entry file="file://$PROJECT_DIR$/Cursor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-198">
-          <caret line="40" column="26" lean-forward="true" selection-start-line="40" selection-start-column="26" selection-end-line="40" selection-end-column="26" />
+        <state relative-caret-position="-68">
+          <caret line="25" column="17" selection-start-line="25" selection-start-column="17" selection-end-line="25" selection-end-column="17" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Window.py">
+    <entry file="file://$PROJECT_DIR$/Menu.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="748">
-          <caret line="234" column="37" selection-start-line="234" selection-start-column="37" selection-end-line="234" selection-end-column="37" />
+        <state relative-caret-position="308">
+          <caret line="50" column="47" selection-start-line="50" selection-start-column="47" selection-end-line="50" selection-end-column="47" />
           <folding>
-            <element signature="e#0#20#0" expanded="true" />
-            <marker date="1539895156404" expanded="true" signature="10554:10990" ph="..." />
-            <marker date="1539895156404" expanded="true" signature="10986:10990" ph="..." />
-            <marker date="1539895156404" expanded="true" signature="19599:19608" ph="..." />
+            <element signature="e#0#35#0" expanded="true" />
           </folding>
         </state>
       </provider>

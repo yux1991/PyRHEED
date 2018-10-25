@@ -4,8 +4,7 @@ from Configuration import *
 import os.path
 
 if __name__ == '__main__':
-    if not os.path.exists('./configuration.ini'):
-        Configuration.saveDefaults()
+    Configuration().saveDefaults()
     config = configparser.ConfigParser()
     config.read('./configuration.ini')
     app = QtWidgets.QApplication(sys.argv)
