@@ -272,6 +272,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
+                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
@@ -282,6 +283,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
+                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
@@ -292,6 +294,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
+                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
@@ -302,6 +305,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
+                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
@@ -343,6 +347,7 @@ class Canvas(QtWidgets.QGraphicsView):
         self._rectItem.show()
         self.canvasObject = "rectangle"
         self.saveStart,self.saveEnd,self.saveWidth = start,end,width
+        self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
 
     def drawArc(self,start,radius,width,span,tilt):
         self.clearCanvas()

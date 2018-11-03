@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="9768f281-3965-45bf-b6a0-35dd9e5c0ed5" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/2D.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/TkCanvas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/TkInfoPanel.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/TkMenu.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/command.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/configuration.ini" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/configuration.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/fit.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/arc.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/line.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/move.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/open.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/rectangle.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/save as.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/save.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/zoom in.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/icons/zoom out.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/io.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyRHEED/operation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/.idea/QRHEED.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/.idea/workspace.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/Browser.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/Canvas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/Configuration.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/Cursor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/Menu.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/ProfileChart.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/Properties.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/PyRHEED.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/Window.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/configuration.ini" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/arc.ai" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/arc.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/curve.ai" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/fit.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/icons.pptx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/line.ai" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/line.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/move.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/open.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/rectangle.ai" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/rectangle.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/save as.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/save.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/zoom in.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/icons/zoom out.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QRHEED/main.py" beforeDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FUSProjectUsageTrigger">
+    <session id="-172967749">
+      <usages-collector id="statistics.lifecycle.project">
+        <counts>
+          <entry key="project.closed" value="5" />
+          <entry key="project.open.time.2" value="1" />
+          <entry key="project.open.time.4" value="1" />
+          <entry key="project.open.time.5" value="1" />
+          <entry key="project.open.time.6" value="2" />
+          <entry key="project.opened" value="5" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.extensions.open">
+        <counts>
+          <entry key="py" value="8" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.types.open">
+        <counts>
+          <entry key="Python" value="8" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.extensions.edit">
+        <counts>
+          <entry key="py" value="23458" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.types.edit">
+        <counts>
+          <entry key="Python" value="23458" />
+        </counts>
+      </usages-collector>
+    </session>
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PyQtRHEED/Main.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="132">
+              <caret line="9" column="25" selection-start-line="9" selection-start-column="25" selection-end-line="9" selection-end-column="25" />
+              <folding>
+                <element signature="e#0#20#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PyQtRHEED/Window.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="8778">
+              <caret line="407" column="47" selection-start-line="407" selection-start-column="47" selection-end-line="407" selection-end-column="47" />
+              <folding>
+                <element signature="e#0#20#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PyQtRHEED/Properties.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PyQtRHEED/Cursor.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PyQtRHEED/Canvas.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="6336">
+              <caret line="289" column="45" selection-start-line="289" selection-start-column="45" selection-end-line="289" selection-end-column="45" />
+              <folding>
+                <element signature="e#0#42#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/PyQtRHEED/ProfileChart.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="561">
+              <caret line="158" column="26" selection-start-line="158" selection-start-column="26" selection-end-line="158" selection-end-column="26" />
+              <folding>
+                <element signature="e#0#51#0" expanded="true" />
+                <marker date="1541204053005" expanded="true" signature="5380:5385" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/PyQtRHEED/Canvas.py" />
+        <option value="$PROJECT_DIR$/PyQtRHEED/ProfileChart.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="1875" />
+    <option name="y" value="-180" />
+    <option name="width" value="1293" />
+    <option name="height" value="907" />
+  </component>
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="PyRHEED" type="b2602c69:ProjectViewProjectNode" />
+              <item name="PyRHEED" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyRHEED" type="b2602c69:ProjectViewProjectNode" />
+              <item name="PyRHEED" type="462c0819:PsiDirectoryNode" />
+              <item name="PyQtRHEED" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Python.Main">
+    <configuration name="Main" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PyRHEED" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/PyQtRHEED" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/PyQtRHEED/Main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="PyRHEED" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PyRHEED" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/PyRHEED.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.Main" />
+      <item itemvalue="Python.PyRHEED" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.Main" />
+        <item itemvalue="Python.PyRHEED" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9768f281-3965-45bf-b6a0-35dd9e5c0ed5" name="Default Changelist" comment="" />
+      <created>1540931557668</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1540931557668</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="1592" y="-180" width="1936" height="1096" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1654373" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.24636175" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.32992327" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.21099745" />
+      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
+      <window_info anchor="bottom" id="Python Console" order="10" weight="0.32992327" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/PyRHEED.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-51660" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/PyRHEED.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-39833">
+          <caret line="46" column="46" selection-start-line="46" selection-start-column="46" selection-end-line="46" selection-end-column="46" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="132">
+          <caret line="9" column="25" selection-start-line="9" selection-start-column="25" selection-end-line="9" selection-end-column="25" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Window.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8778">
+          <caret line="407" column="47" selection-start-line="407" selection-start-column="47" selection-end-line="407" selection-end-column="47" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Properties.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Cursor.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Canvas.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="6336">
+          <caret line="289" column="45" selection-start-line="289" selection-start-column="45" selection-end-line="289" selection-end-column="45" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/ProfileChart.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="561">
+          <caret line="158" column="26" selection-start-line="158" selection-start-column="26" selection-end-line="158" selection-end-column="26" />
+          <folding>
+            <element signature="e#0#51#0" expanded="true" />
+            <marker date="1541204053005" expanded="true" signature="5380:5385" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>
