@@ -102,34 +102,24 @@ class ProfileChart(QtChart.QChartView):
         else:
             slope =(x0-x1)/(y1-y0)
             if abs(slope) > 1:
-                LineScanIntensities = np.sum([self._img[np.fromiter(np.linspace(Ky[i]-int_width,Ky[i]+int_width+1,\
-                                    2*int_width+1),int),np.fromiter(np.linspace(Kx[i]-int_width/slope,Kx[i]+\
-                                    (int_width+1)/slope,2*int_width+1),int)] for i in range(len(Kx))],axis=1)
+                index = np.asarray([[np.linspace(Ky[i]-int_width,Ky[i]+int_width+1,2*int_width+1),\
+                                     np.linspace(Kx[i]-int_width/slope,Kx[i]+(int_width+1)/slope,2*int_width+1)] for i in range(len(Kx))],dtype=int)
             else:
-                LineScanIntensities = np.sum([self._img[np.fromiter(np.linspace(Ky[i]-int_width*slope,Ky[i]+\
-                                    (int_width+1)*slope,2*int_width+1),int),np.fromiter(np.linspace(Kx[i]-int_width,\
-                                    Kx[i]+int_width+1,2*int_width+1),int)] for i in range(len(Kx))],axis=1)
+                index = np.asarray([[np.linspace(Ky[i]-int_width*slope,Ky[i]+(int_width+1)*slope,2*int_width+1),\
+                                     np.linspace(Kx[i]-int_width,Kx[i]+int_width+1,2*int_width+1)] for i in range(len(Kx))],dtype=int)
+            LineScanIntensities = np.sum([self._img[index[i,0,:],index[i,1,:]] for i in range(len(Kx))],axis=1)
         self.addChart(LineScanRadius/self._scaleFactor,LineScanIntensities/2/width/np.amax(np.amax(self._img)),"rectangle")
         self.chartIsPresent = True
         #print("Line Integral run time is: {} s\nThe size is: {}\n".format(np.round(time.time()-start_time,5),int(len(Kx)*(2*width+1))))
 
-    def chiRotate(self,t):
-        xy,theta,x0,y0 = t
-        theta *= -np.pi/180
-        return [int((xy[1]-x0)*np.sin(theta)+(xy[0]-y0)*np.cos(theta)+y0),\
-               int((xy[1]-x0)*np.cos(theta)-(xy[0]-y0)*np.sin(theta)+x0)]
-
     def chiScan(self,center,radius,width,chiRange,tilt,chiStep=1):
-        start_time = time.time()
         x0,y0 = center.x(),center.y()
         if int(chiRange/chiStep)>2:
             ChiTotalSteps = int(chiRange/chiStep)
         else:
             ChiTotalSteps = 2
-        ChiAngle = np.linspace(-chiRange/2+tilt+90,chiRange/2+tilt+90,ChiTotalSteps+1)
+        ChiAngle = np.linspace(-chiRange/2-tilt+90,chiRange/2-tilt+90,ChiTotalSteps+1)
         ChiAngle2 = np.linspace(-chiRange/2,chiRange/2,ChiTotalSteps+1)
-        ChiProfile = np.full(ChiTotalSteps,0)
-        total_step = 0
         x1 = x0 + (radius+width)*np.cos(ChiAngle[1]*np.pi/180)
         y1 = y0 + (radius+width)*np.sin(ChiAngle[1]*np.pi/180)
         x2 = x0 + (radius-width)*np.cos(ChiAngle[1]*np.pi/180)
@@ -152,47 +142,13 @@ class ProfileChart(QtChart.QChartView):
                    (j-x0)/np.sqrt((i-y0)**2+(j-x0)**2) > np.cos(ChiAngle[1]*np.pi/180):
                        indices = np.append(indices,[[i,j]],axis=0)
                        cit+=1
-        print(indices)
-        #print(ChiAngle)
-        ImageIndices = [list(map(self.chiRotate,[(xy,theta-ChiAngle[0],x0,y0) for xy in indices])) \
-                        for theta in ChiAngle]
-        print(ImageIndices)
-        #for i in range(10): print(ImageIndices[i][:][0],ImageIndices[i][:][0])
-        #ChiScan = np.sum([self._img[ImageIndices[i][:][0],ImageIndices[i][:][1]] for i in range(ChiTotalSteps)])
-        #print(ChiScan)
-
-        #for k in range(0,ChiTotalSteps):
-        #    self.progressAdvance.emit(0,ChiTotalSteps-1,k)
-        #    QtWidgets.QApplication.processEvents()
-        #    cit = 0
-        #    x1 = x0 + (radius+width)*np.cos(ChiAngle[k+1]*np.pi/180)
-        #    y1 = y0 + (radius+width)*np.sin(ChiAngle[k+1]*np.pi/180)
-        #    x2 = x0 + (radius-width)*np.cos(ChiAngle[k+1]*np.pi/180)
-        #    y2 = y0 + (radius-width)*np.sin(ChiAngle[k+1]*np.pi/180)
-        #    x3 = x0 + (radius-width)*np.cos(ChiAngle[k]*np.pi/180)
-        #    y3 = y0 + (radius-width)*np.sin(ChiAngle[k]*np.pi/180)
-        #    x4 = x0 + (radius+width)*np.cos(ChiAngle[k]*np.pi/180)
-        #    y4 = y0 + (radius+width)*np.sin(ChiAngle[k]*np.pi/180)
-        #    y5 = 0
-        #    if ChiAngle[k] <= 90. and ChiAngle[k+1] > 90.:
-        #        y5 = y0 + radius + width
-        #    for i in range(int(np.amin([y1,y2,y3,y4])),int(np.amax([y1,y2,y3,y4,y5]))+1):
-        #        for j in range(int(np.amin([x1,x2,x3,x4])),int(np.amax([x1,x2,x3,x4]))+1):
-        #            if (j-x0)**2+(i-y0)**2 > (radius-width)**2 and\
-        #               (j-x0)**2+(i-y0)**2 < (radius+width)**2 and\
-        #               (j-x0)/np.sqrt((i-y0)**2+(j-x0)**2) < np.cos(ChiAngle[k]*np.pi/180) and\
-        #               (j-x0)/np.sqrt((i-y0)**2+(j-x0)**2) > np.cos(ChiAngle[k+1]*np.pi/180):
-        #                   ChiScan[k] += self._img[i,j]
-        #                   cit+=1
-        #    if cit == 0 and k>0:
-        #        ChiProfile[k] = ChiProfile[k-1]
-        #    else:
-        #        ChiProfile[k] = float(ChiScan[k])/float(cit)
-        #    total_step+=cit
-        self.addChart(ChiAngle2[0:-1],ChiProfile/np.amax(np.amax(self._img)),"arc")
+        RotationTensor = np.array([[[-np.sin((theta-ChiAngle[0])*np.pi/180),np.cos((theta-ChiAngle[0])*np.pi/180)],\
+                                    [np.cos((theta-ChiAngle[0])*np.pi/180), np.sin((theta-ChiAngle[0])*np.pi/180)]] for theta in ChiAngle])
+        ImageIndices =np.tensordot(RotationTensor,(indices[1:-1]-[y0,x0]).T,axes=1).astype(int)
+        ChiProfile = np.sum([self._img[ImageIndices[i,1,:]+int(y0),ImageIndices[i,0,:]+int(x0)] for i in range(ChiTotalSteps+1)], axis=1)/cit
+        self.addChart(np.flip(ChiAngle2,axis=0),ChiProfile/np.amax(np.amax(self._img)),"arc")
         self.chartIsPresent = True
-        self.progressEnd.emit()
-        print("Chi Scan run time is: {} s\nThe size is: {}\n".format(np.round(time.time()-start_time,5),total_step))
+        #print("Chi Scan run time is: {} s\nThe size is: {}\n".format(np.round(time.time()-start_time,5),(ChiTotalSteps+1)*cit))
 
     def mouseMoveEvent(self, event):
         if self.chart().plotArea().contains(event.pos()) and self.chartIsPresent:

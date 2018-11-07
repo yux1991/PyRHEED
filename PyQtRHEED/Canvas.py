@@ -275,6 +275,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
+                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
         elif event.key() == QtCore.Qt.Key_Down:
             self.saveStart+=YStep
@@ -286,6 +287,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
+                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
         elif event.key() == QtCore.Qt.Key_Left:
             self.saveStart-=XStep
@@ -297,6 +299,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
+                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
         elif event.key() == QtCore.Qt.Key_Right:
             self.saveStart+=XStep
@@ -308,6 +311,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
             elif self.canvasObject == "arc":
+                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
 
     def clearCanvas(self):
@@ -374,6 +378,7 @@ class Canvas(QtWidgets.QGraphicsView):
         self._arcItem2.show()
         self.canvasObject = "arc"
         self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt = start,radius,width,span,tilt
+        self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
 
     def lineScanSignalEmit(self):
         self.plotLineScan.emit(self.saveStart,self.saveEnd)
