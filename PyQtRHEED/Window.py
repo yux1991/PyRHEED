@@ -19,6 +19,11 @@ class Window(QtWidgets.QMainWindow):
     calibrationChanged = QtCore.pyqtSignal(float,float)
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
+    menu_DefaultPropertiesRestRequested = QtCore.pyqtSignal()
+    window_initialized = QtCore.pyqtSignal()
+    propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
+    canvasRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
+    chartRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
 
     def __init__(self,config):
 
@@ -29,13 +34,12 @@ class Window(QtWidgets.QMainWindow):
         self.pathList = []
         self.tabClosed = False
         self.config = config
-        self.MenuActions = Menu()
 
         #Defaults
         self.windowDefault = dict(self.config['windowDefault'].items())
-        self.propertiesDefault = dict(config['propertiesDefault'].items())
-        self.canvasDefault = dict(config['canvasDefault'].items())
-        self.chartDefault = dict(config['chartDefault'].items())
+        self.propertiesDefault = dict(self.config['propertiesDefault'].items())
+        self.canvasDefault = dict(self.config['canvasDefault'].items())
+        self.chartDefault = dict(self.config['chartDefault'].items())
         self.HS = int(self.windowDefault['hs'])
         self.VS = int(self.windowDefault['vs'])
         self.energy = int(self.windowDefault['energy'])
@@ -61,7 +65,7 @@ class Window(QtWidgets.QMainWindow):
 
         #Preference Menu
         self.defaultSettings = self.menuPreference.addAction("Default Settings",\
-                                    self.MenuActions.Preference_DefaultSettings)
+                                    self.MenuActions_Preference_DefaultSettings)
 
         #Center Widget
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
@@ -219,6 +223,36 @@ class Window(QtWidgets.QMainWindow):
         self.scaleFactorChanged.connect(self.profile.setScaleFactor)
         self.profile.chartMouseMovement.connect(self.photoMouseMovement)
 
+        #Refresh Connections
+        self.propertiesRefresh.connect(self.properties.refresh)
+        self.chartRefresh.connect(self.profile.refresh)
+
+        self.getScaleFactor()
+        self.window_initialized.emit()
+
+    def refresh(self,config):
+        self.windowDefault = dict(config['windowDefault'].items())
+        self.propertiesDefault = dict(config['propertiesDefault'].items())
+        self.canvasDefault = dict(config['canvasDefault'].items())
+        self.chartDefault = dict(config['chartDefault'].items())
+        self.HS = int(self.windowDefault['hs'])
+        self.VS = int(self.windowDefault['vs'])
+        self.energy = int(self.windowDefault['energy'])
+        self.azimuth = int(self.windowDefault['azimuth'])
+        self.scaleBarLength = int(self.windowDefault['scalebarlength'])
+        self.chiRange = int(self.windowDefault['chirange'])
+        self.width = float(self.windowDefault['width'])
+        self.widthSliderScale = int(self.windowDefault['widthsliderscale'])
+        self.radius = int(self.windowDefault['radius'])
+        self.radiusMaximum = int(self.windowDefault['radiusmaximum'])
+        self.radiusSliderScale = int(self.windowDefault['radiussliderscale'])
+        self.tiltAngle = int(self.windowDefault['tiltangle'])
+        self.tiltAngleSliderScale = int(self.windowDefault['tiltanglesliderscale'])
+        self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
+        self.propertiesRefresh.emit(config)
+        self.chartRefresh.emit(config)
+        self.canvasRefresh.emit(config)
+        self.resetImageAdjusts()
         self.getScaleFactor()
 
     def progress(self,min,max,val):
@@ -230,6 +264,9 @@ class Window(QtWidgets.QMainWindow):
     def progressReset(self):
         self.progressBar.reset()
         self.progressBar.setVisible(False)
+
+    def MenuActions_Preference_DefaultSettings(self):
+        self.menu_DefaultPropertiesRestRequested.emit()
 
 
     def getScaleFactor(self):
@@ -275,8 +312,8 @@ class Window(QtWidgets.QMainWindow):
 
     def resetImageAdjusts(self):
         self.properties.autoWBCheckBox.setChecked(False)
-        self.properties.brightnessSlider.setValue(20)
-        self.properties.blackLevelSlider.setValue(50)
+        self.properties.brightnessSlider.setValue(int(self.propertiesDefault['brightness']))
+        self.properties.blackLevelSlider.setValue(int(self.propertiesDefault['blacklevel']))
         self.updateImage(self.currentPath,bitDepth = 16, enableAutoWB = self.properties.autoWBCheckBox.isChecked(), \
                        brightness = self.properties.brightnessSlider.value(),blackLevel=self.properties.blackLevelSlider.value())
 
@@ -410,6 +447,7 @@ class Window(QtWidgets.QMainWindow):
         canvas.plotLineScan.connect(self.profile.lineScan)
         canvas.plotIntegral.connect(self.profile.integral)
         canvas.plotChiScan.connect(self.profile.chiScan)
+
         #canvas slots
         self.zoomIn.triggered.connect(canvas.zoomIn)
         self.zoomOut.triggered.connect(canvas.zoomOut)
@@ -418,6 +456,7 @@ class Window(QtWidgets.QMainWindow):
         self.labelChanged.connect(canvas.label)
         self.calibrationChanged.connect(canvas.calibrate)
         self.canvasScaleFactorChanged.connect(canvas.setScaleFactor)
+        self.canvasRefresh.connect(canvas.refresh)
 
     def disconnectCanvas(self):
         self.zoomIn.disconnect()

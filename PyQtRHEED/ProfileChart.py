@@ -33,21 +33,41 @@ class ProfileChart(QtChart.QChartView):
         self.setRenderHint(QtGui.QPainter.Antialiasing)
         self._scaleFactor = 1
         self.setContentsMargins(0,0,0,0)
-        chart = QtChart.QChart()
-        chart.setTheme(self.theme)
-        chart.setBackgroundRoundness(0)
-        chart.setMargins(QtCore.QMargins(0,0,0,0))
-        self.setChart(chart)
+        self.profileChart = QtChart.QChart()
+        self.profileChart.setTheme(self.theme)
+        self.profileChart.setBackgroundRoundness(0)
+        self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
+        self.setChart(self.profileChart)
+
+    def refresh(self,config):
+        chartDefault = dict(config['chartDefault'].items())
+        if int(chartDefault['theme']) == 0:
+            self.theme = QtChart.QChart.ChartThemeLight
+        if int(chartDefault['theme']) == 1:
+            self.theme = QtChart.QChart.ChartThemeBlueCerulean
+        if int(chartDefault['theme']) == 2:
+            self.theme = QtChart.QChart.ChartThemeDark
+        if int(chartDefault['theme']) == 3:
+            self.theme = QtChart.QChart.ChartThemeBrownSand
+        if int(chartDefault['theme']) == 4:
+            self.theme = QtChart.QChart.ChartThemeBlueNcs
+        if int(chartDefault['theme']) == 5:
+            self.theme = QtChart.QChart.ChartThemeHighContrast
+        if int(chartDefault['theme']) == 6:
+            self.theme = QtChart.QChart.ChartThemeBlueIcy
+        if int(chartDefault['theme']) == 7:
+            self.theme = QtChart.QChart.ChartThemeQt
+        self.profileChart.setTheme(self.theme)
 
     def addChart(self,radius,profile,type="line"):
         series = QtChart.QLineSeries()
         for x,y in zip(radius,profile):
             series.append(x,y)
-        chart = QtChart.QChart()
-        chart.setTheme(self.theme)
-        chart.setBackgroundRoundness(0)
-        chart.setMargins(QtCore.QMargins(0,0,0,0))
-        chart.addSeries(series)
+        self.profileChart = QtChart.QChart()
+        self.profileChart.setTheme(self.theme)
+        self.profileChart.setBackgroundRoundness(0)
+        self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
+        self.profileChart.addSeries(series)
         axisX = QtChart.QValueAxis()
         axisX.setTickCount(10)
         if type == "line" or type == "rectangle":
@@ -57,12 +77,12 @@ class ProfileChart(QtChart.QChartView):
         axisY = QtChart.QValueAxis()
         axisY.setTickCount(10)
         axisY.setTitleText("Intensity (arb. units)")
-        chart.addAxis(axisX, QtCore.Qt.AlignBottom)
-        chart.addAxis(axisY, QtCore.Qt.AlignLeft)
+        self.profileChart.addAxis(axisX, QtCore.Qt.AlignBottom)
+        self.profileChart.addAxis(axisY, QtCore.Qt.AlignLeft)
         series.attachAxis(axisX)
         series.attachAxis(axisY)
-        chart.legend().setVisible(False)
-        self.setChart(chart)
+        self.profileChart.legend().setVisible(False)
+        self.setChart(self.profileChart)
 
     def setImg(self,img):
         self._img = img

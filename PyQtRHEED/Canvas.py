@@ -51,6 +51,16 @@ class Canvas(QtWidgets.QGraphicsView):
         self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor('darkGray')))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
+    def refresh(self,config):
+        canvasDefault = dict(config['canvasDefault'].items())
+        self.widthInAngstrom = float(canvasDefault['widthinangstrom'])
+        self.radiusMaximum = int(canvasDefault['radiusmaximum'])
+        self.span = int(canvasDefault['span'])
+        self.tilt = int(canvasDefault['tilt'])
+        self.max_zoom_factor = int(canvasDefault['max_zoom_factor'])
+        self.clearAnnotations()
+        self.clearCanvas()
+        self.fitCanvas()
 
     def setScaleFactor(self,s):
         self._scaleFactor = s

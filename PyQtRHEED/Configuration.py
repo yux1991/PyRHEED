@@ -1,10 +1,7 @@
 import configparser
 
 class Configuration():
-    def saveDefaults(self):
-        config = configparser.ConfigParser()
-        config['windowDefault'] = {\
-                                    'HS' : 0,\
+    DefaultDic = {'windowDefault':{'HS' : 0,\
                                     'VS' : 0,\
                                     'energy' : 20,\
                                     'azimuth' : 0,\
@@ -16,11 +13,8 @@ class Configuration():
                                     'radiusMaximum' : 20,\
                                     'radiusSliderScale' : 10,\
                                     'tiltAngle' : 0,\
-                                    'tiltAngleSliderScale' : 10\
-                                    }
-
-        config['propertiesDefault'] = {\
-                                    'sensitivity': 361.13,\
+                                    'tiltAngleSliderScale' : 10},\
+            'propertiesDefault':{'sensitivity': 361.13,\
                                     'electronEnergy': 20,\
                                     'azimuth': 0,\
                                     'scaleBarLength': 5,\
@@ -44,28 +38,16 @@ class Configuration():
                                     'tiltAngle': 0,\
                                     'tiltAngleMinimum': -15,\
                                     'tiltAngleMaximum': 15,\
-                                    'tiltAngleSliderScale': 10\
-                                    }
-
-        config['canvasDefault'] = {\
-                                    'widthInAngstrom' : 0.4,\
+                                    'tiltAngleSliderScale': 10},\
+            'canvasDefault':{'widthInAngstrom' : 0.4,\
                                     'radiusMaximum' : 20,\
                                     'span' : 60,\
                                     'tilt' : 0,\
-                                    'max_zoom_factor' : 21\
-                                    }
+                                    'max_zoom_factor' : 21},\
+            'chartDefault':{'theme':1}}
 
-        #0: ChartThemeLight
-        #1: ChartThemeBlueCerulean
-        #2: ChartThemeDark
-        #3: ChartThemeBrownSand
-        #4: ChartThemeBlueNcs
-        #5: ChartThemeHighContrast
-        #6: ChartThemeBlueIcey
-        #7: ChartThemeQt
-        config['chartDefault'] = {\
-                            'theme':'1'\
-                                }
-
+    def saveDefaults(self,Dic = DefaultDic):
+        config = configparser.ConfigParser()
+        config.read_dict(Dic)
         with open('./configuration.ini','w') as configfile:
             config.write(configfile)

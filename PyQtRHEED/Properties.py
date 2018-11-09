@@ -35,6 +35,62 @@ class Properties(QtWidgets.QWidget):
 
         self.initUI()
 
+    def refresh(self,config):
+        propertiesDefault = dict(config['propertiesDefault'].items())
+        self.sensitivity = float(propertiesDefault['sensitivity'])
+        self.electronEnergy = int(propertiesDefault['electronenergy'])
+        self.azimuth = int(propertiesDefault['azimuth'])
+        self.scaleBarLength = int(propertiesDefault['scalebarlength'])
+        self.brightness = int(propertiesDefault['brightness'])
+        self.brightnessMinimum = int(propertiesDefault['brightnessminimum'])
+        self.brightnessMaximum = int(propertiesDefault['brightnessmaximum'])
+        self.blackLevel = int(propertiesDefault['blacklevel'])
+        self.blackLevelMinimum = int(propertiesDefault['blacklevelminimum'])
+        self.blackLevelMaximum = int(propertiesDefault['blacklevelmaximum'])
+        self.integralHalfWidth = float(propertiesDefault['integralhalfwidth'])
+        self.widthMinimum = int(propertiesDefault['widthminimum'])
+        self.widthMaximum = int(propertiesDefault['widthmaximum'])
+        self.widthSliderScale = int(propertiesDefault['widthsliderscale'])
+        self.chiRange = int(propertiesDefault['chirange'])
+        self.chiRangeMinimum = int(propertiesDefault['chirangeminimum'])
+        self.chiRangeMaximum = int(propertiesDefault['chirangemaximum'])
+        self.radius = int(propertiesDefault['radius'])
+        self.radiusMinimum = int(propertiesDefault['radiusminimum'])
+        self.radiusMaximum = int(propertiesDefault['radiusmaximum'])
+        self.radiusSliderScale = int(propertiesDefault['radiussliderscale'])
+        self.tiltAngle = int(propertiesDefault['tiltangle'])
+        self.tiltAngleMinimum = int(propertiesDefault['tiltangleminimum'])
+        self.tiltAngleMaximum = int(propertiesDefault['tiltanglemaximum'])
+        self.tiltAngleSliderScale = int(propertiesDefault['tiltanglesliderscale'])
+
+        #Parameters page
+        self.sensitivityEdit.setText(str(self.sensitivity))
+        self.energyEdit.setText(str(self.electronEnergy))
+        self.azimuthEdit.setText(str(self.azimuth))
+        self.scaleBarEdit.setText(str(self.scaleBarLength))
+
+        #image adjust page
+        self.brightnessSlider.setMinimum(self.brightnessMinimum)
+        self.brightnessSlider.setMaximum(self.brightnessMaximum)
+        self.brightnessSlider.setValue(self.brightness)
+        self.blackLevelSlider.setMinimum(self.blackLevelMinimum)
+        self.blackLevelSlider.setMaximum(self.blackLevelMaximum)
+        self.blackLevelSlider.setValue(self.blackLevel)
+
+        #profile options page
+        self.integralHalfWidthSlider.setMinimum(self.widthMinimum*self.widthSliderScale)
+        self.integralHalfWidthSlider.setMaximum(self.widthMaximum*self.widthSliderScale)
+        self.integralHalfWidthSlider.setValue(self.integralHalfWidth*self.widthSliderScale)
+        self.chiRangeSlider.setMinimum(self.chiRangeMinimum)
+        self.chiRangeSlider.setMaximum(self.chiRangeMaximum)
+        self.chiRangeSlider.setValue(self.chiRange)
+        self.radiusSlider.setMinimum(self.radiusMinimum*self.radiusSliderScale)
+        self.radiusSlider.setMaximum(self.radiusMaximum*self.radiusSliderScale)
+        self.radiusSlider.setValue(self.radius*self.radiusSliderScale)
+        self.tiltAngleSlider.setMinimum(self.tiltAngleMinimum*self.tiltAngleSliderScale)
+        self.tiltAngleSlider.setMaximum(self.tiltAngleMaximum*self.tiltAngleSliderScale)
+        self.tiltAngleSlider.setValue(self.tiltAngle*self.tiltAngleSliderScale)
+
     def initUI(self):
         self.tab = QtWidgets.QTabWidget()
         #Parameters page
@@ -78,7 +134,7 @@ class Properties(QtWidgets.QWidget):
         self.brightnessSlider.setMinimum(self.brightnessMinimum)
         self.brightnessSlider.setMaximum(self.brightnessMaximum)
         self.brightnessSlider.setValue(self.brightness)
-        self.blackLevelLabel = QtWidgets.QLabel('Black Level ({})'.format(50))
+        self.blackLevelLabel = QtWidgets.QLabel('Black Level ({})'.format(self.blackLevel))
         self.blackLevelSlider= QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.blackLevelSlider.setMinimum(self.blackLevelMinimum)
         self.blackLevelSlider.setMaximum(self.blackLevelMaximum)
