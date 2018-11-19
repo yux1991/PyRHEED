@@ -20,6 +20,7 @@ class Window(QtWidgets.QMainWindow):
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
     menu_DefaultPropertiesRestRequested = QtCore.pyqtSignal()
+    menu_TwoDimensionalMappingRequested = QtCore.pyqtSignal(str)
     window_initialized = QtCore.pyqtSignal()
     propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
     canvasRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
@@ -66,6 +67,10 @@ class Window(QtWidgets.QMainWindow):
         #Preference Menu
         self.defaultSettings = self.menuPreference.addAction("Default Settings",\
                                     self.MenuActions_Preference_DefaultSettings)
+
+        #2D Map Menu
+        self.Two_Dimensional_Mapping = self.menu2DMap.addAction("Configuration", \
+                                                             self.MenuActions_Two_Dimensional_Mapping)
 
         #Center Widget
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
@@ -268,6 +273,8 @@ class Window(QtWidgets.QMainWindow):
     def MenuActions_Preference_DefaultSettings(self):
         self.menu_DefaultPropertiesRestRequested.emit()
 
+    def MenuActions_Two_Dimensional_Mapping(self):
+        self.menu_TwoDimensionalMappingRequested.emit(self.currentPath)
 
     def getScaleFactor(self):
         self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(self.properties.energyEdit.text()))

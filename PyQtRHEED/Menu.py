@@ -15,13 +15,15 @@ class Menu(QtCore.QObject):
                                       '100', '60', '0', '180', '5', '0', '20', '10', '0', '-15', '15', '10'], \
                                      ['0.4', '20', '60', '0', '21'], ['1']]
 
-    def Preference_DefaultSettings(self):
+#Preference_Default Settings
+
+    def Preference_DefaultSettings_Main(self):
         self.windowDefault = dict(self.config['windowDefault'].items())
         self.propertiesDefault = dict(self.config['propertiesDefault'].items())
         self.canvasDefault = dict(self.config['canvasDefault'].items())
         self.chartDefault = dict(self.config['chartDefault'].items())
-        dlg = QtWidgets.QDialog()
-        dlgGrid = QtWidgets.QGridLayout(dlg)
+        self.DefaultSettings_Dialog = QtWidgets.QDialog()
+        DefaultSettings_DialogGrid = QtWidgets.QGridLayout(self.DefaultSettings_Dialog)
         tab = QtWidgets.QTabWidget()
         buttonBox = QtWidgets.QDialogButtonBox()
         self.window = QtWidgets.QWidget()
@@ -90,19 +92,20 @@ class Menu(QtCore.QObject):
         buttonBox.addButton("Reset",QtWidgets.QDialogButtonBox.ResetRole)
         buttonBox.addButton("Cancel",QtWidgets.QDialogButtonBox.DestructiveRole)
         buttonBox.setCenterButtons(True)
-        buttonBox.findChildren(QtWidgets.QPushButton)[0].clicked.connect(self.Accept)
-        buttonBox.findChildren(QtWidgets.QPushButton)[1].clicked.connect(self.Reset)
+        buttonBox.findChildren(QtWidgets.QPushButton)[0].clicked.connect(self.Preference_DefaultSettings_Accept)
+        buttonBox.findChildren(QtWidgets.QPushButton)[1].clicked.connect(self.Preference_DefaultSettings_Reset)
+        buttonBox.findChildren(QtWidgets.QPushButton)[2].clicked.connect(self.DefaultSettings_Dialog.reject)
 
-        dlgGrid.addWidget(tab,0,0)
-        dlgGrid.addWidget(buttonBox,1,0)
-        dlgGrid.setContentsMargins(0,0,0,0)
-        dlg.setWindowTitle("Default Settings")
-        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
-        dlg.resize(tab.minimumSizeHint())
-        dlg.showNormal()
-        dlg.exec_()
+        DefaultSettings_DialogGrid.addWidget(tab,0,0)
+        DefaultSettings_DialogGrid.addWidget(buttonBox,1,0)
+        DefaultSettings_DialogGrid.setContentsMargins(0,0,0,0)
+        self.DefaultSettings_Dialog.setWindowTitle("Default Settings")
+        self.DefaultSettings_Dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.DefaultSettings_Dialog.resize(tab.minimumSizeHint())
+        self.DefaultSettings_Dialog.showNormal()
+        self.DefaultSettings_Dialog.exec_()
 
-    def Save_Preference_DefaultSettings(self,lineValueList):
+    def Preference_DefaultSettings_Save(self,lineValueList):
         windowKeys = ['HS','VS','energy','azimuth','scaleBarLength','chiRange','width','widthSliderScale','radius',\
                       'radiusMaximum','radiusSliderScale','tiltAngle','tiltAngleSliderScale']
         propertiesKeys = ['sensitivity','electronEnergy','azimuth','scaleBarLength','brightness','brightnessMinimum',\
@@ -122,19 +125,51 @@ class Menu(QtCore.QObject):
             config.write(configfile)
         return Dic
 
-    def Accept(self):
+    def Preference_DefaultSettings_Accept(self):
         windowValueList = [item.text() for item in self.window.findChildren(QtWidgets.QLineEdit)]
         propertiesValueList = [item.text() for item in self.properties.findChildren(QtWidgets.QLineEdit)]
         canvasValueList = [item.text() for item in self.canvas.findChildren(QtWidgets.QLineEdit)]
         chartValueList = [item.text() for item in self.chart.findChildren(QtWidgets.QLineEdit)]
         lineValueList = [windowValueList, propertiesValueList,canvasValueList,chartValueList]
-        Dic = self.Save_Preference_DefaultSettings(lineValueList)
+        Dic = self.Preference_DefaultSettings_Save(lineValueList)
         config = configparser.ConfigParser()
         config.read_dict(Dic)
         self.DefaultSettingsChanged.emit(config)
 
-    def Reset(self):
-        Dic = self.Save_Preference_DefaultSettings(self.defaultLineValueList)
+    def Preference_DefaultSettings_Reset(self):
+        Dic = self.Preference_DefaultSettings_Save(self.defaultLineValueList)
         config = configparser.ConfigParser()
         config.read_dict(Dic)
         self.DefaultSettingsChanged.emit(config)
+
+    def Two_Dimensional_Mapping_Main(self,path):
+        self.currentPath = path
+        self.Two_Dimensional_Mapping_Dialog = QtWidgets.QDialog()
+        self.Two_Dimensional_Mapping_Grid = QtWidgets.QGridLayout(self.Two_Dimensional_Mapping_Dialog)
+        self.chooseSource = QtWidgets.QGroupBox("Source Directory")
+        self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
+        self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
+        self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
+        self.parametersBox = QtWidgets.QGroupBox("Parameters")
+        self.parametersGrid = QtWidgets.QGridLayout(self.parametersBox)
+        self.plotOptions = QtWidgets.QGroupBox("Plot Options")
+        self.plotOptionsGrid = QtWidgets.QGridLayout(self.plotOptions)
+        self.Two_Dimensional_Mapping_ButtonBox = QtWidgets.QDialogButtonBox()
+        self.Two_Dimensional_Mapping_ButtonBox.addButton("Accept",QtWidgets.QDialogButtonBox.AcceptRole)
+        self.Two_Dimensional_Mapping_ButtonBox.addButton("Reset",QtWidgets.QDialogButtonBox.ResetRole)
+        self.Two_Dimensional_Mapping_ButtonBox.addButton("Cancel",QtWidgets.QDialogButtonBox.DestructiveRole)
+        self.Two_Dimensional_Mapping_ButtonBox.setCenterButtons(True)
+        self.Two_Dimensional_Mapping_ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked.connect(self.TwoDimensional_Mapping_Accept)
+        self.Two_Dimensional_Mapping_ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.connect(self.TwoDimensional_Mapping_Reset)
+        self.Two_Dimensional_Mapping_ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.connect(self.TwoDimensional_Mapping_Dialog.reject)
+        self.Two_Dimensional_Mapping_Grid.addWidget(self.chooseSource,0,0)
+        self.Two_Dimensional_Mapping_Grid.addWidget(self.chooseDestination,1,0)
+        self.Two_Dimensional_Mapping_Grid.addWidget(self.parametersBox,2,0)
+        self.Two_Dimensional_Mapping_Grid.addWidget(self.plotOptions,3,0)
+        self.Two_Dimensional_Mapping_Grid.addWidget(self.Two_Dimensional_Mapping_ButtonBox,4,0)
+        self.TwoDimensional_Mapping_Dialog.setWindowTitle("2D Map")
+        self.TwoDimensional_Mapping_Dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.TwoDimensional_Mapping_Dialog.showNormal()
+        self.TwoDimensional_Mapping_Dialog.exec_()
+
+

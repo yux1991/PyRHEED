@@ -12,7 +12,8 @@ class Main():
         self.window.showMaximized()
         self.window.show()
         self.menuActions = Menu()
-        self.window.menu_DefaultPropertiesRestRequested.connect(self.menuActions.Preference_DefaultSettings)
+        self.window.menu_DefaultPropertiesRestRequested.connect(self.menuActions.Preference_DefaultSettings_Main)
+        self.window.menu_TwoDimensionalMappingRequested.connect(self.menuActions.Two_Dimensional_Mapping_Main)
         self.menuActions.DefaultSettingsChanged.connect(self.window.refresh)
         sys.exit(app.exec_())
 
