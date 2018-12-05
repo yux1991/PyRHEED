@@ -23,14 +23,6 @@ class Cursor(QtWidgets.QWidget):
         self.widthLabel = QtWidgets.QLabel('Width')
         self.widthEdit = QtWidgets.QLineEdit()
 
-        self.setAsCenterButton = QtWidgets.QPushButton('Set As Center')
-        self.chooseButton = QtWidgets.QPushButton('Choose Region')
-        self.setAsCenterButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        self.chooseButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        self.buttonGrid = QtWidgets.QGridLayout()
-        self.buttonGrid.addWidget(self.setAsCenterButton,0,0)
-        self.buttonGrid.addWidget(self.chooseButton,0,1)
-
         self.cursorInfoBoxGrid.addWidget(self.choosedXYLabel,0,0)
         self.cursorInfoBoxGrid.addWidget(self.choosedXYEdit,0,1)
         self.cursorInfoBoxGrid.addWidget(self.intensityLabel,1,0)
@@ -41,7 +33,6 @@ class Cursor(QtWidgets.QWidget):
         self.cursorInfoBoxGrid.addWidget(self.endXYEdit,3,1)
         self.cursorInfoBoxGrid.addWidget(self.widthLabel,4,0)
         self.cursorInfoBoxGrid.addWidget(self.widthEdit,4,1)
-        self.cursorInfoBoxGrid.addLayout(self.buttonGrid,5,0,1,2)
         self.cursorInfoBox.setLayout(self.cursorInfoBoxGrid)
 
         self.UIgrid = QtWidgets.QGridLayout()

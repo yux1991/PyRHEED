@@ -1,14 +1,15 @@
 from Canvas import *
 from Browser import *
 from Properties import *
-from ProfileChart import *
 from Cursor import *
 from Menu import *
 import rawpy
+import ProfileChart
 import os
 import numpy as np
+import Process
 
-class Window(QtWidgets.QMainWindow):
+class Window(QtWidgets.QMainWindow,Process.Image):
 
     #Public Signals
     fileOpened = QtCore.pyqtSignal(str)
@@ -25,6 +26,7 @@ class Window(QtWidgets.QMainWindow):
     propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
     canvasRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
     chartRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
+    returnStatus = QtCore.pyqtSignal(dict)
 
     def __init__(self,config):
 
@@ -89,7 +91,7 @@ class Window(QtWidgets.QMainWindow):
         self.controlPanelBottomGrid.setContentsMargins(0,0,2,0)
         self.properties = Properties(self,self.config)
         self.cursorInfo = Cursor(self)
-        self.profile = ProfileChart(self,self.config)
+        self.profile = ProfileChart.ProfileChart(self.config)
         self.controlPanelBottomGrid.addWidget(self.properties,0,0)
         self.controlPanelBottomGrid.addWidget(self.cursorInfo,1,0)
         self.controlPanelBottomGrid.addWidget(self.profile,2,0)
@@ -221,8 +223,6 @@ class Window(QtWidgets.QMainWindow):
         self.cursorInfo.startXYEdit.textChanged.connect(self.editStartXY)
         self.cursorInfo.endXYEdit.textChanged.connect(self.editEndXY)
         self.cursorInfo.widthEdit.textEdited.connect(self.editWidth)
-        self.cursorInfo.setAsCenterButton.clicked.connect(self.setAsCenter)
-        self.cursorInfo.chooseButton.clicked.connect(self.chooseThisRegion)
 
         #Profile Canvas Connections
         self.scaleFactorChanged.connect(self.profile.setScaleFactor)
@@ -379,11 +379,11 @@ class Window(QtWidgets.QMainWindow):
     def editWidth(self,width):
         self.properties.integralHalfWidthSlider.setValue(int(width)*self.widthSliderScale)
 
-    def setAsCenter(self):
-        return
-
     def chooseThisRegion(self):
-        return
+        startX,startY = self.cursorInfo.startXYEdit.text().split(',')
+        endX,endY = self.cursorInfo.endXYEdit.text().split(',')
+        width = float(self.cursorInfo.widthEdit.text())
+        self.regionChosen.emit(int(startX),int(startY),int(endX),int(endY),width)
 
     def getImgPath(self):
         fileDlg = QtWidgets.QFileDialog(self)
@@ -496,7 +496,7 @@ class Window(QtWidgets.QMainWindow):
         QtWidgets.QApplication.sendPostedEvents()
         self.messageLoadingImage.setVisible(True)
         QtWidgets.QApplication.sendPostedEvents()
-        qImg,img_array = self.read_qImage(bitDepth,path, enableAutoWB, brightness, blackLevel)
+        qImg,img_array = self.getImage(bitDepth,path, enableAutoWB, brightness, blackLevel,self.image_crop)
         qPixImg = QtGui.QPixmap(qImg.size())
         QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.MonoOnly)
         canvas.setPhoto(QtGui.QPixmap(qPixImg))
@@ -574,14 +574,38 @@ class Window(QtWidgets.QMainWindow):
             self.mainTab.currentWidget().setFocus()
             self.mainTab.currentWidget().keyPressEvent(event)
 
-    def read_qImage(self,bit_depth,img_path,EnableAutoWB, Brightness, UserBlack):
-        img_raw = rawpy.imread(img_path)
-        img_rgb = img_raw.postprocess(demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD, output_bps = bit_depth, use_auto_wb = EnableAutoWB,bright=Brightness/100,user_black=UserBlack)
-        img_bw = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
-        img_array = img_bw[self.image_crop[0]:self.image_crop[1],self.image_crop[2]:self.image_crop[3]]
-        if bit_depth == 16:
-            img_array = np.uint8(img_array/256)
-        if bit_depth == 8:
-            img_array = np.uint8(img_array)
-        qImg = QtGui.QImage(img_array,img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
-        return qImg, img_array
+    def status(self):
+        status = {"sensitivity": float(self.properties.sensitivityEdit.text()),\
+                "energy": float(self.properties.energyEdit.text()),\
+                "azimuth": float(self.properties.azimuthEdit.text()),\
+                "scaleBar": float(self.properties.scaleBarEdit.text()),\
+                "brightness": self.properties.brightnessSlider.value(),\
+                "blackLevel": self.properties.blackLevelSlider.value(),\
+                "integralWidth": self.properties.integralHalfWidthSlider.value()/self.properties.widthSliderScale,\
+                "chiRange": self.properties.chiRangeSlider.value(),\
+                "radius": self.properties.radiusSlider.value()/self.properties.radiusSliderScale,\
+                "tiltAngle": self.properties.tiltAngleSlider.value()/self.properties.tiltAngleSliderScale,\
+                "autoWB": self.properties.autoWBCheckBox.isChecked()}
+        try:
+            status["choosedX"] = int(self.cursorInfo.choosedXYEdit.text().split(',')[0])
+            status["choosedY"] = int(self.cursorInfo.choosedXYEdit.text().split(',')[1])
+        except:
+            status["choosedX"] = ""
+            status["choosedY"] = ""
+        try:
+            status["startX"] = int(self.cursorInfo.startXYEdit.text().split(',')[0])
+            status["startY"] = int(self.cursorInfo.startXYEdit.text().split(',')[1])
+        except:
+            status["startX"] = ""
+            status["startY"] = ""
+        try:
+            status["endX"] = int(self.cursorInfo.endXYEdit.text().split(',')[0])
+            status["endY"] = int(self.cursorInfo.endXYEdit.text().split(',')[1])
+        except:
+            status["endX"] = ""
+            status["endY"] = ""
+        try:
+            status["width"] = float(self.cursorInfo.widthEdit.text())
+        except:
+            status["width"] = ""
+        self.returnStatus.emit(status)

@@ -664,7 +664,7 @@ class RHEED_GUI(ttk.Frame):
             map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*math.pi/180)
             map_2D_cart[:,1] = map_2D_polar[:,0]*np.sin((map_2D_polar[:,1])*math.pi/180)
 
-            np.savetxt(self.save_2D_mapping_path,map_2D_polar2,fmt='%4.3f')
+            np.savetxt(self.save_2D_mapping_path,map_2D_polar,fmt='%4.3f')
             self.CMIPercentage.destroy()
             self.CMIProgressBar.destroy()
             messagebox.showinfo(title="2D Mapping", default="ok",message="2D Mapping Completed!")

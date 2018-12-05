@@ -1,7 +1,7 @@
 from Window import *
 import sys
 from Configuration import *
-from Menu import *
+import Menu
 
 class Main():
     def __init__(self):
@@ -11,10 +11,13 @@ class Main():
         self.window = Window(config)
         self.window.showMaximized()
         self.window.show()
-        self.menuActions = Menu()
-        self.window.menu_DefaultPropertiesRestRequested.connect(self.menuActions.Preference_DefaultSettings_Main)
-        self.window.menu_TwoDimensionalMappingRequested.connect(self.menuActions.Two_Dimensional_Mapping_Main)
-        self.menuActions.DefaultSettingsChanged.connect(self.window.refresh)
+        self.menuPreferences = Menu.Preference()
+        self.menuTwoDimensionalMapping = Menu.TwoDimensionalMapping()
+        self.window.menu_DefaultPropertiesRestRequested.connect(self.menuPreferences.Main)
+        self.window.menu_TwoDimensionalMappingRequested.connect(self.menuTwoDimensionalMapping.Main)
+        self.menuPreferences.DefaultSettingsChanged.connect(self.window.refresh)
+        self.menuTwoDimensionalMapping.StatusRequested.connect(self.window.status)
+        self.window.returnStatus.connect(self.menuTwoDimensionalMapping.Set_Status)
         sys.exit(app.exec_())
 
 if __name__ == '__main__':
