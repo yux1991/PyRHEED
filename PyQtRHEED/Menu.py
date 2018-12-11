@@ -154,6 +154,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
     StatusRequested = QtCore.pyqtSignal()
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
+    Show3DGraph = QtCore.pyqtSignal()
 
     def __init__(self):
         super(TwoDimensionalMapping,self).__init__()
@@ -224,7 +225,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.destinationGrid.addWidget(self.profileCentered,4,0)
         self.destinationGrid.addWidget(self.centeredCheck,4,1)
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
-        self.parametersBox = QtWidgets.QGroupBox("Parameters")
+        self.parametersBox = QtWidgets.QGroupBox("Choose Image")
         self.parametersGrid = QtWidgets.QGridLayout(self.parametersBox)
         self.startImageIndexLabel = QtWidgets.QLabel("Start Image Index")
         self.startImageIndexEdit = QtWidgets.QLineEdit(self.startIndex)
@@ -271,6 +272,8 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.plotOptionsGrid.addWidget(self.numberOfContourLevelsSlider,3,1)
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
+        self.statusBar.setFixedHeight(150)
+        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.progressBar = QtWidgets.QProgressBar()
         self.progressBar.setFixedHeight(12)
         self.progressBar.setFixedWidth(500)
@@ -282,15 +285,15 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.progressAdvance.connect(self.progress)
         self.progressEnd.connect(self.progressReset)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
-                                    "\u00A0\u00A0\u00A0\u00A0PyRHEED developed by Y. Xiang (yux1991@gmail.com)")
+                                    "\u00A0\u00A0\u00A0\u00A0Initialized!")
         self.logBox.ensureCursorVisible()
         self.logBox.setAlignment(QtCore.Qt.AlignTop)
         self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
-        self.messageScroll = QtWidgets.QScrollArea()
-        self.messageScroll.setWidget(self.logBox)
-        self.messageScroll.setWidgetResizable(True)
-        self.messageScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
-        self.statusGrid.addWidget(self.messageScroll,0,0)
+        self.logBoxScroll = QtWidgets.QScrollArea()
+        self.logBoxScroll.setWidget(self.logBox)
+        self.logBoxScroll.setWidgetResizable(True)
+        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.statusGrid.addWidget(self.logBoxScroll,0,0)
         self.statusGrid.setAlignment(self.progressBar,QtCore.Qt.AlignRight)
         self.ButtonBox = QtWidgets.QDialogButtonBox()
         self.ButtonBox.addButton("Start",QtWidgets.QDialogButtonBox.AcceptRole)
@@ -303,27 +306,34 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
             connect(self.Reset)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.\
             connect(self.Dialog.reject)
+        self.Show3DGraphButton = QtWidgets.QPushButton("Show 3D Graph")
+        self.Show3DGraphButton.setEnabled(True)
+        self.Show3DGraphButton.clicked.connect(self.Show3DGraphButtonClicked)
         self.chart = ProfileChart.ProfileChart(self.config)
         self.LeftGrid.addWidget(self.chooseSource,0,0)
         self.LeftGrid.addWidget(self.chooseDestination,1,0)
         self.LeftGrid.addWidget(self.parametersBox,2,0)
+        self.LeftGrid.addWidget(self.plotOptions,3,0)
         self.LeftGrid.addWidget(self.ButtonBox,4,0)
+        self.LeftGrid.addWidget(self.Show3DGraphButton,5,0)
         self.RightGrid.addWidget(self.chart,0,0)
-        self.RightGrid.addWidget(self.plotOptions,1,0)
-        self.RightGrid.addWidget(self.statusBar,2,0)
-        self.RightGrid.addWidget(self.progressBar,3,0)
+        self.RightGrid.addWidget(self.statusBar,1,0)
+        self.RightGrid.addWidget(self.progressBar,2,0)
         self.Grid.addWidget(self.LeftFrame,0,0)
         self.Grid.addWidget(self.RightFrame,0,1)
         self.Dialog.setWindowTitle("2D Map")
-        self.Dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
         self.Dialog.showNormal()
         self.Dialog.exec_()
 
+    def Show3DGraphButtonClicked(self):
+        self.Show3DGraph.emit()
 
     def Start(self):
         self.StatusRequested.emit()
         self.windowDefault = dict(self.config['windowDefault'].items())
         self.logBox.clear()
+        self.Show3DGraphButton.setEnabled(False)
         if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
                 self.status["endY"] == "" \
                 or self.status["width"] =="": pass
@@ -415,6 +425,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
             self.progressEnd.emit()
             self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Completed!")
             self.Raise_Attention("2D Map Completed!")
+            self.Show3DGraphButton.setEnabled(True)
 
     def Reset(self):
         self.backgroundLevel = 0

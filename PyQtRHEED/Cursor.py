@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets
+import numpy as np
 
 class Cursor(QtWidgets.QWidget):
 
@@ -40,6 +41,14 @@ class Cursor(QtWidgets.QWidget):
         self.UIgrid.setContentsMargins(0,0,0,0)
         self.setLayout(self.UIgrid)
         self.show()
+
+    def chosenRegionUpdate(self,start,end):
+        self.startXYEdit.setText('{},{}'.format(int(start.x()), int(start.y())))
+        self.endXYEdit.setText('{},{}'.format(int(end.x()), int(end.y())))
+
+    def chiScanRegionUpdate(self,start,radius):
+        self.startXYEdit.setText('{},{}'.format(int(start.x()), int(start.y())))
+        self.endXYEdit.setText('{}'.format(np.round(radius,2)))
 
 
 

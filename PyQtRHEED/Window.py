@@ -379,12 +379,6 @@ class Window(QtWidgets.QMainWindow,Process.Image):
     def editWidth(self,width):
         self.properties.integralHalfWidthSlider.setValue(int(width)*self.widthSliderScale)
 
-    def chooseThisRegion(self):
-        startX,startY = self.cursorInfo.startXYEdit.text().split(',')
-        endX,endY = self.cursorInfo.endXYEdit.text().split(',')
-        width = float(self.cursorInfo.widthEdit.text())
-        self.regionChosen.emit(int(startX),int(startY),int(endX),int(endY),width)
-
     def getImgPath(self):
         fileDlg = QtWidgets.QFileDialog(self)
         fileDlg.setDirectory('C:/RHEED/')
@@ -454,6 +448,8 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         canvas.plotLineScan.connect(self.profile.lineScan)
         canvas.plotIntegral.connect(self.profile.integral)
         canvas.plotChiScan.connect(self.profile.chiScan)
+        canvas.KeyPress.connect(self.cursorInfo.chosenRegionUpdate)
+        canvas.KeyPressWhileArc.connect(self.cursorInfo.chiScanRegionUpdate)
 
         #canvas slots
         self.zoomIn.triggered.connect(canvas.zoomIn)
@@ -528,7 +524,8 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         for i in range(0,self.mainTab.count()):
             self.mainTab.widget(i).toggleMode(cursormode)
         if cursormode == "arc":
-            self.cursorInfo.endXYLabel.setText('Length')
+            self.cursorInfo.startXYEdit.setText('Center (X,Y)')
+            self.cursorInfo.endXYLabel.setText('Radius')
         else:
             self.cursorInfo.endXYLabel.setText('End (X,Y)')
         self.clearCursorInfo()
@@ -551,7 +548,7 @@ class Window(QtWidgets.QMainWindow,Process.Image):
 
     def photoMouseRelease(self, pos):
         if self._mode == "arc":
-            self.cursorInfo.endXYEdit.setText('{}'.format(int(self.mainTab.currentWidget().PFRadius)))
+            self.cursorInfo.endXYEdit.setText('{}'.format(np.round(self.mainTab.currentWidget().PFRadius,2)))
         else:
             self.cursorInfo.endXYEdit.setText('{},{}'.format(pos.x(), pos.y()))
         if self.mainTab.currentWidget()._drawingArc:

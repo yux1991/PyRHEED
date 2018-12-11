@@ -11,6 +11,8 @@ class Canvas(QtWidgets.QGraphicsView):
     plotLineScan = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
     plotIntegral = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float)
     plotChiScan = QtCore.pyqtSignal(QtCore.QPointF,float,float,float,float)
+    KeyPress = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
+    KeyPressWhileArc = QtCore.pyqtSignal(QtCore.QPointF,float)
 
     def __init__(self, parent,config):
         super(Canvas, self).__init__(parent)
@@ -277,52 +279,68 @@ class Canvas(QtWidgets.QGraphicsView):
         YStep = QtCore.QPointF(0.0,5.0)
         if event.key() == QtCore.Qt.Key_Up:
             self.saveStart-=YStep
-            self.saveEnd-=YStep
+            if not self.canvasObject == "arc":
+                self.saveEnd-=YStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
+                self.KeyPress.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
                 self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
+                self.KeyPress.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "arc":
                 self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Down:
             self.saveStart+=YStep
-            self.saveEnd+=YStep
+            if not self.canvasObject == "arc":
+                self.saveEnd-=YStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
+                self.KeyPress.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
                 self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
+                self.KeyPress.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "arc":
                 self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Left:
             self.saveStart-=XStep
-            self.saveEnd-=XStep
+            if not self.canvasObject == "arc":
+                self.saveEnd-=YStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
+                self.KeyPress.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
                 self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
+                self.KeyPress.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "arc":
                 self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Right:
             self.saveStart+=XStep
-            self.saveEnd+=XStep
+            if not self.canvasObject == "arc":
+                self.saveEnd-=YStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
+                self.KeyPress.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
                 self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
                 self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
+                self.KeyPress.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "arc":
                 self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
 
     def clearCanvas(self):
         try:

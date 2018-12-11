@@ -2,6 +2,7 @@ from Window import *
 import sys
 from Configuration import *
 import Menu
+import Graph3DSurface
 
 class Main():
     def __init__(self):
@@ -18,6 +19,8 @@ class Main():
         self.menuPreferences.DefaultSettingsChanged.connect(self.window.refresh)
         self.menuTwoDimensionalMapping.StatusRequested.connect(self.window.status)
         self.window.returnStatus.connect(self.menuTwoDimensionalMapping.Set_Status)
+        self.surface = Graph3DSurface.Graph()
+        self.menuTwoDimensionalMapping.Show3DGraph.connect(self.surface.main)
         sys.exit(app.exec_())
 
 if __name__ == '__main__':
