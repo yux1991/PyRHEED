@@ -16,12 +16,17 @@ class Main():
         self.menuTwoDimensionalMapping = Menu.TwoDimensionalMapping()
         self.window.menu_DefaultPropertiesRestRequested.connect(self.menuPreferences.Main)
         self.window.menu_TwoDimensionalMappingRequested.connect(self.menuTwoDimensionalMapping.Main)
+        self.window.menu_ThreeDimensionalGraphRequested.connect(self.run3DGraph)
         self.menuPreferences.DefaultSettingsChanged.connect(self.window.refresh)
         self.menuTwoDimensionalMapping.StatusRequested.connect(self.window.status)
         self.window.returnStatus.connect(self.menuTwoDimensionalMapping.Set_Status)
-        self.surface = Graph3DSurface.Graph()
-        self.menuTwoDimensionalMapping.Show3DGraph.connect(self.surface.main)
+        self.menuTwoDimensionalMapping.Show3DGraph.connect(self.run3DGraph)
         sys.exit(app.exec_())
+
+    def run3DGraph(self,path):
+        self.graph = Graph3DSurface.Graph()
+        self.graph.run3DGraph(path)
+
 
 if __name__ == '__main__':
     Main()

@@ -22,6 +22,7 @@ class Window(QtWidgets.QMainWindow,Process.Image):
     progressEnd = QtCore.pyqtSignal()
     menu_DefaultPropertiesRestRequested = QtCore.pyqtSignal()
     menu_TwoDimensionalMappingRequested = QtCore.pyqtSignal(str)
+    menu_ThreeDimensionalGraphRequested = QtCore.pyqtSignal(str)
     window_initialized = QtCore.pyqtSignal()
     propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
     canvasRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
@@ -73,6 +74,9 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         #2D Map Menu
         self.Two_Dimensional_Mapping = self.menu2DMap.addAction("Configuration", \
                                                              self.MenuActions_Two_Dimensional_Mapping)
+
+        self.Three_Dimensional_Graph = self.menu2DMap.addAction("3D Graph", \
+                                                                  self.MenuActions_Three_Dimensional_Graph)
 
         #Center Widget
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
@@ -275,6 +279,9 @@ class Window(QtWidgets.QMainWindow,Process.Image):
 
     def MenuActions_Two_Dimensional_Mapping(self):
         self.menu_TwoDimensionalMappingRequested.emit(self.currentPath)
+
+    def MenuActions_Three_Dimensional_Graph(self):
+        self.menu_ThreeDimensionalGraphRequested.emit(self.currentPath)
 
     def getScaleFactor(self):
         self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(self.properties.energyEdit.text()))

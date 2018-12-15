@@ -154,7 +154,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
     StatusRequested = QtCore.pyqtSignal()
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
-    Show3DGraph = QtCore.pyqtSignal()
+    Show3DGraph = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super(TwoDimensionalMapping,self).__init__()
@@ -327,7 +327,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.Dialog.exec_()
 
     def Show3DGraphButtonClicked(self):
-        self.Show3DGraph.emit()
+        self.Show3DGraph.emit(self.currentDestination)
 
     def Start(self):
         self.StatusRequested.emit()

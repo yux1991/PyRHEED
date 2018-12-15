@@ -296,7 +296,7 @@ class Canvas(QtWidgets.QGraphicsView):
         elif event.key() == QtCore.Qt.Key_Down:
             self.saveStart+=YStep
             if not self.canvasObject == "arc":
-                self.saveEnd-=YStep
+                self.saveEnd+=YStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
@@ -312,7 +312,7 @@ class Canvas(QtWidgets.QGraphicsView):
         elif event.key() == QtCore.Qt.Key_Left:
             self.saveStart-=XStep
             if not self.canvasObject == "arc":
-                self.saveEnd-=YStep
+                self.saveEnd-=XStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
@@ -328,7 +328,7 @@ class Canvas(QtWidgets.QGraphicsView):
         elif event.key() == QtCore.Qt.Key_Right:
             self.saveStart+=XStep
             if not self.canvasObject == "arc":
-                self.saveEnd-=YStep
+                self.saveEnd+=XStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
