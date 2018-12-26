@@ -175,7 +175,7 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         #Main Window Settings
         self.setCentralWidget(self.mainSplitter)
         self.mainSplitter.setContentsMargins(2,2,0,0)
-        self.setWindowTitle("QtRHEED")
+        self.setWindowTitle("PyRHEED")
 
         #Main Tab Connections
         self.mainTab.currentChanged.connect(self.switchTab)

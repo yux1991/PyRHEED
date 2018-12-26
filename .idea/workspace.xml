@@ -2,13 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9768f281-3965-45bf-b6a0-35dd9e5c0ed5" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/PyQtRHEED/Test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Canvas.py" beforeDir="false" afterPath="$PROJECT_DIR$/PyQtRHEED/Canvas.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PyQtRHEED/Graph3DSurface.py" beforeDir="false" afterPath="$PROJECT_DIR$/PyQtRHEED/Graph3DSurface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Img0000.nef" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/PyQtRHEED/Main.py" beforeDir="false" afterPath="$PROJECT_DIR$/PyQtRHEED/Main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PyQtRHEED/Menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/PyQtRHEED/Menu.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PyQtRHEED/Window.py" beforeDir="false" afterPath="$PROJECT_DIR$/PyQtRHEED/Window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/configuration.ini" beforeDir="false" afterPath="$PROJECT_DIR$/PyQtRHEED/configuration.ini" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -20,35 +20,37 @@
     <session id="-172967749">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="42" />
+          <entry key="project.closed" value="52" />
+          <entry key="project.open.time.10" value="1" />
+          <entry key="project.open.time.12" value="1" />
           <entry key="project.open.time.2" value="1" />
           <entry key="project.open.time.4" value="1" />
           <entry key="project.open.time.5" value="8" />
-          <entry key="project.open.time.6" value="12" />
-          <entry key="project.open.time.7" value="15" />
-          <entry key="project.open.time.8" value="5" />
-          <entry key="project.open.time.9" value="1" />
-          <entry key="project.opened" value="43" />
+          <entry key="project.open.time.6" value="13" />
+          <entry key="project.open.time.7" value="17" />
+          <entry key="project.open.time.8" value="8" />
+          <entry key="project.open.time.9" value="3" />
+          <entry key="project.opened" value="53" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="26" />
+          <entry key="py" value="29" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="26" />
+          <entry key="Python" value="29" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="137721" />
+          <entry key="py" value="171644" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="137721" />
+          <entry key="Python" value="171644" />
         </counts>
       </usages-collector>
     </session>
@@ -58,8 +60,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/PyQtRHEED/Main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="308">
-              <caret line="18" column="45" selection-start-line="18" selection-start-column="45" selection-end-line="18" selection-end-column="45" />
+            <state relative-caret-position="660">
+              <caret line="30" column="133" selection-start-line="30" selection-start-column="133" selection-end-line="30" selection-end-column="133" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -70,32 +72,29 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/PyQtRHEED/Window.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-12173">
-              <caret line="34" column="13" selection-start-line="34" selection-start-column="13" selection-end-line="34" selection-end-column="13" />
+            <state relative-caret-position="642">
+              <caret line="265" selection-start-line="265" selection-end-line="265" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
-                <marker date="1544721216573" expanded="true" signature="11877:13246" ph="..." />
-                <marker date="1544721216573" expanded="true" signature="13601:13911" ph="..." />
+                <marker date="1545082428975" expanded="true" signature="11877:13246" ph="..." />
+                <marker date="1545082428975" expanded="true" signature="13601:13911" ph="..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/PyQtRHEED/Graph3DSurface.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2723">
-              <caret line="233" column="53" selection-start-line="233" selection-start-column="53" selection-end-line="233" selection-end-column="53" />
+            <state relative-caret-position="218">
+              <caret line="103" column="37" selection-start-line="103" selection-start-column="37" selection-end-line="103" selection-end-column="37" />
               <folding>
                 <element signature="e#0#63#0" expanded="true" />
-                <marker date="1544756876661" expanded="true" signature="204:208" ph="..." />
-                <marker date="1544756876661" expanded="true" signature="9517:9521" ph="..." />
-                <marker date="1544756876661" expanded="true" signature="12716:12721" ph="..." />
-                <marker date="1544756876661" expanded="true" signature="14319:14328" ph="..." />
-                <marker date="1544756876661" expanded="true" signature="14689:14698" ph="..." />
-                <marker date="1544756876661" expanded="true" signature="15806:15811" ph="..." />
-                <marker date="1544756876661" expanded="true" signature="15961:15970" ph="..." />
-                <marker date="1544756876661" expanded="true" signature="16080:16089" ph="..." />
+                <marker date="1545794690121" expanded="true" signature="525:529" ph="..." />
+                <marker date="1545794690121" expanded="true" signature="11683:12125" ph="..." />
+                <marker date="1545794690121" expanded="true" signature="12263:12264" ph="..." />
+                <marker date="1545794690121" expanded="true" signature="12263:13875" ph="..." />
+                <marker date="1545794690121" expanded="true" signature="13875:13879" ph="..." />
               </folding>
             </state>
           </provider>
@@ -104,11 +103,25 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/PyQtRHEED/Menu.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="7084">
-              <caret line="329" column="52" selection-start-line="329" selection-start-column="52" selection-end-line="329" selection-end-column="52" />
+            <state relative-caret-position="367">
+              <caret line="271" column="55" selection-start-line="271" selection-start-column="55" selection-end-line="271" selection-end-column="55" />
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
-                <marker date="1544721180730" expanded="true" signature="20451:20512" ph="..." />
+                <marker date="1545794174972" expanded="true" signature="21661:22087" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PyQtRHEED/Test.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="176">
+              <caret line="9" selection-start-line="9" selection-end-line="9" />
+              <folding>
+                <element signature="e#0#15#0" expanded="true" />
+                <marker date="1545169701820" expanded="true" signature="76:77" ph="..." />
+                <marker date="1545169701820" expanded="true" signature="76:78" ph="..." />
               </folding>
             </state>
           </provider>
@@ -117,7 +130,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/PyQtRHEED/Process.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
+            <state relative-caret-position="88">
+              <caret line="7" column="22" selection-start-line="7" selection-start-column="22" selection-end-line="7" selection-end-column="22" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -126,21 +140,9 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/PyQtRHEED/Cursor.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1078">
-              <caret line="50" column="62" selection-start-line="50" selection-start-column="62" selection-end-line="50" selection-end-column="62" />
-              <folding>
-                <element signature="e#0#27#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/PyQtRHEED/Canvas.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1892">
+            <state relative-caret-position="7238">
               <caret line="330" column="30" selection-start-line="330" selection-start-column="30" selection-end-line="330" selection-end-column="30" />
               <folding>
                 <element signature="e#0#42#0" expanded="true" />
@@ -205,18 +207,19 @@
         <option value="$PROJECT_DIR$/PyQtRHEED/ProfileChart.py" />
         <option value="$PROJECT_DIR$/PyQtRHEED/Cursor.py" />
         <option value="$PROJECT_DIR$/PyQtRHEED/venv/Graph3DSurface.py" />
-        <option value="$PROJECT_DIR$/PyQtRHEED/Window.py" />
-        <option value="$PROJECT_DIR$/PyQtRHEED/Menu.py" />
-        <option value="$PROJECT_DIR$/PyQtRHEED/Main.py" />
-        <option value="$PROJECT_DIR$/PyQtRHEED/Graph3DSurface.py" />
         <option value="$PROJECT_DIR$/PyQtRHEED/Canvas.py" />
+        <option value="$PROJECT_DIR$/PyQtRHEED/Window.py" />
+        <option value="$PROJECT_DIR$/PyQtRHEED/Test.py" />
+        <option value="$PROJECT_DIR$/PyQtRHEED/Main.py" />
+        <option value="$PROJECT_DIR$/PyQtRHEED/Menu.py" />
+        <option value="$PROJECT_DIR$/PyQtRHEED/Graph3DSurface.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="1497" />
-    <option name="y" value="-180" />
-    <option name="width" value="1614" />
+    <option name="x" value="1171" />
+    <option name="y" value="-349" />
+    <option name="width" value="1291" />
     <option name="height" value="805" />
   </component>
   <component name="ProjectLevelVcsManager">
@@ -227,7 +230,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -255,6 +257,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -321,13 +324,29 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="Unittests in Test.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="PyRHEED" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/PyQtRHEED" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/PyQtRHEED/Test.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Python.Main" />
       <item itemvalue="Python.PyRHEED" />
+      <item itemvalue="Python tests.Unittests in Test.py" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.Main" />
+        <item itemvalue="Python tests.Unittests in Test.py" />
         <item itemvalue="Python.PyRHEED" />
       </list>
     </recent_temporary>
@@ -345,22 +364,32 @@
     </task>
     <servers />
   </component>
+  <component name="TestHistory">
+    <history-entry file="Unittests_in_Test_py - 2018.12.17 at 14h 48m 39s.xml">
+      <configuration name="Unittests in Test.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_in_Test_py - 2018.12.18 at 16h 44m 36s.xml">
+      <configuration name="Unittests in Test.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_in_Test_py - 2018.12.18 at 16h 48m 38s.xml">
+      <configuration name="Unittests in Test.py" configurationId="tests" />
+    </history-entry>
+  </component>
   <component name="ToolWindowManager">
     <frame x="1592" y="-180" width="1936" height="1096" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.09062171" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.14278187" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.16528067" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.27338877" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" weight="0.32992327" />
-      <window_info anchor="bottom" id="Terminal" order="8" weight="0.26507276" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="8" visible="true" weight="0.2130977" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.32992327" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -400,42 +429,42 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Main.py">
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Cursor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="18" column="45" selection-start-line="18" selection-start-column="45" selection-end-line="18" selection-end-column="45" />
-          <folding>
-            <element signature="e#0#20#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="1078">
+          <caret line="50" column="62" selection-start-line="50" selection-start-column="62" selection-end-line="50" selection-end-column="62" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Menu.py">
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="7084">
-          <caret line="329" column="52" selection-start-line="329" selection-start-column="52" selection-end-line="329" selection-end-column="52" />
+        <state relative-caret-position="176">
+          <caret line="9" selection-start-line="9" selection-end-line="9" />
           <folding>
-            <element signature="e#0#35#0" expanded="true" />
-            <marker date="1544721180730" expanded="true" signature="20451:20512" ph="..." />
+            <element signature="e#0#15#0" expanded="true" />
+            <marker date="1545169701820" expanded="true" signature="76:77" ph="..." />
+            <marker date="1545169701820" expanded="true" signature="76:78" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/PyQtRHEED/Process.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
+        <state relative-caret-position="88">
+          <caret line="7" column="22" selection-start-line="7" selection-start-column="22" selection-end-line="7" selection-end-column="22" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Cursor.py">
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Canvas.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1078">
-          <caret line="50" column="62" selection-start-line="50" selection-start-column="62" selection-end-line="50" selection-end-column="62" />
+        <state relative-caret-position="7238">
+          <caret line="330" column="30" selection-start-line="330" selection-start-column="30" selection-end-line="330" selection-end-column="30" />
           <folding>
-            <element signature="e#0#27#0" expanded="true" />
+            <element signature="e#0#42#0" expanded="true" />
+            <marker date="1544900414047" expanded="true" signature="2487:2938" ph="..." />
           </folding>
         </state>
       </provider>
@@ -467,43 +496,50 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Graph3DSurface.py">
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2723">
-          <caret line="233" column="53" selection-start-line="233" selection-start-column="53" selection-end-line="233" selection-end-column="53" />
+        <state relative-caret-position="660">
+          <caret line="30" column="133" selection-start-line="30" selection-start-column="133" selection-end-line="30" selection-end-column="133" />
           <folding>
-            <element signature="e#0#63#0" expanded="true" />
-            <marker date="1544756876661" expanded="true" signature="204:208" ph="..." />
-            <marker date="1544756876661" expanded="true" signature="9517:9521" ph="..." />
-            <marker date="1544756876661" expanded="true" signature="12716:12721" ph="..." />
-            <marker date="1544756876661" expanded="true" signature="14319:14328" ph="..." />
-            <marker date="1544756876661" expanded="true" signature="14689:14698" ph="..." />
-            <marker date="1544756876661" expanded="true" signature="15806:15811" ph="..." />
-            <marker date="1544756876661" expanded="true" signature="15961:15970" ph="..." />
-            <marker date="1544756876661" expanded="true" signature="16080:16089" ph="..." />
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/PyQtRHEED/Window.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-12173">
-          <caret line="34" column="13" selection-start-line="34" selection-start-column="13" selection-end-line="34" selection-end-column="13" />
+        <state relative-caret-position="642">
+          <caret line="265" selection-start-line="265" selection-end-line="265" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
-            <marker date="1544721216573" expanded="true" signature="11877:13246" ph="..." />
-            <marker date="1544721216573" expanded="true" signature="13601:13911" ph="..." />
+            <marker date="1545082428975" expanded="true" signature="11877:13246" ph="..." />
+            <marker date="1545082428975" expanded="true" signature="13601:13911" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Canvas.py">
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Menu.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1892">
-          <caret line="330" column="30" selection-start-line="330" selection-start-column="30" selection-end-line="330" selection-end-column="30" />
+        <state relative-caret-position="367">
+          <caret line="271" column="55" selection-start-line="271" selection-start-column="55" selection-end-line="271" selection-end-column="55" />
           <folding>
-            <element signature="e#0#42#0" expanded="true" />
-            <marker date="1544900414047" expanded="true" signature="2487:2938" ph="..." />
+            <element signature="e#0#35#0" expanded="true" />
+            <marker date="1545794174972" expanded="true" signature="21661:22087" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyQtRHEED/Graph3DSurface.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="218">
+          <caret line="103" column="37" selection-start-line="103" selection-start-column="37" selection-end-line="103" selection-end-column="37" />
+          <folding>
+            <element signature="e#0#63#0" expanded="true" />
+            <marker date="1545794690121" expanded="true" signature="525:529" ph="..." />
+            <marker date="1545794690121" expanded="true" signature="11683:12125" ph="..." />
+            <marker date="1545794690121" expanded="true" signature="12263:12264" ph="..." />
+            <marker date="1545794690121" expanded="true" signature="12263:13875" ph="..." />
+            <marker date="1545794690121" expanded="true" signature="13875:13879" ph="..." />
           </folding>
         </state>
       </provider>

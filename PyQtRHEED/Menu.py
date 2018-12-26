@@ -155,6 +155,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
     Show3DGraph = QtCore.pyqtSignal(str)
+    Show2DContour = QtCore.pyqtSignal(str,bool,float,float,float,float,int,str)
 
     def __init__(self):
         super(TwoDimensionalMapping,self).__init__()
@@ -163,8 +164,8 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.config.read('./configuration.ini')
 
     def Main(self,path):
-        self.backgroundLevel = 0
-        self.cutoffLevel = 100
+        self.levelMin = 0
+        self.levelMax = 100
         self.numberOfContourLevels = 5
         self.startIndex = "0"
         self.endIndex = "100"
@@ -198,7 +199,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.fileType.addItem(".xlsx",".xlsx")
         self.profileCentered = QtWidgets.QLabel("Centered?")
         self.centeredCheck = QtWidgets.QCheckBox()
-        self.centeredCheck.setChecked(True)
+        self.centeredCheck.setChecked(False)
         self.coordinateLabel = QtWidgets.QLabel("Choose coordinate system:")
         self.coordinate = QtWidgets.QButtonGroup()
         self.coordinate.setExclusive(True)
@@ -235,7 +236,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.parametersGrid.addWidget(self.startImageIndexEdit,0,1)
         self.parametersGrid.addWidget(self.endImageIndexLabel,1,0)
         self.parametersGrid.addWidget(self.endImageIndexEdit,1,1)
-        self.plotOptions = QtWidgets.QGroupBox("Plot Options")
+        self.plotOptions = QtWidgets.QGroupBox("Contour Plot Options")
         self.plotOptionsGrid = QtWidgets.QGridLayout(self.plotOptions)
         self.colormapLabel = QtWidgets.QLabel("Colormap")
         self.colormap = QtWidgets.QComboBox()
@@ -243,33 +244,49 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.colormap.addItem("hsv","hsv")
         self.colormap.addItem("rainbow","rainbow")
         self.colormap.addItem("nipy_spectral","nipy_spectral")
-        self.backgroundLevelLabel = QtWidgets.QLabel("Background Level ({})".format(self.backgroundLevel))
-        self.backgroundLevelSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.backgroundLevelSlider.setMinimum(0)
-        self.backgroundLevelSlider.setMaximum(100)
-        self.backgroundLevelSlider.setValue(self.backgroundLevel)
-        self.backgroundLevelSlider.valueChanged.connect(self.Refresh_Background_Level)
-        self.cutoffLevelLabel = QtWidgets.QLabel("Cutoff Level ({})".format(self.cutoffLevel))
-        self.cutoffLevelSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.cutoffLevelSlider.setMinimum(0)
-        self.cutoffLevelSlider.setMaximum(100)
-        self.cutoffLevelSlider.setValue(self.cutoffLevel)
-        self.cutoffLevelSlider.valueChanged.connect(self.Refresh_Cutoff_Level)
+        self.levelMinLabel = QtWidgets.QLabel("Level Min ({})".format(self.levelMin/100))
+        self.levelMinSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.levelMinSlider.setMinimum(0)
+        self.levelMinSlider.setMaximum(100)
+        self.levelMinSlider.setValue(self.levelMin)
+        self.levelMinSlider.valueChanged.connect(self.Refresh_Level_Min)
+        self.levelMaxLabel = QtWidgets.QLabel("Level Max ({})".format(self.levelMax/100))
+        self.levelMaxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.levelMaxSlider.setMinimum(0)
+        self.levelMaxSlider.setMaximum(100)
+        self.levelMaxSlider.setValue(self.levelMax)
+        self.levelMaxSlider.valueChanged.connect(self.Refresh_Level_Max)
+        self.radiusMinLabel = QtWidgets.QLabel("Radius Min ({})".format(0.0))
+        self.radiusMinSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.radiusMinSlider.setMinimum(0)
+        self.radiusMinSlider.setMaximum(1000)
+        self.radiusMinSlider.setValue(0)
+        self.radiusMinSlider.valueChanged.connect(self.Refresh_Radius_Min)
+        self.radiusMaxLabel = QtWidgets.QLabel("Radius Max ({})".format(10.0))
+        self.radiusMaxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.radiusMaxSlider.setMinimum(0)
+        self.radiusMaxSlider.setMaximum(1000)
+        self.radiusMaxSlider.setValue(1000)
+        self.radiusMaxSlider.valueChanged.connect(self.Refresh_Radius_Max)
         self.numberOfContourLevelsLabel = QtWidgets.QLabel("Number of Contour Levels ({})".format(self.numberOfContourLevels))
-        self.numberOfContourLevelsLabel.setFixedWidth(150)
+        self.numberOfContourLevelsLabel.setFixedWidth(160)
         self.numberOfContourLevelsSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.numberOfContourLevelsSlider.setMinimum(5)
-        self.numberOfContourLevelsSlider.setMaximum(50)
+        self.numberOfContourLevelsSlider.setMaximum(100)
         self.numberOfContourLevelsSlider.setValue(self.numberOfContourLevels)
         self.numberOfContourLevelsSlider.valueChanged.connect(self.Refresh_Number_Of_Contour_Levels)
         self.plotOptionsGrid.addWidget(self.colormapLabel,0,0)
         self.plotOptionsGrid.addWidget(self.colormap,0,1)
-        self.plotOptionsGrid.addWidget(self.backgroundLevelLabel,1,0)
-        self.plotOptionsGrid.addWidget(self.backgroundLevelSlider,1,1)
-        self.plotOptionsGrid.addWidget(self.cutoffLevelLabel,2,0)
-        self.plotOptionsGrid.addWidget(self.cutoffLevelSlider,2,1)
-        self.plotOptionsGrid.addWidget(self.numberOfContourLevelsLabel,3,0)
-        self.plotOptionsGrid.addWidget(self.numberOfContourLevelsSlider,3,1)
+        self.plotOptionsGrid.addWidget(self.levelMinLabel,1,0)
+        self.plotOptionsGrid.addWidget(self.levelMinSlider,1,1)
+        self.plotOptionsGrid.addWidget(self.levelMaxLabel,2,0)
+        self.plotOptionsGrid.addWidget(self.levelMaxSlider,2,1)
+        self.plotOptionsGrid.addWidget(self.radiusMinLabel,3,0)
+        self.plotOptionsGrid.addWidget(self.radiusMinSlider,3,1)
+        self.plotOptionsGrid.addWidget(self.radiusMaxLabel,4,0)
+        self.plotOptionsGrid.addWidget(self.radiusMaxSlider,4,1)
+        self.plotOptionsGrid.addWidget(self.numberOfContourLevelsLabel,5,0)
+        self.plotOptionsGrid.addWidget(self.numberOfContourLevelsSlider,5,1)
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setFixedHeight(150)
@@ -307,15 +324,19 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.\
             connect(self.Dialog.reject)
         self.Show3DGraphButton = QtWidgets.QPushButton("Show 3D Graph")
-        self.Show3DGraphButton.setEnabled(True)
+        self.Show3DGraphButton.setEnabled(False)
         self.Show3DGraphButton.clicked.connect(self.Show3DGraphButtonClicked)
+        self.Show2DContourButton = QtWidgets.QPushButton("Show 2D Contour")
+        self.Show2DContourButton.setEnabled(False)
+        self.Show2DContourButton.clicked.connect(self.Show2DContourButtonClicked)
         self.chart = ProfileChart.ProfileChart(self.config)
         self.LeftGrid.addWidget(self.chooseSource,0,0)
         self.LeftGrid.addWidget(self.chooseDestination,1,0)
         self.LeftGrid.addWidget(self.parametersBox,2,0)
         self.LeftGrid.addWidget(self.plotOptions,3,0)
         self.LeftGrid.addWidget(self.ButtonBox,4,0)
-        self.LeftGrid.addWidget(self.Show3DGraphButton,5,0)
+        self.LeftGrid.addWidget(self.Show2DContourButton,5,0)
+        self.LeftGrid.addWidget(self.Show3DGraphButton,6,0)
         self.RightGrid.addWidget(self.chart,0,0)
         self.RightGrid.addWidget(self.statusBar,1,0)
         self.RightGrid.addWidget(self.progressBar,2,0)
@@ -327,7 +348,12 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.Dialog.exec_()
 
     def Show3DGraphButtonClicked(self):
-        self.Show3DGraph.emit(self.currentDestination)
+        self.Show3DGraph.emit(self.graphTextPath)
+
+    def Show2DContourButtonClicked(self):
+        self.Show2DContour.emit(self.graphTextPath, False, self.levelMinSlider.value()/100,self.levelMaxSlider.value()/100,\
+                                self.radiusMinSlider.value()/100,self.radiusMaxSlider.value()/100,self.numberOfContourLevelsSlider.value(),\
+                                self.colormap.currentText())
 
     def Start(self):
         self.StatusRequested.emit()
@@ -375,40 +401,42 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
                     RC,I = self.getLineScan(start,end,img,scale_factor)
                     Phi1 = np.full(len(RC),nimg*1.8)
                     Phi2 = np.full(len(RC),nimg*1.8)
-                    for iphi in range(0,np.argmax(I)):
+                    maxPos = np.argmax(I)
+                    for iphi in range(0,maxPos):
                         Phi1[iphi]=nimg*1.8+180
-                    if np.argmax(I)<(len(RC)-1)/2:
-                        x1,y1 = abs(RC[0:(2*np.argmax(I)+1)]), I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)]
-                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*np.argmax(I)+1)],y1)).T))
-                        x2,y2 = RC[0:(2*np.argmax(I)+1)], I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)]
-                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*np.argmax(I)+1)],y2)).T))
+                    if maxPos<(len(RC)-1)/2:
+                        x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
+                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
+                        x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos], I[0:(2*maxPos+1)]/I[maxPos]
+                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
                     else:
-                        x1,y1 = abs(RC[(2*np.argmax(I)-len(RC)-1):-1]), I[(2*np.argmax(I)-len(RC)-1):-1]/I[np.argmax(I)]
-                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*np.argmax(I)-len(RC)-1):-1],y1)).T))
-                        x2,y2 = RC[(2*np.argmax(I)-len(RC)-1):-1], I[(2*np.argmax(I)-len(RC)-1):-1]/I[np.argmax(I)]
-                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*np.argmax(I)-len(RC)-1):-1],y2)).T))
+                        x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
+                        x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
                 else:
                     RC,I = self.getIntegral(start,end,width,img,scale_factor)
                     Phi1 = np.full(len(RC),nimg*1.8)
                     Phi2 = np.full(len(RC),nimg*1.8)
-                    for iphi in range(0,np.argmax(I)):
+                    maxPos = np.argmax(I)
+                    for iphi in range(0,maxPos):
                         Phi1[iphi]=nimg*1.8+180
-                    if np.argmax(I)<(len(RC)-1)/2:
-                        x1,y1 = abs(RC[0:(2*np.argmax(I)+1)]),I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)]
-                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*np.argmax(I)+1)],y1)).T))
-                        x2,y2 = RC[0:(2*np.argmax(I)+1)],I[0:(2*np.argmax(I)+1)]/I[np.argmax(I)]
-                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*np.argmax(I)+1)],y2)).T))
+                    if maxPos<(len(RC)-1)/2:
+                        x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
+                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
+                        x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
+                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
                     else:
-                        x1,y1 = abs(RC[(2*np.argmax(I)-len(RC)-1):-1]), I[(2*np.argmax(I)-len(RC)-1):-1]/I[np.argmax(I)]
-                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*np.argmax(I)-len(RC)-1):-1],y1)).T))
-                        x2,y2 = RC[(2*np.argmax(I)-len(RC)-1):-1], I[(2*np.argmax(I)-len(RC)-1):-1]/I[np.argmax(I)]
-                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*np.argmax(I)-len(RC)-1):-1],y2)).T))
+                        x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
+                        x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
                 self.progressAdvance.emit(0,100,(nimg+1-startIndex)*100/(endIndex-startIndex+1))
                 self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0The file being processed right now is: "+image_list[nimg-startIndex])
                 if self.centeredCheck.checkState():
-                    self.chart.addChart(x1,y1)
-                else:
                     self.chart.addChart(x2,y2)
+                else:
+                    self.chart.addChart(x1,y1)
                 QtCore.QCoreApplication.processEvents()
             if self.centeredCheck.checkState():
                 map_2D_polar = np.delete(map_2D2,0,0)
@@ -418,23 +446,25 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
             map_2D_cart[:,2] = map_2D_polar[:,2]
             map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*math.pi/180)
             map_2D_cart[:,1] = map_2D_polar[:,0]*np.sin((map_2D_polar[:,1])*math.pi/180)
+            self.graphTextPath = self.currentDestination+"/"+saveFileName+fileType
             if self.cartesian.checkState():
-                np.savetxt(self.currentDestination+"/"+saveFileName+fileType,map_2D_cart,fmt='%4.3f')
+                np.savetxt(self.graphTextPath,map_2D_cart,fmt='%4.3f')
             else:
-                np.savetxt(self.currentDestination+"/"+saveFileName+fileType,map_2D_polar,fmt='%4.3f')
+                np.savetxt(self.graphTextPath,map_2D_polar,fmt='%4.3f')
             self.progressEnd.emit()
             self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Completed!")
             self.Raise_Attention("2D Map Completed!")
             self.Show3DGraphButton.setEnabled(True)
+            self.Show2DContourButton.setEnabled(True)
 
     def Reset(self):
-        self.backgroundLevel = 0
-        self.cutoffLevel = 100
+        self.levelMin = 0
+        self.levelMax = 100
         self.numberOfContourLevels = 5
         self.currentSource = self.path
         self.currentDestination = self.currentSource
-        self.backgroundLevelSlider.setValue(self.backgroundLevel)
-        self.cutoffLevelSlider.setValue(self.cutoffLevel)
+        self.levelMinSlider.setValue(self.levelMin)
+        self.levelMaxSlider.setValue(self.levelMax)
         self.numberOfContourLevelsSlider.setValue(self.numberOfContourLevels)
         self.colormap.setCurrentText("jet")
         self.chooseSourceLabel.setText("The source directory is:\n"+self.currentSource)
@@ -459,13 +489,27 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.currentDestination = path
         self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
 
-    def Refresh_Background_Level(self):
-        self.backgroundLevel = self.backgroundLevelSlider.value()
-        self.backgroundLevelLabel.setText("Background Level ({})".format(self.backgroundLevel))
+    def Refresh_Level_Min(self):
+        self.levelMin = self.levelMinSlider.value()
+        self.levelMinLabel.setText("Level Min ({})".format(self.levelMin/100))
+        if self.levelMinSlider.value() > self.levelMaxSlider.value():
+            self.levelMaxSlider.setValue(self.levelMinSlider.value())
 
-    def Refresh_Cutoff_Level(self):
-        self.cutoffLevel = self.cutoffLevelSlider.value()
-        self.cutoffLevelLabel.setText("Cutoff Level ({})".format(self.cutoffLevel))
+    def Refresh_Level_Max(self):
+        self.levelMax = self.levelMaxSlider.value()
+        self.levelMaxLabel.setText("Level Max ({})".format(self.levelMax/100))
+        if self.levelMinSlider.value() > self.levelMaxSlider.value():
+            self.levelMinSlider.setValue(self.levelMaxSlider.value())
+
+    def Refresh_Radius_Min(self):
+        self.radiusMinLabel.setText("Radius Min ({})".format(self.radiusMinSlider.value()/100))
+        if self.radiusMinSlider.value() > self.radiusMaxSlider.value():
+            self.radiusMaxSlider.setValue(self.radiusMinSlider.value())
+
+    def Refresh_Radius_Max(self):
+        self.radiusMaxLabel.setText("Radius Max ({})".format(self.radiusMaxSlider.value()/100))
+        if self.radiusMinSlider.value() > self.radiusMaxSlider.value():
+            self.radiusMinSlider.setValue(self.radiusMaxSlider.value())
 
     def Refresh_Number_Of_Contour_Levels(self):
         self.numberOfContourLevels = self.numberOfContourLevelsSlider.value()
