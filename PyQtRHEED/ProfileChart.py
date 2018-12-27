@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 import Process
+import numpy as np
 
 class ProfileChart(QtChart.QChartView,Process.Image):
 
@@ -59,12 +60,17 @@ class ProfileChart(QtChart.QChartView,Process.Image):
 
     def addChart(self,radius,profile,type="line"):
         series = QtChart.QLineSeries()
+        self.currentRadius = []
+        self.currentProfile = []
         for x,y in zip(radius,profile):
             series.append(x,y)
+            self.currentRadius.append(x)
+            self.currentProfile.append(y)
         self.profileChart = QtChart.QChart()
         self.profileChart.setTheme(self.theme)
         self.profileChart.setBackgroundRoundness(0)
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
+        self.profileChart.removeAllSeries()
         self.profileChart.addSeries(series)
         axisX = QtChart.QValueAxis()
         axisX.setTickCount(10)
@@ -81,6 +87,7 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         series.attachAxis(axisY)
         self.profileChart.legend().setVisible(False)
         self.setChart(self.profileChart)
+        self.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
 
     def setImg(self,img):
         self._img = img
@@ -111,3 +118,36 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         else:
             self.setCursor(QtCore.Qt.ArrowCursor)
         super(ProfileChart, self).mouseMoveEvent(event)
+
+    def contextMenuEvent(self,event):
+        self.menu = QtWidgets.QMenu()
+        self.save = QtWidgets.QAction('Save as...')
+        self.save.triggered.connect(self.saveProfile)
+        self.menu.addAction(self.save)
+        self.menu.popup(event.globalPos())
+
+    def saveProfile(self):
+        if self.chartIsPresent:
+            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./profile.txt","Text (*.txt)")
+            np.savetxt(self.filename[0],np.vstack((self.currentRadius,self.currentProfile)).transpose(),fmt='%5.3f')
+        else:
+            self.Raise_Error("No line profile is available")
+
+    def Raise_Error(self,message):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setText(message)
+        msg.setWindowTitle("Error")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.exec()
+
+    def Raise_Attention(self,information):
+        info = QtWidgets.QMessageBox()
+        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setText(information)
+        info.setWindowTitle("Information")
+        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.exec()
+

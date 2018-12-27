@@ -67,6 +67,12 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.menuHelp = self.menu.addMenu("Help")
         self.setMenuBar(self.menu)
 
+        #File Menu
+        self.openFile = self.menuFile.addAction("Open",self.MenuActions_Open)
+        self.export = self.menuFile.addMenu("Export")
+        self.saveCanvasAsImage = self.export.addAction("RHEED pattern",self.MenuActions_Save_As_Image)
+        self.saveProfileAsText = self.export.addAction("Line Profile",self.MenuActions_Save_As_Text)
+
         #Preference Menu
         self.defaultSettings = self.menuPreference.addAction("Default Settings",\
                                     self.MenuActions_Preference_DefaultSettings)
@@ -77,6 +83,9 @@ class Window(QtWidgets.QMainWindow,Process.Image):
 
         self.Three_Dimensional_Graph = self.menu2DMap.addAction("3D Graph", \
                                                                   self.MenuActions_Three_Dimensional_Graph)
+
+        #Help Menu
+        self.about = self.menuHelp.addAction("About",self.MenuActions_About)
 
         #Center Widget
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
@@ -274,6 +283,19 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.progressBar.reset()
         self.progressBar.setVisible(False)
 
+    def MenuActions_Open(self):
+        self.openImage(path=self.getImgPath())
+
+    def MenuActions_Save_As_Image(self):
+        canvas = self.mainTab.currentWidget()
+        try:
+            canvas.saveScene()
+        except:
+            self.Raise_Error("Please open a RHEED pattern first")
+
+    def MenuActions_Save_As_Text(self):
+        self.profile.saveProfile()
+
     def MenuActions_Preference_DefaultSettings(self):
         self.menu_DefaultPropertiesRestRequested.emit()
 
@@ -282,6 +304,9 @@ class Window(QtWidgets.QMainWindow,Process.Image):
 
     def MenuActions_Three_Dimensional_Graph(self):
         self.menu_ThreeDimensionalGraphRequested.emit(self.currentPath)
+
+    def MenuActions_About(self):
+        self.Raise_Attention(information="Author: Yu Xiang\nEmail: yux1991@gmail.com")
 
     def getScaleFactor(self):
         self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(self.properties.energyEdit.text()))
@@ -613,3 +638,21 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         except:
             status["width"] = ""
         self.returnStatus.emit(status)
+
+    def Raise_Error(self,message):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setText(message)
+        msg.setWindowTitle("Error")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.exec()
+
+    def Raise_Attention(self,information):
+        info = QtWidgets.QMessageBox()
+        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setText(information)
+        info.setWindowTitle("Information")
+        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.exec()

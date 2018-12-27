@@ -53,7 +53,10 @@ class Image(object):
             else:
                 index = np.asarray([[np.linspace(Ky[i]-int_width*slope,Ky[i]+(int_width+1)*slope,2*int_width+1),\
                                      np.linspace(Kx[i]-int_width,Kx[i]+int_width+1,2*int_width+1)] for i in range(len(Kx))],dtype=int)
-            LineScanIntensities = np.sum([img[index[i,0,:],index[i,1,:]] for i in range(len(Kx))],axis=1)
+            try:
+                LineScanIntensities = np.sum([img[index[i,0,:],index[i,1,:]] for i in range(len(Kx))],axis=1)
+            except:
+                self.Raise_Error("index out of bounds")
         return LineScanRadius/scale_factor,LineScanIntensities/2/width/np.amax(np.amax(img))
 
     def getChiScan(self,center,radius,width,chiRange,tilt,img,chiStep=1):
@@ -91,3 +94,21 @@ class Image(object):
         ImageIndices =np.tensordot(RotationTensor,(indices[1:-1]-[y0,x0]).T,axes=1).astype(int)
         ChiProfile = np.sum([img[ImageIndices[i,1,:]+int(y0),ImageIndices[i,0,:]+int(x0)] for i in range(ChiTotalSteps+1)], axis=1)/cit
         return np.flip(ChiAngle2,axis=0),ChiProfile/np.amax(np.amax(img))
+
+    def Raise_Error(self,message):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setText(message)
+        msg.setWindowTitle("Error")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.exec()
+
+    def Raise_Attention(self,information):
+        info = QtWidgets.QMessageBox()
+        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setText(information)
+        info.setWindowTitle("Information")
+        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.exec()

@@ -86,7 +86,7 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def label(self,energy,azimuth):
         if self.hasPhoto():
-            self._labelText.setPlainText("Energy = {} eV\n\u03C6 = {}\u00B0".format(energy,azimuth))
+            self._labelText.setPlainText("Energy = {} keV\n\u03C6 = {}\u00B0".format(energy,azimuth))
             self._labelText.setFont(QtGui.QFont("Helvetica[Cronyx]",40))
             self._labelText.setPos(40,40)
             self._labelText.show()
@@ -226,11 +226,6 @@ class Canvas(QtWidgets.QGraphicsView):
                     position = self.mapToScene(event.pos())
                     self.photoMousePress.emit(position.toPoint())
                     self._mouseIsPressed = True
-            else:
-                try:
-                    self.clearCanvas()
-                except:
-                    pass
         super(Canvas, self).mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
@@ -361,6 +356,14 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def drawLine(self,start,end):
         self.clearCanvas()
+        if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
+            slope = (end.y()-start.y())/(end.x()-start.x())
+            if slope > np.tan(np.pi/3):
+                end.setX(start.x())
+            elif slope < np.tan(np.pi/6):
+                end.setY(start.y())
+            else:
+                end.setY(end.x()-start.x()+start.y())
         self._lineItem = self._scene.addLine(QtCore.QLineF(start,end),QtGui.QPen(QtCore.Qt.yellow,1))
         self._lineItem.show()
         self.canvasObject = "line"
@@ -370,6 +373,17 @@ class Canvas(QtWidgets.QGraphicsView):
     def drawRect(self,start,end,width):
         self.clearCanvas()
         rect = QtGui.QPolygonF()
+        if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
+            if end.x() == start.x():
+                slope = 10
+            else:
+                slope = (end.y()-start.y())/(end.x()-start.x())
+            if slope > np.tan(np.pi/3):
+                end.setX(start.x())
+            elif slope < np.tan(np.pi/6):
+                end.setY(start.y())
+            else:
+                end.setY(end.x()-start.x()+start.y())
         p1,p2,p3,p4 = self.getRectanglePosition(start,end,width)
         rect.append(p1)
         rect.append(p2)
@@ -457,3 +471,25 @@ class Canvas(QtWidgets.QGraphicsView):
                 x3 = end.x()-width
                 y3 = np.round(end.y()-slope0*width).astype(int)
         return QtCore.QPointF(x0,y0),QtCore.QPointF(x1,y1),QtCore.QPointF(x2,y2),QtCore.QPointF(x3,y3)
+
+    def contextMenuEvent(self,event):
+        self.menu = QtWidgets.QMenu()
+        self.clear = QtWidgets.QAction('Clear')
+        self.clear.triggered.connect(self.clearCanvas)
+        self.save = QtWidgets.QAction('Save as...')
+        self.save.triggered.connect(self.saveScene)
+        self.menu.addAction(self.clear)
+        self.menu.addAction(self.save)
+        self.menu.popup(event.globalPos())
+
+    def saveScene(self):
+        imageFileName = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./pattern.jpeg",\
+                                                                   "Image (*.jpeg)")
+        rect = self._scene.sceneRect()
+        capture = QtGui.QImage(rect.size().toSize(),QtGui.QImage.Format_ARGB32_Premultiplied)
+        painter = QtGui.QPainter(capture)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        self._scene.render(painter,QtCore.QRectF(capture.rect()),QtCore.QRectF(rect))
+        painter.end()
+        capture.save(imageFileName[0])
+
