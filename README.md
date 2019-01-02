@@ -1,16 +1,16 @@
 # PyRHEED
 
-#Table of Content
+# Table of Content
 1. [Description](README.md#Description)
 2. [Structure](README.md#Structure)
 3. [Contact](README.md#Contact)
 
-#Description
+# Description
 This application is used for RHEED analysis and simulation.
 A screenshot of the running program is shown below:
 ![alt text](https://raw.githubusercontent.com/yux1991/PyRHEED/master/Source/Screenshot.JPG)
 
-#Structure
+# Structure
 - Browser: browse files inside the working directory
 - Canvas: display images, draw shapes and take user input
 - Configuration: change default configurations
@@ -24,5 +24,5 @@ A screenshot of the running program is shown below:
 - Test: the test module
 - Window: the main window of the application
 
-#Contact
+# Contact
 Please contact Yu Xiang (yux1991@gmail.com) if you have any questions or suggestions.
