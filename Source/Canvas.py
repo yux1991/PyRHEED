@@ -270,12 +270,19 @@ class Canvas(QtWidgets.QGraphicsView):
         super(Canvas, self).mouseReleaseEvent(event)
 
     def keyPressEvent(self,event):
-        XStep = QtCore.QPointF(5.0,0.0)
-        YStep = QtCore.QPointF(0.0,5.0)
+        XStep = QtCore.QPointF(10.0,0.0)
+        YStep = QtCore.QPointF(0.0,10.0)
+        XFineStep = QtCore.QPointF(1.0,0.0)
+        YFineStep = QtCore.QPointF(0.0,1.0)
         if event.key() == QtCore.Qt.Key_Up:
-            self.saveStart-=YStep
-            if not self.canvasObject == "arc":
-                self.saveEnd-=YStep
+            if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
+                self.saveStart-=YFineStep
+                if not self.canvasObject == "arc":
+                    self.saveEnd-=YFineStep
+            else:
+                self.saveStart-=YStep
+                if not self.canvasObject == "arc":
+                    self.saveEnd-=YStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
@@ -289,9 +296,14 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Down:
-            self.saveStart+=YStep
-            if not self.canvasObject == "arc":
-                self.saveEnd+=YStep
+            if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
+                self.saveStart+=YFineStep
+                if not self.canvasObject == "arc":
+                    self.saveEnd+=YFineStep
+            else:
+                self.saveStart+=YStep
+                if not self.canvasObject == "arc":
+                    self.saveEnd+=YStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
@@ -305,9 +317,14 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Left:
-            self.saveStart-=XStep
-            if not self.canvasObject == "arc":
-                self.saveEnd-=XStep
+            if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
+                self.saveStart-=XFineStep
+                if not self.canvasObject == "arc":
+                    self.saveEnd-=XFineStep
+            else:
+                self.saveStart-=XStep
+                if not self.canvasObject == "arc":
+                    self.saveEnd-=XStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)
@@ -321,9 +338,14 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Right:
-            self.saveStart+=XStep
-            if not self.canvasObject == "arc":
-                self.saveEnd+=XStep
+            if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
+                self.saveStart+=XFineStep
+                if not self.canvasObject == "arc":
+                    self.saveEnd+=XFineStep
+            else:
+                self.saveStart+=XStep
+                if not self.canvasObject == "arc":
+                    self.saveEnd+=XStep
             if self.canvasObject == "line":
                 self.plotLineScan.emit(self.saveStart,self.saveEnd)
                 self.drawLine(self.saveStart,self.saveEnd)

@@ -2,87 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="95709aaf-b03b-4a24-92ea-ce273c27d53a" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/PyRHEED.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PyRHEED.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/ProjectSettings.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/PyRHEED/v15/.suo" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/VSWorkspaceState.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/slnx.sqlite" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/.idea/QRHEED.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/.idea/workspace.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Browser.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Canvas.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Configuration.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Cursor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Graph3DSurface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Menu.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Process.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/ProfileChart.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Properties.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Screenshot.JPG" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Test.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/Window.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/configuration.ini" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/arc.ai" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/arc.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/curve.ai" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/fit.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/icons.pptx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/line.ai" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/line.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/move.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/open.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/rectangle.ai" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/rectangle.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/save as.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/save.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/zoom in.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/icons/zoom out.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyQtRHEED/test.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PyRHEED.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/2D.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/PyRHEED.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/TkCanvas.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/TkInfoPanel.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/TkMenu.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/command.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/configuration.ini" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/configuration.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/fit.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/arc.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/line.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/move.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/open.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/rectangle.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/save as.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/save.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/zoom in.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/icons/zoom out.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/io.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TkRHEED/operation.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/arc.ai" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/arc.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/curve.ai" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/folder-icon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/line.ai" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/line.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/move.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/open.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/rectangle.ai" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/rectangle.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/save as.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/save.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/zoom in.gif" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/zoom out.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Canvas.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Canvas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/configuration.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Source/configuration.ini" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -94,30 +17,42 @@
     <session id="-172967749">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="1" />
+          <entry key="project.closed" value="9" />
           <entry key="project.open.time.4" value="1" />
-          <entry key="project.opened" value="1" />
+          <entry key="project.open.time.6" value="7" />
+          <entry key="project.open.time.7" value="2" />
+          <entry key="project.opened" value="10" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="8" />
+          <entry key="py" value="9" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="8" />
+          <entry key="Python" value="9" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.extensions.edit">
+        <counts>
+          <entry key="py" value="793" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.types.edit">
+        <counts>
+          <entry key="Python" value="793" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
-    <leaf>
-      <file pinned="false" current-in-tab="false">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Source/Main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="132">
-              <caret line="6" column="12" selection-start-line="6" selection-start-column="12" selection-end-line="6" selection-end-column="12" />
+            <state relative-caret-position="550">
+              <caret line="25" column="33" selection-start-line="25" selection-start-column="33" selection-end-line="25" selection-end-column="33" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -126,9 +61,32 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/Window.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <folding>
+                <element signature="e#0#20#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/Menu.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="3410">
+              <caret line="162" column="40" selection-start-line="162" selection-start-column="40" selection-end-line="162" selection-end-column="40" />
+              <folding>
+                <element signature="e#0#35#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Source/Graph3DSurface.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-8140">
+            <state>
               <folding>
                 <element signature="e#0#63#0" expanded="true" />
               </folding>
@@ -136,11 +94,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Source/ProfileChart.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="718">
-              <caret line="151" column="56" selection-start-line="151" selection-start-column="56" selection-end-line="151" selection-end-column="56" />
+            <state relative-caret-position="2376">
+              <caret line="110" column="66" selection-start-line="110" selection-start-column="66" selection-end-line="110" selection-end-column="66" />
               <folding>
                 <element signature="e#0#51#0" expanded="true" />
               </folding>
@@ -150,26 +108,14 @@
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Source/Properties.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-4290" />
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Source/Window.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-14146">
-              <folding>
-                <element signature="e#0#20#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Source/Canvas.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-10626">
+            <state relative-caret-position="7700">
+              <caret line="351" column="62" selection-start-line="351" selection-start-column="62" selection-end-line="351" selection-end-column="62" />
               <folding>
                 <element signature="e#0#42#0" expanded="true" />
               </folding>
@@ -180,7 +126,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Source/Cursor.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-184">
+            <state>
               <folding>
                 <element signature="e#0#27#0" expanded="true" />
               </folding>
@@ -198,17 +144,27 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="216" />
-    <option name="y" value="-8" />
-    <option name="width" value="1033" />
-    <option name="height" value="805" />
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/Source/Canvas.py" />
+        <option value="$PROJECT_DIR$/Source/Menu.py" />
+        <option value="$PROJECT_DIR$/Source/Main.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="7">
+    <option name="x" value="1137" />
+    <option name="y" value="-180" />
+    <option name="width" value="1616" />
+    <option name="height" value="916" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -225,7 +181,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -320,23 +275,23 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1616" height="916" extended-state="6" />
+    <frame x="1592" y="-180" width="1936" height="1096" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Favorites" side_tool="true" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.24968314" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16491044" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Version Control" />
-      <window_info anchor="bottom" id="Python Console" />
-      <window_info anchor="bottom" id="Terminal" weight="0.32992327" />
-      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.32992327" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.2027027" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32992327" />
+      <window_info anchor="bottom" id="Version Control" order="7" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.3887468" />
+      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
+      <window_info anchor="bottom" id="Python Console" order="10" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -348,40 +303,59 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/Source/Main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="132">
-          <caret line="6" column="12" selection-start-line="6" selection-start-column="12" selection-end-line="6" selection-end-column="12" />
+        <state relative-caret-position="550">
+          <caret line="25" column="33" selection-start-line="25" selection-start-column="33" selection-end-line="25" selection-end-column="33" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Source/Window.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Source/Menu.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3410">
+          <caret line="162" column="40" selection-start-line="162" selection-start-column="40" selection-end-line="162" selection-end-column="40" />
+          <folding>
+            <element signature="e#0#35#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Source/Graph3DSurface.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-8140">
+        <state>
           <folding>
             <element signature="e#0#63#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Properties.py">
+    <entry file="file://$PROJECT_DIR$/Source/ProfileChart.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-4290" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Window.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-14146">
+        <state relative-caret-position="2376">
+          <caret line="110" column="66" selection-start-line="110" selection-start-column="66" selection-end-line="110" selection-end-column="66" />
           <folding>
-            <element signature="e#0#20#0" expanded="true" />
+            <element signature="e#0#51#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Source/Properties.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/Source/Canvas.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-10626">
+        <state relative-caret-position="7700">
+          <caret line="351" column="62" selection-start-line="351" selection-start-column="62" selection-end-line="351" selection-end-column="62" />
           <folding>
             <element signature="e#0#42#0" expanded="true" />
           </folding>
@@ -390,7 +364,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Source/Cursor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-184">
+        <state>
           <folding>
             <element signature="e#0#27#0" expanded="true" />
           </folding>
@@ -399,16 +373,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Source/Configuration.py">
       <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Source/ProfileChart.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="718">
-          <caret line="151" column="56" selection-start-line="151" selection-start-column="56" selection-end-line="151" selection-end-column="56" />
-          <folding>
-            <element signature="e#0#51#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
     </entry>
   </component>
 </project>

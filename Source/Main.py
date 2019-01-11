@@ -9,6 +9,8 @@ class Main():
         config = configparser.ConfigParser()
         config.read('./configuration.ini')
         app = QtWidgets.QApplication(sys.argv)
+        icon = QtGui.QIcon('./icons/icon.png')
+        app.setWindowIcon(icon)
         self.window = Window(config)
         self.window.showMaximized()
         self.window.show()
