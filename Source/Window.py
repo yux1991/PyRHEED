@@ -23,6 +23,9 @@ class Window(QtWidgets.QMainWindow,Process.Image):
     menu_DefaultPropertiesRestRequested = QtCore.pyqtSignal()
     menu_TwoDimensionalMappingRequested = QtCore.pyqtSignal(str)
     menu_ThreeDimensionalGraphRequested = QtCore.pyqtSignal(str)
+    menu_BroadeningRequested = QtCore.pyqtSignal(str)
+    menu_ManualFitRequested = QtCore.pyqtSignal(str,int)
+    menu_GenerateReportRequested = QtCore.pyqtSignal(str)
     window_initialized = QtCore.pyqtSignal()
     propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
     canvasRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
@@ -79,10 +82,15 @@ class Window(QtWidgets.QMainWindow,Process.Image):
 
         #2D Map Menu
         self.Two_Dimensional_Mapping = self.menu2DMap.addAction("Configuration", \
-                                                             self.MenuActions_Two_Dimensional_Mapping)
+                                            self.MenuActions_Two_Dimensional_Mapping)
 
         self.Three_Dimensional_Graph = self.menu2DMap.addAction("3D Graph", \
-                                                                  self.MenuActions_Three_Dimensional_Graph)
+                                        self.MenuActions_Three_Dimensional_Graph)
+
+        #Fit Menu
+        self.Fit_Broadening = self.menuFit.addAction("Broadening",self.MenuActions_Broadening)
+        self.Fit_ManualFit = self.menuFit.addAction("Manual Fit", self.MenuActions_ShowManualFit)
+        self.Fit_Report = self.menuFit.addAction("Generate Report", self.MenuActions_GenerateReport)
 
         #Help Menu
         self.about = self.menuHelp.addAction("About",self.MenuActions_About)
@@ -305,6 +313,15 @@ class Window(QtWidgets.QMainWindow,Process.Image):
     def MenuActions_Three_Dimensional_Graph(self):
         self.menu_ThreeDimensionalGraphRequested.emit(self.currentPath)
 
+    def MenuActions_Broadening(self):
+        self.menu_BroadeningRequested.emit(self.currentPath)
+
+    def MenuActions_ShowManualFit(self):
+        self.menu_ManualFitRequested.emit(self.currentPath,0)
+
+    def MenuActions_GenerateReport(self):
+        self.menu_GenerateReportRequested.emit(self.currentPath)
+
     def MenuActions_About(self):
         self.Raise_Attention(information="Author: Yu Xiang\nEmail: yux1991@gmail.com")
 
@@ -314,21 +331,25 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.canvasScaleFactorChanged.emit(self.scaleFactor)
 
     def changeSensitivity(self,sensitivity):
-        self.scaleFactor = float(sensitivity)/np.sqrt(float(self.properties.energyEdit.text()))
+        if not sensitivity == "":
+            self.scaleFactor = float(sensitivity)/np.sqrt(float(self.properties.energyEdit.text()))
         self.scaleFactorChanged.emit(self.scaleFactor)
         self.canvasScaleFactorChanged.emit(self.scaleFactor)
 
     def changeEnergy(self,energy):
-        self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(energy))
+        if not energy == "":
+            self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(energy))
         self.scaleFactorChanged.emit(self.scaleFactor)
         self.canvasScaleFactorChanged.emit(self.scaleFactor)
         self.energy = float(energy)
 
     def changeAzimuth(self,azimuth):
-        self.azimuth = float(azimuth)
+        if not azimuth == "":
+            self.azimuth = float(azimuth)
 
     def changeScaleBar(self,scaleBar):
-        self.scaleBarLength = float(scaleBar)
+        if not scaleBar == "":
+            self.scaleBarLength = float(scaleBar)
 
     def labelImage(self):
         self.labelChanged.emit(self.energy,self.azimuth)
@@ -571,24 +592,35 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.cursorInfo.widthEdit.clear()
 
     def photoMousePress(self, pos):
-        self.cursorInfo.startXYEdit.setText('{},{}'.format(pos.x(), pos.y()))
+        self.cursorInfo.startXYEdit.setText('{},{}'.format(int(pos.x()), int(pos.y())))
         self.cursorInfo.endXYEdit.clear()
         if self._mode == "rectangle" or self._mode == "arc":
             self.cursorInfo.widthEdit.setText('{:3.2f}'.format(self.properties.integralHalfWidthSlider.value()/self.widthSliderScale))
         elif self._mode == "line":
             self.cursorInfo.widthEdit.setText('{:3.2f}'.format(0.00))
 
-    def photoMouseRelease(self, pos):
+    def photoMouseRelease(self, pos,start,ShiftModified):
         if self._mode == "arc":
             self.cursorInfo.endXYEdit.setText('{}'.format(np.round(self.mainTab.currentWidget().PFRadius,2)))
         else:
-            self.cursorInfo.endXYEdit.setText('{},{}'.format(pos.x(), pos.y()))
+            if ShiftModified:
+                if pos.x() == start.x():
+                    slope = 10
+                else:
+                    slope = (pos.y()-start.y())/(pos.x()-start.x())
+                if slope > np.tan(np.pi/3):
+                    pos.setX(start.x())
+                elif slope < np.tan(np.pi/6):
+                    pos.setY(start.y())
+                else:
+                    pos.setY(pos.x()-start.x()+start.y())
+            self.cursorInfo.endXYEdit.setText('{},{}'.format(int(pos.x()), int(pos.y())))
         if self.mainTab.currentWidget()._drawingArc:
             self.properties.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
 
     def photoMouseMovement(self, pos, type="canvas"):
         if type == "canvas":
-            self.editPixInfo.setText('x = %d, y = %d' % (pos.x(), pos.y()))
+            self.editPixInfo.setText('x = %d, y = %d' % (int(pos.x()), int(pos.y())))
         elif type == "chart":
             self.editPixInfo.setText('K = %3.2f, Int. = %3.2f' % (pos.x(), pos.y()))
         if self.mainTab.currentWidget()._drawingArc:

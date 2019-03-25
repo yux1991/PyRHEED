@@ -61,7 +61,11 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         self.profileChart.setTheme(self.theme)
 
     def addChart(self,radius,profile,type="line"):
+        pen = QtGui.QPen(QtCore.Qt.SolidLine)
+        pen.setColor(QtGui.QColor(QtCore.Qt.yellow))
+        pen.setWidth(3)
         series = QtChart.QLineSeries()
+        series.setPen(pen)
         self.currentRadius = []
         self.currentProfile = []
         for x,y in zip(radius,profile):
@@ -74,19 +78,30 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
         self.profileChart.removeAllSeries()
         self.profileChart.addSeries(series)
-        axisX = QtChart.QValueAxis()
-        axisX.setTickCount(10)
         if type == "line" or type == "rectangle":
-            axisX.setTitleText("K (\u212B\u207B\u00B9)")
+            self.axisX = QtChart.QValueAxis()
+            self.axisX.setTickCount(10)
+            self.axisY = QtChart.QValueAxis()
+            self.axisX.setTitleText("K (\u212B\u207B\u00B9)")
+            self.axisY.setTitleText("Intensity (arb. units)")
+            self.axisY.setTickCount(10)
         elif type == "arc":
-            axisX.setTitleText("\u03A7 (\u00BA)")
-        axisY = QtChart.QValueAxis()
-        axisY.setTickCount(10)
-        axisY.setTitleText("Intensity (arb. units)")
-        self.profileChart.addAxis(axisX, QtCore.Qt.AlignBottom)
-        self.profileChart.addAxis(axisY, QtCore.Qt.AlignLeft)
-        series.attachAxis(axisX)
-        series.attachAxis(axisY)
+            self.axisX = QtChart.QValueAxis()
+            self.axisX.setTickCount(10)
+            self.axisY = QtChart.QValueAxis()
+            self.axisX.setTitleText("\u03A7 (\u00BA)")
+            self.axisY.setTitleText("Intensity (arb. units)")
+            self.axisY.setTickCount(10)
+        elif type == "cost_function":
+            self.axisX = QtChart.QValueAxis()
+            self.axisX.setTickCount(10)
+            self.axisY = QtChart.QLogValueAxis()
+            self.axisX.setTitleText("Number of Iterations")
+            self.axisY.setTitleText("Cost Function")
+        self.profileChart.addAxis(self.axisX, QtCore.Qt.AlignBottom)
+        self.profileChart.addAxis(self.axisY, QtCore.Qt.AlignLeft)
+        series.attachAxis(self.axisX)
+        series.attachAxis(self.axisY)
         self.profileChart.legend().setVisible(False)
         self.setChart(self.profileChart)
         self.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)

@@ -1,5 +1,6 @@
 import numpy as np
-from PyQt5 import QtGui
+from PyQt5 import QtGui,QtCore
+from scipy.optimize import least_squares
 import rawpy
 import math
 
@@ -112,3 +113,157 @@ class Image(object):
         info.setStandardButtons(QtWidgets.QMessageBox.Ok)
         info.setEscapeButton(QtWidgets.QMessageBox.Close)
         info.exec()
+
+class Fit(object):
+
+    def __init__(self):
+        super(Fit,self).__init__()
+
+    def gaussian(self,x,height, center,FWHM,offset=0):
+        if FWHM == 0:
+            FWHM = 0.001
+        return height/(FWHM*math.sqrt(math.pi/(4*math.log(2))))*np.exp(-4*math.log(2)*(x - center)**2/(FWHM**2))+offset
+
+    def gaussian_bg(self,x,H1,Hbg,C1,Cbg,W1,Wbg,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+
+    def three_gaussians(self,x,H1,H2,H3,C1,C2,C3,W1,W2,W3,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+offset)
+
+    def three_gaussians_bg(self,x,H1,H2,H3,Hbg,C1,C2,C3,Cbg,W1,W2,W3,Wbg,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+
+    def five_gaussians(self,x,H1,H2,H3,H4,H5,C1,C2,C3,C4,C5,W1,W2,W3,W4,W5,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,H4,C4,W4,offset=0)+
+                self.gaussian(x,H5,C5,W5,offset=0)+offset)
+
+    def five_gaussians_bg(self,x,H1,H2,H3,H4,H5,Hbg,C1,C2,C3,C4,C5,Cbg,\
+                          W1,W2,W3,W4,W5,Wbg,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,H4,C4,W4,offset=0)+
+                self.gaussian(x,H5,C5,W5,offset=0)+
+                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+
+    def seven_gaussians(self,x,H1,H2,H3,H4,H5,H6,H7,C1,C2,C3,C4,C5,C6,C7,\
+                        W1,W2,W3,W4,W5,W6,W7,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,H4,C4,W4,offset=0)+
+                self.gaussian(x,H5,C5,W5,offset=0)+
+                self.gaussian(x,H6,C6,W6,offset=0)+
+                self.gaussian(x,H7,C7,W7,offset=0)+offset)
+
+    def seven_gaussians_bg(self,x,H1,H2,H3,H4,H5,H6,H7,Hbg,C1,C2,C3,C4,C5,C6,C7,Cbg, \
+                        W1,W2,W3,W4,W5,W6,W7,Wbg,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,H4,C4,W4,offset=0)+
+                self.gaussian(x,H5,C5,W5,offset=0)+
+                self.gaussian(x,H6,C6,W6,offset=0)+
+                self.gaussian(x,H7,C7,W7,offset=0)+
+                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+
+    def nine_gaussians(self,x,H1,H2,H3,H4,H5,H6,H7,H8,H9,C1,C2,C3,C4,C5,C6,C7,\
+                       C8,C9,W1,W2,W3,W4,W5,W6,W7,W8,W9,offset=0):
+
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,H4,C4,W4,offset=0)+
+                self.gaussian(x,H5,C5,W5,offset=0)+
+                self.gaussian(x,H6,C6,W6,offset=0)+
+                self.gaussian(x,H7,C7,W7,offset=0)+
+                self.gaussian(x,H8,C8,W8,offset=0)+
+                self.gaussian(x,H9,C9,W9,offset=0)+offset)
+
+    def nine_gaussians_bg(self,x,H1,H2,H3,H4,H5,H6,H7,H8,H9,Hbg,C1,C2,C3,C4,C5,C6,C7,\
+                          C8,C9,Cbg,W1,W2,W3,W4,W5,W6,W7,W8,W9,Wbg,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,H4,C4,W4,offset=0)+
+                self.gaussian(x,H5,C5,W5,offset=0)+
+                self.gaussian(x,H6,C6,W6,offset=0)+
+                self.gaussian(x,H7,C7,W7,offset=0)+
+                self.gaussian(x,H8,C8,W8,offset=0)+
+                self.gaussian(x,H9,C9,W9,offset=0)+
+                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+
+    def eleven_gaussians(self,x,H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,H11,C1,C2,\
+        C3,C4,C5,C6,C7,C8,C9,C10,C11,W1,W2,W3,W4,W5,W6,W7,W8,W9,W10, W11,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,H4,C4,W4,offset=0)+
+                self.gaussian(x,H5,C5,W5,offset=0)+
+                self.gaussian(x,H6,C6,W6,offset=0)+
+                self.gaussian(x,H7,C7,W7,offset=0)+
+                self.gaussian(x,H8,C8,W8,offset=0)+
+                self.gaussian(x,H9,C9,W9,offset=0)+
+                self.gaussian(x,H10,C10,W10,offset=0)+
+                self.gaussian(x,H11,C11,W11,offset=0)+offset)
+
+    def eleven_gaussians_bg(self,x,H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,H11,Hbg,C1,C2, \
+        C3,C4,C5,C6,C7,C8,C9,C10,C11,Cbg,W1,W2,W3,W4,W5,W6,W7,W8,W9,W10,W11,Wbg,offset=0):
+        return (self.gaussian(x,H1,C1,W1,offset=0)+
+                self.gaussian(x,H2,C2,W2,offset=0)+
+                self.gaussian(x,H3,C3,W3,offset=0)+
+                self.gaussian(x,H4,C4,W4,offset=0)+
+                self.gaussian(x,H5,C5,W5,offset=0)+
+                self.gaussian(x,H6,C6,W6,offset=0)+
+                self.gaussian(x,H7,C7,W7,offset=0)+
+                self.gaussian(x,H8,C8,W8,offset=0)+
+                self.gaussian(x,H9,C9,W9,offset=0)+
+                self.gaussian(x,H10,C10,W10,offset=0)+
+                self.gaussian(x,H11,C11,W11,offset=0)+
+                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+
+    def errfunc(self,p,x0,y0):
+        cost = self.fitFunction(x0,*p)-y0
+        self.cost_values.append(sum(map(lambda x:np.abs(x),cost)))
+        return cost
+
+    def getGaussianFit(self,x,y,numberOfPeaks,includeBackground,guess,bounds,FTol,XTol,GTol,method,loss):
+        if includeBackground == 0:
+            if numberOfPeaks == 1:
+                self.fitFunction = self.gaussian
+            elif numberOfPeaks == 3:
+                self.fitFunction = self.three_gaussians
+            elif numberOfPeaks == 5:
+                self.fitFunction = self.five_gaussians
+            elif numberOfPeaks == 7:
+                self.fitFunction = self.seven_gaussians
+            elif numberOfPeaks == 9:
+                self.fitFunction = self.nine_gaussians
+            elif numberOfPeaks == 11:
+                self.fitFunction = self.eleven_gaussians
+        elif includeBackground == 2:
+            if numberOfPeaks == 1:
+                self.fitFunction = self.gaussian_bg
+            elif numberOfPeaks == 3:
+                self.fitFunction = self.three_gaussians_bg
+            elif numberOfPeaks == 5:
+                self.fitFunction = self.five_gaussians_bg
+            elif numberOfPeaks == 7:
+                self.fitFunction = self.seven_gaussians_bg
+            elif numberOfPeaks == 9:
+                self.fitFunction = self.nine_gaussians_bg
+            elif numberOfPeaks == 11:
+                self.fitFunction = self.eleven_gaussians_bg
+        self.cost_values=[]
+        optim = least_squares(fun=self.errfunc,x0=guess,\
+                bounds=bounds,method=method,loss=loss, ftol=FTol,xtol=XTol,gtol=GTol,args=(x,y),verbose=0)
+        return optim, self.cost_values

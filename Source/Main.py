@@ -16,13 +16,24 @@ class Main():
         self.window.show()
         self.menuPreferences = Menu.Preference()
         self.menuTwoDimensionalMapping = Menu.TwoDimensionalMapping()
+        self.menuBroadening = Menu.Broadening()
+        self.menuManualFit = Menu.ManualFit()
+        self.menuGenerateReport = Menu.GenerateReport()
         self.window.menu_DefaultPropertiesRestRequested.connect(self.menuPreferences.Main)
         self.window.menu_TwoDimensionalMappingRequested.connect(self.menuTwoDimensionalMapping.Main)
+        self.window.menu_BroadeningRequested.connect(self.menuBroadening.Main)
+        self.window.menu_ManualFitRequested.connect(self.menuManualFit.Main)
+        self.window.menu_GenerateReportRequested.connect(self.menuGenerateReport.Main)
         self.window.menu_ThreeDimensionalGraphRequested.connect(self.run3DGraph)
         self.menuPreferences.DefaultSettingsChanged.connect(self.window.refresh)
         self.menuPreferences.DefaultSettingsChanged.connect(self.menuTwoDimensionalMapping.refresh)
         self.menuTwoDimensionalMapping.StatusRequested.connect(self.window.status)
         self.window.returnStatus.connect(self.menuTwoDimensionalMapping.Set_Status)
+        self.window.returnStatus.connect(self.menuBroadening.Set_Status)
+        self.window.returnStatus.connect(self.menuManualFit.Set_Status)
+        self.menuBroadening.StatusRequested.connect(self.window.status)
+        self.menuBroadening.connectToCanvas.connect(self.connect_broadening_to_canvas)
+        self.menuManualFit.StatusRequested.connect(self.window.status)
         self.menuTwoDimensionalMapping.Show3DGraph.connect(self.run3DGraph)
         self.menuTwoDimensionalMapping.Show2DContour.connect(self.run2DContour)
         sys.exit(app.exec_())
@@ -36,6 +47,9 @@ class Main():
         self.graph.Show_2D_Contour(path,insideGraph3D = insideGraph3D, min=min, max=max, radius_min=radius_min, radius_max=radius_max,\
                                    number_of_levels=number_of_levels, colormap=colormap)
 
+    def connect_broadening_to_canvas(self):
+        self.menuBroadening.drawLineRequested.connect(self.window.mainTab.currentWidget().drawLine)
+        self.menuBroadening.drawRectRequested.connect(self.window.mainTab.currentWidget().drawRect)
 
 if __name__ == '__main__':
     Main()

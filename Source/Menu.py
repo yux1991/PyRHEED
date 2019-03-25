@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 import numpy as np
 import os
 import glob
@@ -211,12 +211,12 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.chooseSource = QtWidgets.QGroupBox("Source Directory")
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
         self.chooseSourceLabel = QtWidgets.QLabel("The source directory is:\n"+self.currentSource)
+        self.chooseSourceLabel.setAlignment(QtCore.Qt.AlignTop)
         self.chooseSourceButton = QtWidgets.QPushButton("Choose")
         self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseSourceButton.clicked.connect(self.Choose_Source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
-        self.sourceGrid.setAlignment(self.chooseSourceLabel,QtCore.Qt.AlignTop)
         self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
         self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
         self.chooseDestinationLabel = QtWidgets.QLabel("The save destination is:\n"+self.currentSource)
@@ -461,8 +461,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
                         x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
                         map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
                 self.progressAdvance.emit(0,100,(nimg+1-startIndex)*100/(endIndex-startIndex+1))
-                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0The \
-                file being processed right now is: "+image_list[nimg-startIndex])
+                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0The file being processed right now is: "+image_list[nimg-startIndex])
                 if self.centeredCheck.checkState():
                     self.chart.addChart(x2,y2)
                 else:
@@ -575,3 +574,937 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
     def progressReset(self):
         self.progressBar.reset()
         self.progressBar.setVisible(False)
+
+class Broadening(QtCore.QObject,Process.Image,Process.Fit):
+
+    #Public Signals
+    StatusRequested = QtCore.pyqtSignal()
+    progressAdvance = QtCore.pyqtSignal(int,int,int)
+    progressEnd = QtCore.pyqtSignal()
+    connectToCanvas = QtCore.pyqtSignal()
+    drawLineRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
+    drawRectRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    color = ['red','cyan','darkCyan','darkMagenta','darkRed','blue','darkBlue','green','gray','darkYellow','magenta','black']
+
+    def __init__(self):
+        super(Broadening,self).__init__()
+        self.analysisRegion = [0,0,0,0,0]
+        self.config = configparser.ConfigParser()
+        self.config.read('./configuration.ini')
+
+    def refresh(self,config):
+            self.config = config
+            try:
+                self.chart.refresh(config)
+            except:
+                pass
+
+    def Main(self,path):
+        self.startIndex = "0"
+        self.endIndex = "3"
+        self.range = "5"
+        self.FTol = '1e-6'
+        self.XTol = '1e-4'
+        self.GTol = '1e-6'
+        self.numberOfSteps = "20"
+        self.defaultFileName = "Broadening"
+        self.path = os.path.dirname(path)
+        self.currentSource = self.path
+        self.currentDestination = self.currentSource
+        self.Dialog = QtWidgets.QDialog()
+        self.Grid = QtWidgets.QGridLayout(self.Dialog)
+        self.LeftFrame = QtWidgets.QFrame()
+        self.RightFrame = QtWidgets.QFrame()
+        self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
+        self.RightGrid = QtWidgets.QGridLayout(self.RightFrame)
+        self.chooseSource = QtWidgets.QGroupBox("Source Directory")
+        self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
+        self.chooseSourceLabel = QtWidgets.QLabel("The source directory is:\n"+self.currentSource)
+        self.chooseSourceLabel.setAlignment(QtCore.Qt.AlignTop)
+        self.chooseSourceButton = QtWidgets.QPushButton("Choose")
+        self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.chooseSourceButton.clicked.connect(self.Choose_Source)
+        self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
+        self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
+        self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
+        self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
+        self.chooseDestinationLabel = QtWidgets.QLabel("The save destination is:\n"+self.currentSource)
+        self.destinationNameLabel = QtWidgets.QLabel("The file name is:")
+        self.destinationNameEdit = QtWidgets.QLineEdit(self.defaultFileName)
+        self.fileTypeLabel = QtWidgets.QLabel("Type of file is:")
+        self.fileType = QtWidgets.QComboBox()
+        self.fileType.addItem(".txt",".txt")
+        self.fileType.addItem(".xlsx",".xlsx")
+        self.chooseDestinationButton = QtWidgets.QPushButton("Choose")
+        self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.chooseDestinationButton.clicked.connect(self.Choose_Destination)
+        self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0)
+        self.destinationGrid.addWidget(self.chooseDestinationButton,0,1)
+        self.destinationGrid.addWidget(self.destinationNameLabel,1,0)
+        self.destinationGrid.addWidget(self.destinationNameEdit,1,1)
+        self.destinationGrid.addWidget(self.fileTypeLabel,2,0)
+        self.destinationGrid.addWidget(self.fileType,2,1)
+        self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
+        self.parametersBox = QtWidgets.QGroupBox("Choose Image")
+        self.parametersGrid = QtWidgets.QGridLayout(self.parametersBox)
+        self.startImageIndexLabel = QtWidgets.QLabel("Start Image Index")
+        self.startImageIndexEdit = QtWidgets.QLineEdit(self.startIndex)
+        self.endImageIndexLabel = QtWidgets.QLabel("End Image Index")
+        self.endImageIndexEdit = QtWidgets.QLineEdit(self.endIndex)
+        self.rangeLabel = QtWidgets.QLabel("Range (\u212B\u207B\u00B9)")
+        self.rangeEdit = QtWidgets.QLineEdit(self.range)
+        self.parametersGrid.addWidget(self.startImageIndexLabel,0,0)
+        self.parametersGrid.addWidget(self.startImageIndexEdit,0,1)
+        self.parametersGrid.addWidget(self.endImageIndexLabel,1,0)
+        self.parametersGrid.addWidget(self.endImageIndexEdit,1,1)
+        self.parametersGrid.addWidget(self.rangeLabel,2,0)
+        self.parametersGrid.addWidget(self.rangeEdit,2,1)
+        self.fitOptions = QtWidgets.QGroupBox("Fit Options")
+        self.fitOptionsGrid = QtWidgets.QGridLayout(self.fitOptions)
+        self.numberOfPeaksLabel = QtWidgets.QLabel("Number of Gaussian Peaks")
+        self.numberOfPeaksLabel.setFixedWidth(160)
+        self.numberOfPeaksCombo = QtWidgets.QComboBox()
+        self.numberOfPeaksCombo.addItem('1','1')
+        self.numberOfPeaksCombo.addItem('3','3')
+        self.numberOfPeaksCombo.addItem('5','5')
+        self.numberOfPeaksCombo.addItem('7','7')
+        self.numberOfPeaksCombo.addItem('9','9')
+        self.numberOfPeaksCombo.addItem('11','11')
+        self.numberOfPeaksCombo.currentIndexChanged.connect(self.numberOfPeaksChanged)
+        self.includeBG = QtWidgets.QLabel("Include Gaussian Background?")
+        self.BGCheck = QtWidgets.QCheckBox()
+        self.BGCheck.setChecked(False)
+        self.BGCheck.stateChanged.connect(self.BGCheckChanged)
+        self.FTolLabel = QtWidgets.QLabel("Cost Function Tolerance")
+        self.FTolEdit = QtWidgets.QLineEdit(self.FTol)
+        self.XTolLabel = QtWidgets.QLabel("Variable Tolerance")
+        self.XTolEdit = QtWidgets.QLineEdit(self.XTol)
+        self.GTolLabel = QtWidgets.QLabel("Gradient Tolerance")
+        self.GTolEdit = QtWidgets.QLineEdit(self.GTol)
+        self.methodLabel = QtWidgets.QLabel("Algorithm")
+        self.methodLabel.setFixedWidth(160)
+        self.method = QtWidgets.QComboBox()
+        self.method.addItem('Trust Region Reflective','trf')
+        self.method.addItem('Dogleg','dogbox')
+        self.lossLabel = QtWidgets.QLabel("Loss Function")
+        self.lossLabel.setFixedWidth(160)
+        self.loss = QtWidgets.QComboBox()
+        self.loss.addItem('Linear','linear')
+        self.loss.addItem('Soft l1','soft_l1')
+        self.loss.addItem('Huber','huber')
+        self.loss.addItem('Cauchy','cauchy')
+        self.loss.addItem('Arctan','arctan')
+        self.ManualFitButton = QtWidgets.QPushButton("Manual Fit")
+        self.ManualFitButton.clicked.connect(self.ShowManualFit)
+        self.offset = LabelSlider(0,1,100,0,'Offset',0,False,'horizontal')
+        self.fitOptionsGrid.addWidget(self.numberOfPeaksLabel,0,0)
+        self.fitOptionsGrid.addWidget(self.numberOfPeaksCombo,0,1)
+        self.fitOptionsGrid.addWidget(self.methodLabel,1,0)
+        self.fitOptionsGrid.addWidget(self.method,1,1)
+        self.fitOptionsGrid.addWidget(self.lossLabel,2,0)
+        self.fitOptionsGrid.addWidget(self.loss,2,1)
+        self.fitOptionsGrid.addWidget(self.includeBG,3,0)
+        self.fitOptionsGrid.addWidget(self.BGCheck,3,1)
+        self.fitOptionsGrid.addWidget(self.offset,4,0,1,2)
+        self.fitOptionsGrid.addWidget(self.FTolLabel,5,0)
+        self.fitOptionsGrid.addWidget(self.FTolEdit,5,1)
+        self.fitOptionsGrid.addWidget(self.XTolLabel,6,0)
+        self.fitOptionsGrid.addWidget(self.XTolEdit,6,1)
+        self.fitOptionsGrid.addWidget(self.GTolLabel,7,0)
+        self.fitOptionsGrid.addWidget(self.GTolEdit,7,1)
+        self.fitOptionsGrid.addWidget(self.ManualFitButton,8,0,1,2)
+        self.statusBar = QtWidgets.QGroupBox("Log")
+        self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
+        self.statusBar.setFixedHeight(150)
+        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.progressBar = QtWidgets.QProgressBar()
+        self.progressBar.setFixedHeight(12)
+        self.progressBar.setFixedWidth(800)
+        self.progressBar.setVisible(False)
+        self.progressBar.setOrientation(QtCore.Qt.Horizontal)
+        self.progressBarSizePolicy = self.progressBar.sizePolicy()
+        self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
+        self.progressBar.setSizePolicy(self.progressBarSizePolicy)
+        self.progressAdvance.connect(self.progress)
+        self.progressEnd.connect(self.progressReset)
+        self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
+                                    "\u00A0\u00A0\u00A0\u00A0Initialized!")
+        self.logBox.ensureCursorVisible()
+        self.logBox.setAlignment(QtCore.Qt.AlignTop)
+        self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBoxScroll = QtWidgets.QScrollArea()
+        self.logBoxScroll.setWidget(self.logBox)
+        self.logBoxScroll.setWidgetResizable(True)
+        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.statusGrid.addWidget(self.logBoxScroll,0,0)
+        self.statusGrid.setAlignment(self.progressBar,QtCore.Qt.AlignRight)
+        self.ButtonBox = QtWidgets.QDialogButtonBox()
+        self.ButtonBox.addButton("Start",QtWidgets.QDialogButtonBox.AcceptRole)
+        self.ButtonBox.addButton("Reset",QtWidgets.QDialogButtonBox.ResetRole)
+        self.ButtonBox.addButton("Cancel",QtWidgets.QDialogButtonBox.DestructiveRole)
+        self.ButtonBox.setCenterButtons(True)
+        self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked.\
+            connect(self.Start)
+        self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
+            connect(self.Reset)
+        self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.\
+            connect(self.Dialog.reject)
+        self.GenerateReportButton = QtWidgets.QPushButton("Generate Report")
+        self.GenerateReportButton.setEnabled(False)
+        self.GenerateReportButton.clicked.connect(self.GenerateBroadeningReport)
+        self.chartTitle = QtWidgets.QLabel('Profile')
+        self.chart = ProfileChart.ProfileChart(self.config)
+        self.costChartTitle = QtWidgets.QLabel('Cost Function')
+        self.costChart = ProfileChart.ProfileChart(self.config)
+        self.table = QtWidgets.QTableWidget()
+        self.table.setColumnCount(9)
+        self.table.setHorizontalHeaderItem(0,QtWidgets.QTableWidgetItem('C'))
+        self.table.setHorizontalHeaderItem(1,QtWidgets.QTableWidgetItem('C_Low'))
+        self.table.setHorizontalHeaderItem(2,QtWidgets.QTableWidgetItem('C_High'))
+        self.table.setHorizontalHeaderItem(3,QtWidgets.QTableWidgetItem('H'))
+        self.table.setHorizontalHeaderItem(4,QtWidgets.QTableWidgetItem('H_Low'))
+        self.table.setHorizontalHeaderItem(5,QtWidgets.QTableWidgetItem('H_High'))
+        self.table.setHorizontalHeaderItem(6,QtWidgets.QTableWidgetItem('W'))
+        self.table.setHorizontalHeaderItem(7,QtWidgets.QTableWidgetItem('W_Low'))
+        self.table.setHorizontalHeaderItem(8,QtWidgets.QTableWidgetItem('W_High'))
+        self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+        self.table.setMinimumHeight(200)
+        self.table.setRowCount(int(self.numberOfPeaksCombo.currentData()))
+        self.Table_Auto_Initilize()
+        for i in range(1,int(self.numberOfPeaksCombo.currentData())+1):
+            item = QtWidgets.QTableWidgetItem('Peak {}'.format(i))
+            item.setForeground(QtGui.QColor(self.color[i-1]))
+            self.table.setVerticalHeaderItem(i-1,item)
+        self.LeftGrid.addWidget(self.chooseSource,0,0)
+        self.LeftGrid.addWidget(self.chooseDestination,1,0)
+        self.LeftGrid.addWidget(self.parametersBox,2,0)
+        self.LeftGrid.addWidget(self.fitOptions,3,0)
+        self.LeftGrid.addWidget(self.ButtonBox,4,0)
+        self.LeftGrid.addWidget(self.GenerateReportButton,5,0)
+        self.RightGrid.addWidget(self.chartTitle,0,0)
+        self.RightGrid.addWidget(self.costChartTitle,0,1)
+        self.RightGrid.addWidget(self.chart,1,0)
+        self.RightGrid.addWidget(self.costChart,1,1)
+        self.RightGrid.addWidget(self.table,2,0,1,2)
+        self.RightGrid.addWidget(self.statusBar,3,0,1,2)
+        self.RightGrid.addWidget(self.progressBar,4,0,1,2)
+        self.Grid.addWidget(self.LeftFrame,0,0)
+        self.Grid.addWidget(self.RightFrame,0,1)
+        self.Dialog.setWindowTitle("Broadening Analysis")
+        self.Dialog.setMinimumHeight(800)
+        self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
+        self.Dialog.showNormal()
+        self.Dialog.exec_()
+
+    def Choose_Source(self):
+        path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose source directory",self.currentSource,QtWidgets.QFileDialog.ShowDirsOnly)
+        self.currentSource = path
+        self.chooseSourceLabel.setText("The source directory is:\n"+self.currentSource)
+
+    def Choose_Destination(self):
+        path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",self.currentDestination,QtWidgets.QFileDialog.ShowDirsOnly)
+        self.currentDestination = path
+        self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
+
+    def Start(self):
+        if self.TableIsReady():
+            self.StatusRequested.emit()
+            self.windowDefault = dict(self.config['windowDefault'].items())
+            self.logBox.clear()
+            if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
+                    self.status["endY"] == "" \
+                    or self.status["width"] =="": pass
+            else:
+                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Ready to Start!")
+            image_list = []
+            path = os.path.join(self.currentSource,'*.nef')
+            autoWB = self.status["autoWB"]
+            brightness = self.status["brightness"]
+            blackLevel = self.status["blackLevel"]
+            VS = int(self.windowDefault["vs"])
+            HS = int(self.windowDefault["hs"])
+            image_crop = [1200+VS,2650+VS,500+HS,3100+HS]
+            scale_factor = self.status["sensitivity"]/np.sqrt(self.status["energy"])
+            startIndex = int(self.startImageIndexEdit.text())
+            endIndex = int(self.endImageIndexEdit.text())
+            saveFileName = self.destinationNameEdit.text()
+            fileType = self.fileType.currentData()
+            analysisRange = int(self.rangeEdit.text())
+            self.initialparameters = self.initialParameters()
+            self.reportPath = self.currentDestination+"/"+saveFileName+fileType
+            output = open(self.reportPath,mode='w')
+            output.write('This is a summary of the fit results:\n\n')
+            index = []
+            for index_i in range(1,int(self.numberOfPeaksCombo.currentData())+1):
+                index.append(str(index_i))
+            if self.BGCheck.checkState():
+                index.append('BG')
+            results_head =str('Phi').ljust(12)+'\t'+str('Kperp').ljust(12)+'\t'+'\t'.join(str(label+i).ljust(12)+'\t'+str(label+i+'_error').ljust(12) for label in ['H','C','W'] for i in index )+'\t'+str('Offset').ljust(12)+'\t'+str('Offset_error').ljust(12)+'\n'
+            output.write(results_head)
+            if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
+                    self.status["endY"] == ""\
+                or self.status["width"] =="":
+                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0ERROR: Please choose the region!")
+                self.Raise_Error("Please choose the region!")
+            elif self.status["choosedX"] == "" or self.status["choosedY"] == "":
+                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0ERROR: Please choose the origin!")
+                self.Raise_Error("Please choose the origin!")
+            else:
+                self.connectToCanvas.emit()
+                start = QtCore.QPointF()
+                end = QtCore.QPointF()
+                origin = QtCore.QPointF()
+                origin.setX(self.status["choosedX"])
+                origin.setY(self.status["choosedY"])
+                start.setX(self.status["startX"])
+                start.setY(self.status["startY"])
+                end.setX(self.status["endX"])
+                end.setY(self.status["endY"])
+                width = self.status["width"]*scale_factor
+                for filename in glob.glob(path):
+                    image_list.append(filename)
+                for nimg in range(startIndex,endIndex+1):
+                    self.updateResults(self.initialparameters)
+                    self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
+                                       "\u00A0\u00A0\u00A0\u00A0The file being processed right now is: "+image_list[nimg-startIndex])
+                    qImg, img = self.getImage(16,image_list[nimg],autoWB,brightness,blackLevel,image_crop)
+                    x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
+                    newStart = QtCore.QPointF()
+                    newEnd = QtCore.QPointF()
+                    if width==0.0:
+                        step = 5
+                        nos = int(analysisRange*scale_factor/step)
+                    else:
+                        nos = int(analysisRange*scale_factor/width)
+                        step = width
+                    for i in range(1,nos+1):
+                        if x0 == x1:
+                            newStart.setX(x0+i*step)
+                            newStart.setY(y0)
+                            newEnd.setX(x1+i*step)
+                            newEnd.setY(y1)
+                        else:
+                            angle = np.arctan((y0-y1)/(x1-x0))
+                            newStart.setX(int(x0+i*step*np.sin(angle)))
+                            newStart.setY(int(y0+i*step*np.cos(angle)))
+                            newEnd.setX(int(x1+i*step*np.sin(angle)))
+                            newEnd.setY(int(y1+i*step*np.cos(angle)))
+                        if width == 0.0:
+                            self.drawLineRequested.emit(newStart,newEnd,False)
+                            RC,I = self.getLineScan(newStart,newEnd,img,scale_factor)
+                        else:
+                            self.drawRectRequested.emit(newStart,newEnd,width,False)
+                            RC,I = self.getIntegral(newStart,newEnd,width,img,scale_factor)
+                        results, cost = self.getGaussianFit(RC,I,\
+                            int(self.numberOfPeaksCombo.currentData()),\
+                            self.BGCheck.checkState(),self.guess,(self.bound_low,self.bound_high),float(self.FTolEdit.text()),\
+                            float(self.XTolEdit.text()),float(self.GTolEdit.text()),self.method.currentData(),self.loss.currentData())
+                        Kperp = (np.abs((newEnd.y()-newStart.y())*origin.x()-(newEnd.x()-newStart.x())*origin.y()+newEnd.x()*newStart.y()-newEnd.y()*newStart.x())/\
+                                np.sqrt((newEnd.y()-newStart.y())**2+(newEnd.x()-newStart.x())**2))/scale_factor
+                        iteration = np.linspace(1,len(cost)+1,len(cost))
+                        jac = results.jac
+                        cov = np.linalg.pinv(jac.T.dot(jac))
+                        residual_variance = np.sum(results.fun**2)/(len(I)-len(self.guess))
+                        var = np.sqrt(np.diagonal(cov*residual_variance))
+                        value_variance = np.reshape(np.concatenate((np.array(results.x),np.array(var)),axis=0),(2,len(var)))
+                        #for i in range(len(var)):
+                        #    print('Parameter {}: {:6.3f}+/-{:6.3f}'.format(i,value_variance[0,i],value_variance[1,i]))
+                        self.costChart.addChart(iteration,cost,'cost_function')
+                        self.updateResults(results.x)
+                        if i == 1:
+                            self.initialparameters = results.x
+                        fitresults =str(nimg*1.8).ljust(12)+'\t'+str(np.round(Kperp,3)).ljust(12)+'\t'+'\t'.join(str(np.round(e[0],3)).ljust(12)+'\t'+str(np.round(e[1],3)).ljust(12) for e in value_variance.T)+'\n'
+                        output.write(fitresults)
+                        self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
+                                           "\u00A0\u00A0\u00A0\u00A0MESSAGE:"+results.message)
+                        self.plotResults(RC,I)
+                        self.progressAdvance.emit(0,100,((nimg-startIndex)*nos+i)*100/nos/(endIndex-startIndex+1))
+                self.progressEnd.emit()
+                output.close()
+                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Completed!")
+                self.Raise_Attention("Broadening Analysis Completed!")
+                self.GenerateReportButton.setEnabled(True)
+
+    def initialParameters(self):
+        para = []
+        for j in [3,0,6]:
+            for i in range(self.table.rowCount()):
+                para.append(float(self.table.item(i,j).text()))
+        para.append(float(self.offset.value()))
+        return para
+
+    def updateResults(self,results):
+        index=0
+        for j in [3,0,6]:
+            for i in range(self.table.rowCount()):
+                value = np.round(results[index],2)
+                item = QtWidgets.QTableWidgetItem('{}'.format(value))
+                variation = [0.5,0.5,0.5,0.5,0.5,0.5]
+                #Height
+                if j == 3:
+                    item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0,np.round(value-variation[0],2))))
+                    item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[1],2)))
+                #Center
+                elif j == 0:
+                    item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0,np.round(value-variation[2],2))))
+                    item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[3],2)))
+                #Width
+                else:
+                    item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0.1,np.round(value-variation[4],2))))
+                    item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[5],2)))
+                item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                item2.setTextAlignment(QtCore.Qt.AlignCenter)
+                item3.setTextAlignment(QtCore.Qt.AlignCenter)
+                self.table.setItem(i,j,item)
+                self.table.setItem(i,j+1,item2)
+                self.table.setItem(i,j+2,item3)
+                index+=1
+        self.offset.setValue(results[-1])
+
+    def plotResults(self,x0,y0):
+        self.chart.addChart(x0,y0)
+        total = np.full(len(x0),float(self.offset.value()))
+        total_min = 100
+        for i in range(self.table.rowCount()):
+            center = float(self.table.item(i,0).text())
+            height = float(self.table.item(i,3).text())
+            width = float(self.table.item(i,6).text())
+            offset = float(self.offset.value())
+            fit = self.gaussian(x0,height,center,width,offset)
+            fit0 = self.gaussian(x0,height,center,width,0)
+            total = np.add(total,fit0)
+            maxH = self.gaussian(center,height,center,width,offset)
+            minH1 = self.gaussian(x0[0],height,center,width,offset)
+            minH2 = self.gaussian(x0[-1],height,center,width,offset)
+            if min(minH1,minH2) < total_min:
+                total_min = min(minH1,minH2)
+            pen = QtGui.QPen(QtCore.Qt.DotLine)
+            pen.setColor(QtGui.QColor(self.color[i]))
+            pen.setWidth(2)
+            series_fit = QtChart.QLineSeries()
+            series_fit.setPen(pen)
+            for x,y in zip(x0,fit):
+                series_fit.append(x,y)
+            self.chart.profileChart.addSeries(series_fit)
+            for ax in self.chart.profileChart.axes():
+                series_fit.attachAxis(ax)
+            self.chart.profileChart.axisY().setRange(min(minH1,minH2,min(y0)),max(maxH,max(y0)))
+        pen = QtGui.QPen(QtCore.Qt.DotLine)
+        pen.setColor(QtGui.QColor('white'))
+        pen.setWidth(2)
+        series_total = QtChart.QLineSeries()
+        series_total.setPen(pen)
+        for x,y in zip(x0,total):
+            series_total.append(x,y)
+        self.chart.profileChart.addSeries(series_total)
+        for ax in self.chart.profileChart.axes():
+            series_total.attachAxis(ax)
+        self.chart.profileChart.axisY().setRange(min(total[0],total[-1],np.amin(y0),total_min),max(np.amax(total),np.amax(y0)))
+        QtCore.QCoreApplication.processEvents()
+
+    def Reset(self):
+        self.currentSource = self.path
+        self.currentDestination = self.currentSource
+        self.numberOfPeaksCombo.setCurrentText('1')
+        self.chooseSourceLabel.setText("The source directory is:\n"+self.currentSource)
+        self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
+        self.destinationNameEdit.setText(self.defaultFileName)
+        self.startImageIndexEdit.setText(self.startIndex)
+        self.endImageIndexEdit.setText(self.endIndex)
+        self.fileType.setCurrentText(".txt")
+        self.logBox.clear()
+        self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Reset Successful!")
+        self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Ready to Start!")
+
+    def Table_Auto_Initilize(self):
+        self.table.disconnect()
+        for r in range(0,self.table.rowCount()):
+            valueList = ['1','0','5','1','0','5','1','0','5']
+            for c in range(0,self.table.columnCount()):
+                item = QtWidgets.QTableWidgetItem(valueList[c])
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                if c == 0 or c == 3 or c == 6:
+                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
+                self.table.setItem(r,c,item)
+        self.SaveTableContents()
+        self.table.cellChanged.connect(self.SaveTableContents)
+
+    def TableIsReady(self):
+        B = True
+        for j in [3,0,6]:
+            for i in range(self.table.rowCount()):
+                if not (float(self.table.item(i,j).text()) >= float(self.table.item(i,j+1).text()) \
+                        and float(self.table.item(i,j).text()) <= float(self.table.item(i,j+2).text())):
+                    self.Raise_Error('Wrong table entry at cell ({},{})'.format(i,j))
+                    B = False
+        return B
+
+    def SaveTableContents(self,row=0,column=0):
+        self.guess = []
+        self.bound_low = []
+        self.bound_high = []
+        for j in [3,0,6]:
+            for i in range(self.table.rowCount()):
+                self.guess.append(float(self.table.item(i,j).text()))
+        for j in [4,1,7]:
+            for i in range(self.table.rowCount()):
+                self.bound_low.append(float(self.table.item(i,j).text()))
+        for j in [5,2,8]:
+            for i in range(self.table.rowCount()):
+                self.bound_high.append(float(self.table.item(i,j).text()))
+        self.guess.append(float(self.offset.value()))
+        self.bound_low.append(0)
+        self.bound_high.append(1)
+
+    def numberOfPeaksChanged(self):
+        self.table.setRowCount(int(self.numberOfPeaksCombo.currentData()))
+        for i in range(1,int(self.numberOfPeaksCombo.currentData())+1):
+            item = QtWidgets.QTableWidgetItem('Peak {}'.format(i))
+            item.setForeground(QtGui.QColor(self.color[i-1]))
+            self.table.setVerticalHeaderItem(i-1,item)
+        if self.BGCheck.checkState() == 2:
+            self.table.setRowCount(self.table.rowCount()+1)
+            item = QtWidgets.QTableWidgetItem('BG')
+            item.setForeground(QtGui.QColor(self.color[self.table.rowCount()-1]))
+            self.table.setVerticalHeaderItem(self.table.rowCount()-1,item)
+        self.Table_Auto_Initilize()
+
+    def BGCheckChanged(self,state):
+        if state == 2:
+            self.table.setRowCount(self.table.rowCount()+1)
+            item = QtWidgets.QTableWidgetItem('BG')
+            item.setForeground(QtGui.QColor(self.color[self.table.rowCount()-1]))
+            self.table.setVerticalHeaderItem(self.table.rowCount()-1,item)
+        elif state == 0:
+            self.table.removeRow(self.table.rowCount()-1)
+        self.Table_Auto_Initilize()
+
+
+    def GenerateBroadeningReport(self):
+        report = GenerateReport.Main(self.reportPath)
+
+    def ShowManualFit(self):
+        self.StatusRequested.emit()
+        window = ManualFit()
+        window.FitSatisfied.connect(self.updateResults)
+        window.Set_Status(self.status)
+        path = os.path.join(self.currentSource,'*.nef')
+        startIndex = int(self.startImageIndexEdit.text())
+        image_list = []
+        for filename in glob.glob(path):
+            image_list.append(filename)
+        window.Main(image_list[startIndex],self.table.rowCount(),self.BGCheck.checkState())
+
+    def Set_Status(self,status):
+        self.status = status
+
+    def Raise_Error(self,message):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setText(message)
+        msg.setWindowTitle("Error")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.exec()
+
+    def Raise_Attention(self,information):
+        info = QtWidgets.QMessageBox()
+        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setText(information)
+        info.setWindowTitle("Information")
+        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.exec()
+
+    def progress(self,min,max,val):
+        self.progressBar.setVisible(True)
+        self.progressBar.setMinimum(min)
+        self.progressBar.setMaximum(max)
+        self.progressBar.setValue(val)
+
+    def progressReset(self):
+        self.progressBar.reset()
+        self.progressBar.setVisible(False)
+
+class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
+
+    StatusRequested = QtCore.pyqtSignal()
+    FitSatisfied = QtCore.pyqtSignal(list)
+    color = ['red','cyan','darkCyan','darkMagenta','darkRed','blue','darkBlue','green','gray','darkYellow','magenta','black']
+
+    def __init__(self):
+        super(ManualFit,self).__init__()
+        self.config = configparser.ConfigParser()
+        self.config.read('./configuration.ini')
+
+    def Set_Status(self,status):
+        self.status = status
+
+    def getInput(self):
+        items = ['1','1+BG','3','3+BG','5','5+BG','7','7+BG','9','9+BG','11','11+BG']
+        return QtWidgets.QInputDialog.getItem(None,'Input','Choose the Number of Peaks',items,0,False)
+
+    def Main(self,path,nop=1,BG=False):
+        if nop == 0:
+            text, OK = self.getInput()
+            if OK:
+                if text.isdigit():
+                    self.nop = int(text)
+                    self.BG = False
+                else:
+                    self.nop = int(text.split('+')[0])+1
+                    self.BG = True
+            else:
+                return
+        else:
+            self.nop = nop
+            self.BG = BG
+        self.StatusRequested.emit()
+        self.initialGuess = ['1','0.1','1','0.5']
+        if os.path.isdir(path):
+            self.path = os.path.join(path,'*.nef')
+        elif os.path.isfile(path):
+            self.path = path
+        else:
+            self.Raise_Error('Please open a pattern!')
+            return
+        self.Dialog = QtWidgets.QDialog()
+        self.Grid = QtWidgets.QGridLayout(self.Dialog)
+        self.LeftFrame = QtWidgets.QFrame()
+        self.RightFrame = QtWidgets.QFrame()
+        self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
+        self.RightGrid = QtWidgets.QGridLayout(self.RightFrame)
+        self.parameters = QtWidgets.QGroupBox("Fitting Parameters")
+        self.parametersHLayout = QtWidgets.QHBoxLayout(self.parameters)
+        self.windowDefault = dict(self.config['windowDefault'].items())
+        self.RC, self.I = self.profile()
+        self.maxIntensity = np.amax(self.I)
+        self.minIntensity = np.amin(self.I)
+        for i in range(1,self.nop+1):
+            parametersVLayout = QtWidgets.QVBoxLayout()
+            mode = [('C',i,self.RC[-1]/self.nop*i,0,self.RC[-1]),('H',i,float(self.initialGuess[1]),0.01,0.2),\
+                    ('W',i,float(self.initialGuess[2]),0.01,5)]
+            for name,index,value,minimum,maximum in mode:
+                if self.BG and i==self.nop:
+                    if name == 'W':
+                        slider = LabelSlider(minimum,self.RC[-1],100,value,name,index,self.BG,'vertical',self.color[i-1])
+                    elif name == 'H':
+                        slider = LabelSlider(minimum,5,100,value,name,index,self.BG,'vertical',self.color[i-1])
+                    elif name =='C':
+                        slider = LabelSlider(minimum,maximum,100,self.RC[-1]/2,name,index,self.BG,'vertical',self.color[i-1])
+                else:
+                    slider = LabelSlider(minimum,maximum,100,value,name,index,False,'vertical',self.color[i-1])
+                slider.valueChanged.connect(self.updateGuess)
+                parametersVLayout.addWidget(slider)
+            self.parametersHLayout.addLayout(parametersVLayout)
+        self.OffsetSlider = LabelSlider(0,1,100,(self.I[0]+self.I[-1])/2,'O',0)
+        self.OffsetSlider.valueChanged.connect(self.updateGuess)
+        self.parametersHLayout.addWidget(self.OffsetSlider)
+
+        self.AcceptButton = QtWidgets.QPushButton("Accept")
+        self.AcceptButton.clicked.connect(self.Accept)
+        self.FitChartTitle = QtWidgets.QLabel('Profile')
+        self.FitChart = ProfileChart.ProfileChart(self.config)
+        self.FitChart.addChart(self.RC,self.I)
+        self.FitChart.profileChart.setMinimumWidth(650)
+        self.updateGuess()
+
+        self.LeftGrid.addWidget(self.parameters,0,0)
+        self.LeftGrid.addWidget(self.AcceptButton,1,0)
+        self.RightGrid.addWidget(self.FitChartTitle,0,0)
+        self.RightGrid.addWidget(self.FitChart,1,0)
+        self.Grid.addWidget(self.LeftFrame,0,0)
+        self.Grid.addWidget(self.RightFrame,0,1)
+
+        self.Dialog.setWindowTitle("Manual Fit")
+        self.Dialog.setMinimumHeight(600)
+        self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
+        self.Dialog.showNormal()
+        self.Dialog.exec_()
+
+    def Accept(self):
+        self.Dialog.reject()
+        results = self.flatten(self.guess)
+        results.append(float(self.OffsetSlider.value()))
+        self.FitSatisfied.emit(results)
+
+    def flatten(self,input):
+        new_list=[]
+        for i in [1,0,2]:
+            for j in range(len(input)):
+                new_list.append(float(input[j][i]))
+        return new_list
+
+    def updateGuess(self):
+        guess = []
+        for VLayout in self.parametersHLayout.children():
+            row = []
+            for i in range(VLayout.count()):
+                row.append(VLayout.itemAt(i).widget().value())
+            guess.append(row)
+        self.guess = guess
+        self.plotResults(self.RC,self.guess)
+
+    def profile(self):
+        image_list = []
+        autoWB = self.status["autoWB"]
+        brightness = self.status["brightness"]
+        blackLevel = self.status["blackLevel"]
+        VS = int(self.windowDefault["vs"])
+        HS = int(self.windowDefault["hs"])
+        image_crop = [1200+VS,2650+VS,500+HS,3100+HS]
+        scale_factor = self.status["sensitivity"]/np.sqrt(self.status["energy"])
+        for filename in glob.glob(self.path):
+            image_list.append(filename)
+        if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
+                self.status["endY"] == ""\
+            or self.status["width"] =="":
+            self.Raise_Error("Please choose the region!")
+        else:
+            start = QtCore.QPointF()
+            end = QtCore.QPointF()
+            start.setX(self.status["startX"])
+            start.setY(self.status["startY"])
+            end.setX(self.status["endX"])
+            end.setY(self.status["endY"])
+            width = self.status["width"]*scale_factor
+            qImg, img = self.getImage(16,image_list[0],autoWB,brightness,blackLevel,image_crop)
+            if width == 0.0:
+                RC,I = self.getLineScan(start,end,img,scale_factor)
+            else:
+                RC,I = self.getIntegral(start,end,width,img,scale_factor)
+            return RC,I
+
+    def plotResults(self,x0,guess):
+        if len(self.FitChart.profileChart.series())>1:
+            for series in self.FitChart.profileChart.series()[1:]:
+                self.FitChart.profileChart.removeSeries(series)
+        total = np.full(len(x0),float(self.OffsetSlider.value()))
+        total_min = 100
+        for i in range(len(guess)):
+            center = float(guess[i][0])
+            height = float(guess[i][1])
+            width = float(guess[i][2])
+            offset = float(self.OffsetSlider.value())
+            fit = self.gaussian(x0,height,center,width,offset)
+            fit0 = self.gaussian(x0,height,center,width,0)
+            total = np.add(total,fit0)
+            maxH = self.gaussian(center,height,center,width,offset)
+            minH1 = self.gaussian(x0[0],height,center,width,offset)
+            minH2 = self.gaussian(x0[-1],height,center,width,offset)
+            if min(minH1,minH2) < total_min:
+                total_min = min(minH1,minH2)
+            pen = QtGui.QPen(QtCore.Qt.DotLine)
+            pen.setColor(QtGui.QColor(self.color[i]))
+            pen.setWidth(2)
+            self.series_fit = QtChart.QLineSeries()
+            self.series_fit.setPen(pen)
+            for x,y in zip(x0,fit):
+                self.series_fit.append(x,y)
+            self.FitChart.profileChart.addSeries(self.series_fit)
+            for ax in self.FitChart.profileChart.axes():
+                self.series_fit.attachAxis(ax)
+            self.FitChart.profileChart.axisY().setRange(min(minH1,minH2,self.minIntensity),max(maxH,self.maxIntensity))
+        pen = QtGui.QPen(QtCore.Qt.DotLine)
+        pen.setColor(QtGui.QColor('white'))
+        pen.setWidth(2)
+        series_total = QtChart.QLineSeries()
+        series_total.setPen(pen)
+        for x,y in zip(x0,total):
+            series_total.append(x,y)
+        self.FitChart.profileChart.addSeries(series_total)
+        for ax in self.FitChart.profileChart.axes():
+            series_total.attachAxis(ax)
+        self.FitChart.profileChart.axisY().setRange(min(total[0],total[-1],self.minIntensity,total_min),max(np.amax(total),self.maxIntensity))
+
+    def Raise_Error(self,message):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setText(message)
+        msg.setWindowTitle("Error")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.exec()
+
+    def Raise_Attention(self,information):
+        info = QtWidgets.QMessageBox()
+        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setText(information)
+        info.setWindowTitle("Information")
+        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.exec()
+
+class LabelSlider(QtWidgets.QWidget):
+    valueChanged = QtCore.pyqtSignal()
+    def __init__(self,minimum,maximum,scale,value,name,index,BG=False,direction='vertical',color='black'):
+        super(LabelSlider,self).__init__()
+        self.name = name
+        self.scale = scale
+        self.index = index
+        self.BG = BG
+        self.currentValue = value
+        self.direction = direction
+        if direction == 'vertical':
+            self.slider = QtWidgets.QSlider(QtCore.Qt.Vertical)
+        elif direction == 'horizontal':
+            self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.slider.setMinimum(minimum*scale)
+        self.slider.setMaximum(maximum*scale)
+        self.slider.setValue(value*self.scale)
+        self.slider.valueChanged.connect(self.updateLabel)
+
+        self.UIgrid = QtWidgets.QGridLayout()
+        palette = QtGui.QPalette()
+        palette.setColor(QtGui.QPalette.Window, QtCore.Qt.transparent)
+        palette.setColor(QtGui.QPalette.WindowText,QtGui.QColor(color))
+        if direction == 'vertical':
+            if self.BG:
+                self.label = QtWidgets.QLabel('\u00A0\u00A0'+self.name+'\u00A0BG\n({:3.2f})'.format(value))
+            else:
+                self.label = QtWidgets.QLabel('\u00A0\u00A0'+self.name+'{}\n({:3.2f})'.format(self.index,value))
+            self.label.setFixedWidth(35)
+            self.UIgrid.addWidget(self.slider,0,0)
+            self.UIgrid.addWidget(self.label,1,0)
+        elif direction == 'horizontal':
+            self.label = QtWidgets.QLabel(self.name+'\u00A0({:3.2f})'.format(value))
+            self.UIgrid.addWidget(self.label,0,0)
+            self.UIgrid.addWidget(self.slider,0,1)
+        self.label.setAutoFillBackground(True)
+        self.label.setPalette(palette)
+        self.UIgrid.setContentsMargins(0,0,0,0)
+        self.setLayout(self.UIgrid)
+
+    def value(self):
+        return str(self.currentValue)
+
+    def setValue(self,value):
+        self.slider.setValue(value*self.scale)
+
+    def updateLabel(self,value):
+        self.currentValue = value/self.scale
+        if self.direction == 'vertical':
+            if self.BG:
+                self.label.setText('\u00A0\u00A0'+self.name+'\u00A0BG\n({:3.2f})'.format(self.currentValue))
+            else:
+                self.label.setText('\u00A0\u00A0'+self.name+'{}\n({:3.2f})'.format(self.index,self.currentValue))
+        elif self.direction == 'horizontal':
+            self.label.setText(self.name+'\u00A0({:3.2f})'.format(self.currentValue))
+        self.valueChanged.emit()
+
+class GenerateReport(QtCore.QObject):
+
+    def __init__(self):
+        super(GenerateReport,self).__init__()
+        self.config = configparser.ConfigParser()
+        self.config.read('./configuration.ini')
+
+    def Main(self,path):
+        self.reportPath = path
+        self.Dialog = QtWidgets.QDialog()
+        self.Grid = QtWidgets.QGridLayout(self.Dialog)
+        self.LeftFrame = QtWidgets.QFrame()
+        self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
+
+        self.chooseSource = QtWidgets.QGroupBox("Choose the report file")
+        self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
+        self.chooseSourceLabel = QtWidgets.QLabel("The path of the report file is:\n"+self.reportPath)
+        self.chooseSourceLabel.setAlignment(QtCore.Qt.AlignTop)
+        self.chooseSourceButton = QtWidgets.QPushButton("Choose")
+        self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.chooseSourceButton.clicked.connect(self.Choose_Source)
+        self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
+        self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
+
+        self.optionBox = QtWidgets.QGroupBox("Type of the Report to Be Generated")
+        self.optionGrid = QtWidgets.QGridLayout(self.optionBox)
+        self.type = QtWidgets.QButtonGroup()
+        self.type.setExclusive(False)
+        self.typeFrame = QtWidgets.QFrame()
+        self.typeGrid = QtWidgets.QGridLayout(self.typeFrame)
+        self.IA = QtWidgets.QCheckBox("Intensity vs Azimuth")
+        self.FA = QtWidgets.QCheckBox("FWHM vs Azimuth")
+        self.IK = QtWidgets.QCheckBox("Intensity vs Kperp")
+        self.FK = QtWidgets.QCheckBox("FWHM vs Kperp")
+        self.IA.setChecked(True)
+        self.typeGrid.addWidget(self.IA,0,0)
+        self.typeGrid.addWidget(self.FA,0,1)
+        self.typeGrid.addWidget(self.IK,0,2)
+        self.typeGrid.addWidget(self.FK,0,3)
+        self.type.addButton(self.IA)
+        self.type.addButton(self.FA)
+        self.type.addButton(self.IK)
+        self.type.addButton(self.FK)
+        self.optionGrid.addWidget(self.typeFrame,0,0)
+
+        self.statusBar = QtWidgets.QGroupBox("Log")
+        self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
+        self.statusBar.setFixedHeight(150)
+        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
+                                    "\u00A0\u00A0\u00A0\u00A0Initialized!")
+        self.logBox.ensureCursorVisible()
+        self.logBox.setAlignment(QtCore.Qt.AlignTop)
+        self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBoxScroll = QtWidgets.QScrollArea()
+        self.logBoxScroll.setWidget(self.logBox)
+        self.logBoxScroll.setWidgetResizable(True)
+        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.statusGrid.addWidget(self.logBoxScroll,0,0)
+
+        self.ButtonBox = QtWidgets.QDialogButtonBox()
+        self.ButtonBox.addButton("OK",QtWidgets.QDialogButtonBox.AcceptRole)
+        self.ButtonBox.addButton("Cancel",QtWidgets.QDialogButtonBox.DestructiveRole)
+        self.ButtonBox.setCenterButtons(True)
+        self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked.\
+            connect(self.Start)
+        self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
+            connect(self.Dialog.reject)
+
+        self.LeftGrid.addWidget(self.chooseSource,0,0)
+        self.LeftGrid.addWidget(self.optionBox,1,0)
+        self.LeftGrid.addWidget(self.statusBar,2,0)
+        self.LeftGrid.addWidget(self.ButtonBox,3,0)
+
+        self.Grid.addWidget(self.LeftFrame,0,0)
+        self.Dialog.setWindowTitle("Generate Report")
+        self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
+        self.Dialog.showNormal()
+        self.Dialog.exec_()
+
+    def updateLog(self,msg):
+        self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
+
+    def Choose_Source(self):
+        path = QtWidgets.QFileDialog.getOpenFileName(None,"choose the graph",self.reportPath)
+        self.reportPath = path[0]
+        self.reportPathExtension = os.path.splitext(self.reportPath)[1]
+        if not self.reportPathExtension == ".txt":
+            self.Raise_Error('[Error: wrong file type] Please choose a *.txt file')
+            self.updateLog('[Error: wrong file type] Please choose a *.txt file')
+        else:
+            self.chooseSourceLabel.setText("The path of the report is:\n"+self.reportPath)
+            self.updateLog("The report file is loaded")
+
+    def Start(self):
+        return
+
+    def Raise_Error(self,message):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setText(message)
+        msg.setWindowTitle("Error")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.exec()
+
+    def Raise_Attention(self,information):
+        info = QtWidgets.QMessageBox()
+        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setText(information)
+        info.setWindowTitle("Information")
+        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.exec()

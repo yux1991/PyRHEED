@@ -4,9 +4,9 @@ import numpy as np
 class Canvas(QtWidgets.QGraphicsView):
 
     #public signals
-    photoMouseMovement = QtCore.pyqtSignal(QtCore.QPoint)
-    photoMousePress = QtCore.pyqtSignal(QtCore.QPoint)
-    photoMouseRelease = QtCore.pyqtSignal(QtCore.QPoint)
+    photoMouseMovement = QtCore.pyqtSignal(QtCore.QPointF)
+    photoMousePress = QtCore.pyqtSignal(QtCore.QPointF)
+    photoMouseRelease = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     photoMouseDoubleClick = QtCore.pyqtSignal(QtCore.QPoint)
     plotLineScan = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
     plotIntegral = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float)
@@ -223,8 +223,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 if self._mode == "arc":
                     self._drawingArc = True
                 if not self._mode =="pan":
-                    position = self.mapToScene(event.pos())
-                    self.photoMousePress.emit(position.toPoint())
+                    self.photoMousePress.emit(self.start)
                     self._mouseIsPressed = True
         super(Canvas, self).mousePressEvent(event)
 
@@ -243,14 +242,17 @@ class Canvas(QtWidgets.QGraphicsView):
             if not self._mode == "pan":
                 if self._mouseIsPressed:
                     self._mouseIsMoved = True
-            position = self.mapToScene(event.pos())
+            position = QtCore.QPointF(self.mapToScene(event.pos()))
             self.photoMouseMovement.emit(position.toPoint())
         super(Canvas, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        ShiftModified = False
         if self._photo.isUnderMouse():
             if event.button() == QtCore.Qt.LeftButton:
                 if self._mouseIsPressed and self._mouseIsMoved:
+                    if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
+                        ShiftModified = True
                     self.end = QtCore.QPointF(self.mapToScene(event.pos()))
                     if self._drawingLine:
                         self.drawLine(self.start,self.end)
@@ -261,7 +263,7 @@ class Canvas(QtWidgets.QGraphicsView):
                             self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
                             self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
                     position = self.mapToScene(event.pos())
-                    self.photoMouseRelease.emit(position.toPoint())
+                    self.photoMouseRelease.emit(self.end,self.start,ShiftModified)
         self._drawingLine = False
         self._drawingRect = False
         self._drawingArc = False
@@ -376,7 +378,7 @@ class Canvas(QtWidgets.QGraphicsView):
             pass
         self.canvasObject = "none"
 
-    def drawLine(self,start,end):
+    def drawLine(self,start,end,EnablePlot = True):
         self.clearCanvas()
         if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
             if end.x() == start.x():
@@ -393,9 +395,10 @@ class Canvas(QtWidgets.QGraphicsView):
         self._lineItem.show()
         self.canvasObject = "line"
         self.saveStart,self.saveEnd = start,end
-        self.plotLineScan.emit(start,end)
+        if EnablePlot:
+            self.plotLineScan.emit(start,end)
 
-    def drawRect(self,start,end,width):
+    def drawRect(self,start,end,width,EnablePlot = True):
         self.clearCanvas()
         rect = QtGui.QPolygonF()
         if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
@@ -418,7 +421,8 @@ class Canvas(QtWidgets.QGraphicsView):
         self._rectItem.show()
         self.canvasObject = "rectangle"
         self.saveStart,self.saveEnd,self.saveWidth = start,end,width
-        self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
+        if EnablePlot:
+            self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
 
     def drawArc(self,start,radius,width,span,tilt):
         self.clearCanvas()
