@@ -11,6 +11,7 @@ class Cursor(QtWidgets.QWidget):
     def initUI(self):
         #the Cursor Information group box
         self.cursorInfoBox = QtWidgets.QGroupBox('Cursor Information')
+        self.cursorInfoBox.setStyleSheet('QGroupBox::title {color:blue;}')
         self.cursorInfoBoxGrid = QtWidgets.QGridLayout()
         self.choosedXYLabel = QtWidgets.QLabel('Chosen (X,Y)')
         self.choosedXYEdit = QtWidgets.QLineEdit()

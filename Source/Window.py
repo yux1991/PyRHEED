@@ -73,8 +73,10 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         #File Menu
         self.openFile = self.menuFile.addAction("Open",self.MenuActions_Open)
         self.export = self.menuFile.addMenu("Export")
-        self.saveCanvasAsImage = self.export.addAction("RHEED pattern",self.MenuActions_Save_As_Image)
-        self.saveProfileAsText = self.export.addAction("Line Profile",self.MenuActions_Save_As_Text)
+        self.saveCanvasAsImage = self.export.addAction("RHEED pattern as Image",self.MenuActions_Save_As_Image)
+        self.saveProfileAsText = self.export.addAction("Line profile as text",self.MenuActions_Save_As_Text)
+        self.saveProfileAsText = self.export.addAction("Line profile as image",self.MenuActions_Save_Profile_As_Image)
+        self.saveProfileAsText = self.export.addAction("Line profile as SVG",self.MenuActions_Save_As_SVG)
 
         #Preference Menu
         self.defaultSettings = self.menuPreference.addAction("Default Settings",\
@@ -302,7 +304,13 @@ class Window(QtWidgets.QMainWindow,Process.Image):
             self.Raise_Error("Please open a RHEED pattern first")
 
     def MenuActions_Save_As_Text(self):
-        self.profile.saveProfile()
+        self.profile.saveProfileAsText()
+
+    def MenuActions_Save_Profile_As_Image(self):
+        self.profile.saveProfileAsImage()
+
+    def MenuActions_Save_As_SVG(self):
+        self.profile.saveProfileAsSVG()
 
     def MenuActions_Preference_DefaultSettings(self):
         self.menu_DefaultPropertiesRestRequested.emit()

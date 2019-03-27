@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+from PyQt5 import QtCore, QtWidgets, QtGui, QtChart, QtSvg
 import Process
 import numpy as np
 
@@ -33,9 +33,9 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         self._scaleFactor = 1
         self.setContentsMargins(0,0,0,0)
         self.profileChart = QtChart.QChart()
-        self.profileChart.setTheme(self.theme)
         self.profileChart.setBackgroundRoundness(0)
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
+        self.profileChart.setTheme(self.theme)
         self.setChart(self.profileChart)
 
     def refresh(self,config):
@@ -62,7 +62,7 @@ class ProfileChart(QtChart.QChartView,Process.Image):
 
     def addChart(self,radius,profile,type="line"):
         pen = QtGui.QPen(QtCore.Qt.SolidLine)
-        pen.setColor(QtGui.QColor(QtCore.Qt.yellow))
+        pen.setColor(QtGui.QColor(QtCore.Qt.blue))
         pen.setWidth(3)
         series = QtChart.QLineSeries()
         series.setPen(pen)
@@ -98,6 +98,8 @@ class ProfileChart(QtChart.QChartView,Process.Image):
             self.axisY = QtChart.QLogValueAxis()
             self.axisX.setTitleText("Number of Iterations")
             self.axisY.setTitleText("Cost Function")
+        self.axisX.setLabelsFont(QtGui.QFont("Times",pointSize=10,weight=57))
+        self.axisY.setLabelsFont(QtGui.QFont("Times",pointSize=10,weight=57))
         self.profileChart.addAxis(self.axisX, QtCore.Qt.AlignBottom)
         self.profileChart.addAxis(self.axisY, QtCore.Qt.AlignLeft)
         series.attachAxis(self.axisX)
@@ -105,6 +107,7 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         self.profileChart.legend().setVisible(False)
         self.setChart(self.profileChart)
         self.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
+        self.chartIsPresent = True
 
     def setImg(self,img):
         self._img = img
@@ -115,17 +118,14 @@ class ProfileChart(QtChart.QChartView,Process.Image):
     def lineScan(self,start,end):
         x,y = self.getLineScan(start,end,self._img,self._scaleFactor)
         self.addChart(x,y,"line")
-        self.chartIsPresent = True
 
     def integral(self,start,end,width):
         x,y = self.getIntegral(start,end,width,self._img,self._scaleFactor)
         self.addChart(x,y,"rectangle")
-        self.chartIsPresent = True
 
     def chiScan(self,center,radius,width,chiRange,tilt,chiStep=1):
         x,y = self.getChiScan(center,radius,width,chiRange,tilt,self._img,chiStep)
         self.addChart(x,y,"arc")
-        self.chartIsPresent = True
 
     def mouseMoveEvent(self, event):
         if self.chart().plotArea().contains(event.pos()) and self.chartIsPresent:
@@ -138,15 +138,71 @@ class ProfileChart(QtChart.QChartView,Process.Image):
 
     def contextMenuEvent(self,event):
         self.menu = QtWidgets.QMenu()
-        self.save = QtWidgets.QAction('Save as...')
-        self.save.triggered.connect(self.saveProfile)
-        self.menu.addAction(self.save)
+        self.saveAsText = QtWidgets.QAction('Save as text...')
+        self.saveAsText.triggered.connect(self.saveProfileAsText)
+        self.saveAsImage = QtWidgets.QAction('Save as an image...')
+        self.saveAsImage.triggered.connect(self.saveProfileAsImage)
+        self.saveAsSVG = QtWidgets.QAction('Export as SVG...')
+        self.saveAsSVG.triggered.connect(self.saveProfileAsSVG)
+        self.menu.addAction(self.saveAsText)
+        self.menu.addAction(self.saveAsImage)
+        self.menu.addAction(self.saveAsSVG)
         self.menu.popup(event.globalPos())
 
-    def saveProfile(self):
+    def saveProfileAsText(self):
         if self.chartIsPresent:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./profile.txt","Text (*.txt)")
-            np.savetxt(self.filename[0],np.vstack((self.currentRadius,self.currentProfile)).transpose(),fmt='%5.3f')
+            if not self.filename[0] == "":
+                np.savetxt(self.filename[0],np.vstack((self.currentRadius,self.currentProfile)).transpose(),fmt='%5.3f')
+            else:
+                return
+        else:
+            self.Raise_Error("No line profile is available")
+
+    def saveProfileAsImage(self):
+        if self.chartIsPresent:
+            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./profile.png","PNG (*.png);;JPEG (*.jpeg);;GIF (*.gif);;BMP (*.bmp)")
+            if not self.filename[0] == "":
+                output_size = QtCore.QSize(800,600)
+                output_rect = QtCore.QRectF(QtCore.QPointF(0,0),QtCore.QSizeF(output_size))
+                image = QtGui.QImage(output_size,QtGui.QImage.Format_ARGB32)
+                image.fill(QtCore.Qt.transparent)
+                original_size = self.profileChart.size()
+                self.profileChart.resize(QtCore.QSizeF(output_size))
+                painter = QtGui.QPainter()
+                painter.begin(image)
+                painter.setRenderHint(QtGui.QPainter.Antialiasing)
+                self.profileChart.scene().render(painter, source=output_rect,target=output_rect,mode=QtCore.Qt.IgnoreAspectRatio)
+                painter.end()
+                self.profileChart.resize(original_size)
+                image.save(self.filename[0])
+            else:
+                return
+        else:
+            self.Raise_Error("No line profile is available")
+
+    def saveProfileAsSVG(self):
+        if self.chartIsPresent:
+            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./profile.svg","SVG (*.svg)")
+            if not self.filename[0] == "":
+                output_size = QtCore.QSize(800,600)
+                output_rect = QtCore.QRectF(QtCore.QPointF(0,0),QtCore.QSizeF(output_size))
+
+                svg = QtSvg.QSvgGenerator()
+                svg.setFileName(self.filename[0])
+                svg.setSize(output_size)
+                svg.setViewBox(output_rect)
+
+                original_size = self.profileChart.size()
+                self.profileChart.resize(QtCore.QSizeF(output_size))
+                painter = QtGui.QPainter()
+                painter.begin(svg)
+                painter.setRenderHint(QtGui.QPainter.Antialiasing)
+                self.profileChart.scene().render(painter, source=output_rect,target=output_rect,mode=QtCore.Qt.IgnoreAspectRatio)
+                painter.end()
+                self.profileChart.resize(original_size)
+            else:
+                return
         else:
             self.Raise_Error("No line profile is available")
 

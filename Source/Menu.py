@@ -6,6 +6,7 @@ import configparser
 import Process
 import math
 import ProfileChart
+import matplotlib.pyplot as plt
 
 class Preference(QtCore.QObject):
 
@@ -209,15 +210,17 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
         self.RightGrid = QtWidgets.QGridLayout(self.RightFrame)
         self.chooseSource = QtWidgets.QGroupBox("Source Directory")
+        self.chooseSource.setStyleSheet('QGroupBox::title {color:blue;}')
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
+        self.sourceGrid.setAlignment(QtCore.Qt.AlignTop)
         self.chooseSourceLabel = QtWidgets.QLabel("The source directory is:\n"+self.currentSource)
-        self.chooseSourceLabel.setAlignment(QtCore.Qt.AlignTop)
-        self.chooseSourceButton = QtWidgets.QPushButton("Choose")
+        self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
         self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseSourceButton.clicked.connect(self.Choose_Source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
         self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
+        self.chooseDestination.setStyleSheet('QGroupBox::title {color:blue;}')
         self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
         self.chooseDestinationLabel = QtWidgets.QLabel("The save destination is:\n"+self.currentSource)
         self.destinationNameLabel = QtWidgets.QLabel("The file name is:")
@@ -241,7 +244,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.coordnateGrid.addWidget(self.cartesian,0,1)
         self.coordinate.addButton(self.polar)
         self.coordinate.addButton(self.cartesian)
-        self.chooseDestinationButton = QtWidgets.QPushButton("Choose")
+        self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
         self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseDestinationButton.clicked.connect(self.Choose_Destination)
         self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0)
@@ -256,6 +259,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.destinationGrid.addWidget(self.centeredCheck,4,1)
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
         self.parametersBox = QtWidgets.QGroupBox("Choose Image")
+        self.parametersBox.setStyleSheet('QGroupBox::title {color:blue;}')
         self.parametersGrid = QtWidgets.QGridLayout(self.parametersBox)
         self.startImageIndexLabel = QtWidgets.QLabel("Start Image Index")
         self.startImageIndexEdit = QtWidgets.QLineEdit(self.startIndex)
@@ -266,6 +270,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.parametersGrid.addWidget(self.endImageIndexLabel,1,0)
         self.parametersGrid.addWidget(self.endImageIndexEdit,1,1)
         self.plotOptions = QtWidgets.QGroupBox("Contour Plot Options")
+        self.plotOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.plotOptionsGrid = QtWidgets.QGridLayout(self.plotOptions)
         self.colormapLabel = QtWidgets.QLabel("Colormap")
         self.colormap = QtWidgets.QComboBox()
@@ -317,6 +322,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.plotOptionsGrid.addWidget(self.numberOfContourLevelsLabel,5,0)
         self.plotOptionsGrid.addWidget(self.numberOfContourLevelsSlider,5,1)
         self.statusBar = QtWidgets.QGroupBox("Log")
+        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
@@ -584,7 +590,7 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
     connectToCanvas = QtCore.pyqtSignal()
     drawLineRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     drawRectRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
-    color = ['red','cyan','darkCyan','darkMagenta','darkRed','blue','darkBlue','green','gray','darkYellow','magenta','black']
+    color = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','yellow','darkYellow','black']
 
     def __init__(self):
         super(Broadening,self).__init__()
@@ -618,15 +624,17 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
         self.RightGrid = QtWidgets.QGridLayout(self.RightFrame)
         self.chooseSource = QtWidgets.QGroupBox("Source Directory")
+        self.chooseSource.setStyleSheet('QGroupBox::title {color:blue;}')
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
+        self.sourceGrid.setAlignment(QtCore.Qt.AlignTop)
         self.chooseSourceLabel = QtWidgets.QLabel("The source directory is:\n"+self.currentSource)
-        self.chooseSourceLabel.setAlignment(QtCore.Qt.AlignTop)
-        self.chooseSourceButton = QtWidgets.QPushButton("Choose")
+        self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
         self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseSourceButton.clicked.connect(self.Choose_Source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
         self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
+        self.chooseDestination.setStyleSheet('QGroupBox::title {color:blue;}')
         self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
         self.chooseDestinationLabel = QtWidgets.QLabel("The save destination is:\n"+self.currentSource)
         self.destinationNameLabel = QtWidgets.QLabel("The file name is:")
@@ -635,7 +643,7 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.fileType = QtWidgets.QComboBox()
         self.fileType.addItem(".txt",".txt")
         self.fileType.addItem(".xlsx",".xlsx")
-        self.chooseDestinationButton = QtWidgets.QPushButton("Choose")
+        self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
         self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseDestinationButton.clicked.connect(self.Choose_Destination)
         self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0)
@@ -646,6 +654,7 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.destinationGrid.addWidget(self.fileType,2,1)
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
         self.parametersBox = QtWidgets.QGroupBox("Choose Image")
+        self.parametersBox.setStyleSheet('QGroupBox::title {color:blue;}')
         self.parametersGrid = QtWidgets.QGridLayout(self.parametersBox)
         self.startImageIndexLabel = QtWidgets.QLabel("Start Image Index")
         self.startImageIndexEdit = QtWidgets.QLineEdit(self.startIndex)
@@ -660,6 +669,7 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.parametersGrid.addWidget(self.rangeLabel,2,0)
         self.parametersGrid.addWidget(self.rangeEdit,2,1)
         self.fitOptions = QtWidgets.QGroupBox("Fit Options")
+        self.fitOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.fitOptionsGrid = QtWidgets.QGridLayout(self.fitOptions)
         self.numberOfPeaksLabel = QtWidgets.QLabel("Number of Gaussian Peaks")
         self.numberOfPeaksLabel.setFixedWidth(160)
@@ -714,6 +724,7 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.fitOptionsGrid.addWidget(self.GTolEdit,7,1)
         self.fitOptionsGrid.addWidget(self.ManualFitButton,8,0,1,2)
         self.statusBar = QtWidgets.QGroupBox("Log")
+        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
@@ -830,16 +841,28 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
             endIndex = int(self.endImageIndexEdit.text())
             saveFileName = self.destinationNameEdit.text()
             fileType = self.fileType.currentData()
-            analysisRange = int(self.rangeEdit.text())
+            analysisRange = float(self.rangeEdit.text())
             self.initialparameters = self.initialParameters()
             self.reportPath = self.currentDestination+"/"+saveFileName+fileType
             output = open(self.reportPath,mode='w')
-            output.write('This is a summary of the fit results:\n\n')
+            output.write(QtCore.QDateTime.currentDateTime().toString("MMMM d, yyyy  hh:mm:ss ap")+"\n")
+            output.write("The source directory is: "+self.currentSource+"\n")
             index = []
             for index_i in range(1,int(self.numberOfPeaksCombo.currentData())+1):
                 index.append(str(index_i))
             if self.BGCheck.checkState():
                 index.append('BG')
+            information = self.status
+            information['AnalysisRange'] = analysisRange
+            information['NumberOfPeaks'] = int(self.numberOfPeaksCombo.currentData())
+            information['BGCheck'] = self.BGCheck.checkState()
+            information['FTol'] = float(self.FTolEdit.text())
+            information['XTol'] = float(self.XTolEdit.text())
+            information['GTol'] = float(self.GTolEdit.text())
+            information['method'] = self.method.currentData()
+            information['loss_function'] = self.loss.currentData()
+            output.write(str(information))
+            output.write('\n\n')
             results_head =str('Phi').ljust(12)+'\t'+str('Kperp').ljust(12)+'\t'+'\t'.join(str(label+i).ljust(12)+'\t'+str(label+i+'_error').ljust(12) for label in ['H','C','W'] for i in index )+'\t'+str('Offset').ljust(12)+'\t'+str('Offset_error').ljust(12)+'\n'
             output.write(results_head)
             if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
@@ -867,7 +890,7 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
                 for nimg in range(startIndex,endIndex+1):
                     self.updateResults(self.initialparameters)
                     self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
-                                       "\u00A0\u00A0\u00A0\u00A0The file being processed right now is: "+image_list[nimg-startIndex])
+                                       "\u00A0\u00A0\u00A0\u00A0The file being processed right now is: "+image_list[nimg])
                     qImg, img = self.getImage(16,image_list[nimg],autoWB,brightness,blackLevel,image_crop)
                     x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
                     newStart = QtCore.QPointF()
@@ -908,8 +931,6 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
                         residual_variance = np.sum(results.fun**2)/(len(I)-len(self.guess))
                         var = np.sqrt(np.diagonal(cov*residual_variance))
                         value_variance = np.reshape(np.concatenate((np.array(results.x),np.array(var)),axis=0),(2,len(var)))
-                        #for i in range(len(var)):
-                        #    print('Parameter {}: {:6.3f}+/-{:6.3f}'.format(i,value_variance[0,i],value_variance[1,i]))
                         self.costChart.addChart(iteration,cost,'cost_function')
                         self.updateResults(results.x)
                         if i == 1:
@@ -992,7 +1013,7 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
                 series_fit.attachAxis(ax)
             self.chart.profileChart.axisY().setRange(min(minH1,minH2,min(y0)),max(maxH,max(y0)))
         pen = QtGui.QPen(QtCore.Qt.DotLine)
-        pen.setColor(QtGui.QColor('white'))
+        pen.setColor(QtGui.QColor('red'))
         pen.setWidth(2)
         series_total = QtChart.QLineSeries()
         series_total.setPen(pen)
@@ -1083,7 +1104,8 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
 
 
     def GenerateBroadeningReport(self):
-        report = GenerateReport.Main(self.reportPath)
+        report = GenerateReport()
+        report.Main(self.reportPath,True)
 
     def ShowManualFit(self):
         self.StatusRequested.emit()
@@ -1132,7 +1154,7 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
 
     StatusRequested = QtCore.pyqtSignal()
     FitSatisfied = QtCore.pyqtSignal(list)
-    color = ['red','cyan','darkCyan','darkMagenta','darkRed','blue','darkBlue','green','gray','darkYellow','magenta','black']
+    color = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','yellow','darkYellow','black']
 
     def __init__(self):
         super(ManualFit,self).__init__()
@@ -1177,6 +1199,7 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
         self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
         self.RightGrid = QtWidgets.QGridLayout(self.RightFrame)
         self.parameters = QtWidgets.QGroupBox("Fitting Parameters")
+        self.parameters.setStyleSheet('QGroupBox::title {color:blue;}')
         self.parametersHLayout = QtWidgets.QHBoxLayout(self.parameters)
         self.windowDefault = dict(self.config['windowDefault'].items())
         self.RC, self.I = self.profile()
@@ -1184,7 +1207,7 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
         self.minIntensity = np.amin(self.I)
         for i in range(1,self.nop+1):
             parametersVLayout = QtWidgets.QVBoxLayout()
-            mode = [('C',i,self.RC[-1]/self.nop*i,0,self.RC[-1]),('H',i,float(self.initialGuess[1]),0.01,0.2),\
+            mode = [('C',i,self.RC[-1]/self.nop*i,0,self.RC[-1]),('H',i,float(self.initialGuess[1]),0.01,0.5),\
                     ('W',i,float(self.initialGuess[2]),0.01,5)]
             for name,index,value,minimum,maximum in mode:
                 if self.BG and i==self.nop:
@@ -1308,7 +1331,7 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
                 self.series_fit.attachAxis(ax)
             self.FitChart.profileChart.axisY().setRange(min(minH1,minH2,self.minIntensity),max(maxH,self.maxIntensity))
         pen = QtGui.QPen(QtCore.Qt.DotLine)
-        pen.setColor(QtGui.QColor('white'))
+        pen.setColor(QtGui.QColor('red'))
         pen.setWidth(2)
         series_total = QtChart.QLineSeries()
         series_total.setPen(pen)
@@ -1336,6 +1359,68 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
         info.setStandardButtons(QtWidgets.QMessageBox.Ok)
         info.setEscapeButton(QtWidgets.QMessageBox.Close)
         info.exec()
+
+class DoubleSlider(QtWidgets.QWidget):
+    valueChanged = QtCore.pyqtSignal(float,float)
+
+    def __init__(self,minimum,maximum,scale,head,tail,text,unit,direction='horizontal'):
+        super(DoubleSlider,self).__init__()
+        self.currentMin, self.currentMax = int(head/scale),int(tail/scale)
+        self.text = text
+        self.scale = scale
+        self.unit = unit
+        self.minLabel = QtWidgets.QLabel(self.text+"_min = {:5.2f} ".format(self.currentMin*self.scale)+"("+unit+")")
+        self.minLabel.setFixedWidth(180)
+        self.minSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.minSlider.setFixedWidth(300)
+        self.minSlider.setMinimum(minimum)
+        self.minSlider.setMaximum(maximum)
+        self.minSlider.setValue(self.currentMin)
+        self.minSlider.valueChanged.connect(self.minChanged)
+
+        self.maxLabel = QtWidgets.QLabel(self.text+"_max = {:5.2f} ".format(self.currentMax*self.scale)+"("+unit+")")
+        self.maxLabel.setFixedWidth(180)
+        self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.maxSlider.setFixedWidth(300)
+        self.maxSlider.setMinimum(minimum)
+        self.maxSlider.setMaximum(maximum)
+        self.maxSlider.setValue(self.currentMax)
+        self.maxSlider.valueChanged.connect(self.maxChanged)
+
+        self.UIgrid = QtWidgets.QGridLayout()
+        self.UIgrid.addWidget(self.minLabel,0,0)
+        self.UIgrid.addWidget(self.minSlider,0,1)
+        self.UIgrid.addWidget(self.maxLabel,1,0)
+        self.UIgrid.addWidget(self.maxSlider,1,1)
+        self.UIgrid.setContentsMargins(0,0,0,0)
+        self.setLayout(self.UIgrid)
+
+    def setHead(self,value):
+        self.minSlider.setValue(int(value/self.scale))
+
+    def setTail(self,value):
+        self.maxSlider.setValue(int(value/self.scale))
+
+    def values(self):
+        return self.currentMin*self.scale, self.currentMax*self.scale
+
+    def minChanged(self):
+        self.currentMin = self.minSlider.value()
+        if self.currentMin > self.currentMax:
+            self.maxSlider.setValue(self.currentMin)
+        self.minLabel.setText(self.text+"_min = {:5.2f} ".format(self.currentMin*self.scale)+"("+self.unit+")")
+        self.valueChanged.emit(self.currentMin*self.scale, self.currentMax*self.scale)
+
+    def maxChanged(self):
+        self.currentMax = self.maxSlider.value()
+        if self.currentMin > self.currentMax:
+            self.minSlider.setValue(self.currentMax)
+        self.maxLabel.setText(self.text+"_max = {:5.2f} ".format(self.currentMax*self.scale)+"("+self.unit+")")
+        self.valueChanged.emit(self.currentMin*self.scale, self.currentMax*self.scale)
+
+    def setEnabled(self,enable):
+        self.minSlider.setEnabled(enable)
+        self.maxSlider.setEnabled(enable)
 
 class LabelSlider(QtWidgets.QWidget):
     valueChanged = QtCore.pyqtSignal()
@@ -1396,30 +1481,64 @@ class LabelSlider(QtWidgets.QWidget):
 
 class GenerateReport(QtCore.QObject):
 
+    StatusRequested = QtCore.pyqtSignal()
+
     def __init__(self):
         super(GenerateReport,self).__init__()
         self.config = configparser.ConfigParser()
         self.config.read('./configuration.ini')
 
-    def Main(self,path):
-        self.reportPath = path
+    def Set_Status(self,status):
+        self.status = status
+
+    def Main(self,path,preload=False):
+        self.StatusRequested.emit()
+        self.path = path
+        self.KPmin = 0
+        self.KPmax = 100
+        self.currentKP = 0
+        self.RangeStart = 0
+        self.AzimuthStart = 0
+        self.KperpSliderScale = 1
+        self.AZmin = 0
+        self.AZmax = 100
+        self.currentAzimuth = 0
+        self.Imin = 0
+        self.Imax = 2
+        self.currentImin = 0
+        self.currentImax = 1
+        self.Fmin = 0
+        self.Fmax = 2
+        self.currentFmin = 0
+        self.currentFmax = 1
         self.Dialog = QtWidgets.QDialog()
         self.Grid = QtWidgets.QGridLayout(self.Dialog)
         self.LeftFrame = QtWidgets.QFrame()
         self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
 
-        self.chooseSource = QtWidgets.QGroupBox("Choose the report file")
+        self.chooseSource = QtWidgets.QGroupBox("Choose the Report File")
+        self.chooseSource.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.chooseSource.setMinimumHeight(100)
+        self.chooseSource.setMinimumWidth(300)
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
-        self.chooseSourceLabel = QtWidgets.QLabel("The path of the report file is:\n"+self.reportPath)
-        self.chooseSourceLabel.setAlignment(QtCore.Qt.AlignTop)
-        self.chooseSourceButton = QtWidgets.QPushButton("Choose")
+        self.sourceGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.chooseSourceLabel = QtWidgets.QLabel("The path of the report file is:\n"+self.path)
+        self.chooseSourceLabel.setWordWrap(True)
+        self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
         self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseSourceButton.clicked.connect(self.Choose_Source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
 
-        self.optionBox = QtWidgets.QGroupBox("Type of the Report to Be Generated")
-        self.optionGrid = QtWidgets.QGridLayout(self.optionBox)
+        self.ReportInformationBox = QtWidgets.QGroupBox("Information")
+        self.ReportInformationBox.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.ReportInformationGrid = QtWidgets.QGridLayout(self.ReportInformationBox)
+        self.ReportInformation = QtWidgets.QLabel("Number of peaks:\nDate of the report:\nStart image index:\nEnd image index:\nStart Kperp position:\nEnd Kperp position:\nKperp step size:")
+        self.ReportInformationGrid.addWidget(self.ReportInformation)
+
+        self.typeOfReportBox = QtWidgets.QGroupBox("Type of the Report to Be Generated")
+        self.typeOfReportBox.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.typeOfReportGrid = QtWidgets.QGridLayout(self.typeOfReportBox)
         self.type = QtWidgets.QButtonGroup()
         self.type.setExclusive(False)
         self.typeFrame = QtWidgets.QFrame()
@@ -1428,18 +1547,53 @@ class GenerateReport(QtCore.QObject):
         self.FA = QtWidgets.QCheckBox("FWHM vs Azimuth")
         self.IK = QtWidgets.QCheckBox("Intensity vs Kperp")
         self.FK = QtWidgets.QCheckBox("FWHM vs Kperp")
-        self.IA.setChecked(True)
         self.typeGrid.addWidget(self.IA,0,0)
-        self.typeGrid.addWidget(self.FA,0,1)
-        self.typeGrid.addWidget(self.IK,0,2)
-        self.typeGrid.addWidget(self.FK,0,3)
+        self.typeGrid.addWidget(self.FA,1,0)
+        self.typeGrid.addWidget(self.IK,2,0)
+        self.typeGrid.addWidget(self.FK,3,0)
         self.type.addButton(self.IA)
         self.type.addButton(self.FA)
         self.type.addButton(self.IK)
         self.type.addButton(self.FK)
-        self.optionGrid.addWidget(self.typeFrame,0,0)
+        self.typeOfReportGrid.addWidget(self.typeFrame,0,0)
+
+        self.optionBox = QtWidgets.QGroupBox("Plot Options")
+        self.optionBox.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.optionGrid = QtWidgets.QGridLayout(self.optionBox)
+        self.peakLabel = QtWidgets.QLabel("Choose the peak to be analyzed:")
+        self.peak = QtWidgets.QComboBox()
+        self.peak.addItem('Center','0')
+        self.KperpLabel = QtWidgets.QLabel("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
+        self.KperpSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.KperpSlider.setMinimum(self.KPmin)
+        self.KperpSlider.setMaximum(self.KPmax)
+        self.KperpSlider.setValue(self.currentKP)
+        self.KperpSlider.valueChanged.connect(self.KPChanged)
+        self.KperpSlider.setEnabled(False)
+        self.AzimuthLabel = QtWidgets.QLabel("Azimuth Angle = {:5.1f} (\u00B0)".format(self.currentAzimuth))
+        self.AzimuthSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.AzimuthSlider.setMinimum(self.AZmin)
+        self.AzimuthSlider.setMaximum(self.AZmax)
+        self.AzimuthSlider.setValue(0)
+        self.AzimuthSlider.valueChanged.connect(self.AzimuthChanged)
+        self.AzimuthSlider.setEnabled(False)
+
+        self.intensityRangeSlider = DoubleSlider(minimum=0,maximum=200,scale=0.01,head=0,tail=1,text="Intensity",unit='arb. units')
+        self.intensityRangeSlider.setEnabled(False)
+        self.FWHMRangeSlider = DoubleSlider(minimum=0,maximum=200,scale=0.01,head=0,tail=1,text="FWHM",unit='\u212B\u207B\u00B9')
+        self.FWHMRangeSlider.setEnabled(False)
+
+        self.optionGrid.addWidget(self.peakLabel,0,0)
+        self.optionGrid.addWidget(self.peak,0,1)
+        self.optionGrid.addWidget(self.KperpLabel,1,0,1,2)
+        self.optionGrid.addWidget(self.KperpSlider,2,0,1,2)
+        self.optionGrid.addWidget(self.AzimuthLabel,3,0,1,2)
+        self.optionGrid.addWidget(self.AzimuthSlider,4,0,1,2)
+        self.optionGrid.addWidget(self.intensityRangeSlider,5,0,1,2)
+        self.optionGrid.addWidget(self.FWHMRangeSlider,6,0,1,2)
 
         self.statusBar = QtWidgets.QGroupBox("Log")
+        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
@@ -1463,12 +1617,23 @@ class GenerateReport(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
             connect(self.Dialog.reject)
 
-        self.LeftGrid.addWidget(self.chooseSource,0,0)
-        self.LeftGrid.addWidget(self.optionBox,1,0)
-        self.LeftGrid.addWidget(self.statusBar,2,0)
-        self.LeftGrid.addWidget(self.ButtonBox,3,0)
-
+        self.LeftGrid.addWidget(self.chooseSource,0,0,1,2)
+        self.LeftGrid.addWidget(self.ReportInformationBox,1,0)
+        self.LeftGrid.addWidget(self.typeOfReportBox,1,1)
+        self.LeftGrid.addWidget(self.optionBox,3,0,1,2)
+        self.LeftGrid.addWidget(self.statusBar,4,0,1,2)
+        self.LeftGrid.addWidget(self.ButtonBox,5,0,1,2)
         self.Grid.addWidget(self.LeftFrame,0,0)
+
+        self.IA.stateChanged.connect(self.IACheckChanged)
+        self.FA.stateChanged.connect(self.FACheckChanged)
+        self.IK.stateChanged.connect(self.IKCheckChanged)
+        self.FK.stateChanged.connect(self.FKCheckChanged)
+        self.IA.setChecked(True)
+
+        if preload:
+            self.loadReport(self.path)
+
         self.Dialog.setWindowTitle("Generate Report")
         self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
         self.Dialog.showNormal()
@@ -1478,18 +1643,218 @@ class GenerateReport(QtCore.QObject):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
 
     def Choose_Source(self):
-        path = QtWidgets.QFileDialog.getOpenFileName(None,"choose the graph",self.reportPath)
-        self.reportPath = path[0]
-        self.reportPathExtension = os.path.splitext(self.reportPath)[1]
-        if not self.reportPathExtension == ".txt":
+        path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The Report File",self.path)
+        self.path = path[0]
+        self.pathExtension = os.path.splitext(self.path)[1]
+        if not self.pathExtension == ".txt":
             self.Raise_Error('[Error: wrong file type] Please choose a *.txt file')
             self.updateLog('[Error: wrong file type] Please choose a *.txt file')
         else:
-            self.chooseSourceLabel.setText("The path of the report is:\n"+self.reportPath)
-            self.updateLog("The report file is loaded")
+            self.chooseSourceLabel.setText("The path of the report is:\n"+self.path)
+        self.loadReport(self.path)
 
     def Start(self):
-        return
+        Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
+        Az = self.currentAzimuth*1.8+self.AzimuthStart
+        if self.IA.checkState() == 2:
+            I, A, Ierror = self.getIA()
+            self.IAPlot(I,A,Kp,self.intensityRangeSlider.values()[0],self.intensityRangeSlider.values()[1])
+        if self.IK.checkState() == 2:
+            I, K, Ierror = self.getIK()
+            self.IKPlot(I,K,Az)
+        if self.FA.checkState() == 2:
+            F, A, Ferror = self.getFA()
+            self.FAPlot(F,A,Kp,self.FWHMRangeSlider.values()[0],self.FWHMRangeSlider.values()[1])
+        if self.FK.checkState() == 2:
+            F, K, Ferror = self.getFK()
+            self.FKPlot(F,K,Az)
+        plt.show()
+
+    def getIA(self):
+        peakIndex = np.round(float(self.peak.currentData()),0)
+        columnI = int(1+peakIndex*2+1)
+        columnIerror = int(1+peakIndex*2+2)
+        rows = np.full(self.AZmax+1, self.currentKP).astype(int) + np.linspace(0,self.AZmax,self.AZmax+1).astype(int)*(self.KPmax+1)
+        A = self.Angles
+        I = np.fromiter((self.report[i,columnI] for i in rows.tolist()),float)
+        Ierror = np.fromiter((self.report[i,columnIerror] for i in rows.tolist()),float)
+        return I,A,Ierror
+
+    def getFA(self):
+        if self.BGCheck:
+            nop = self.NumberOfPeaks+1
+        else:
+            nop = self.NumberOfPeaks
+        peakIndex = np.round(float(self.peak.currentData()),0)
+        columnF = int(1+nop*4+peakIndex*2+1)
+        columnFerror = int(1+nop*4+peakIndex*2+2)
+        rows = np.full(self.AZmax+1, self.currentKP).astype(int) + np.linspace(0,self.AZmax,self.AZmax+1).astype(int)*(self.KPmax+1)
+        A = self.Angles
+        F = np.fromiter((self.report[i,columnF] for i in rows.tolist()),float)
+        Ferror = np.fromiter((self.report[i,columnFerror] for i in rows.tolist()),float)
+        return F,A,Ferror
+
+    def getIK(self):
+        if self.BGCheck:
+            nop = self.NumberOfPeaks+1
+        else:
+            nop = self.NumberOfPeaks
+        peakIndex = np.round(float(self.peak.currentData()),0)
+        columnI = int(1+peakIndex*2+1)
+        columnIerror = int(1+peakIndex*2+2)
+        rows = np.full(self.KPmax+1, self.currentAzimuth*(self.KPmax+1)).astype(int) + np.linspace(0,self.KPmax,self.KPmax+1).astype(int)
+        K = self.Kperps
+        I = np.fromiter((self.report[i,columnI] for i in rows.tolist()),float)
+        Ierror = np.fromiter((self.report[i,columnIerror] for i in rows.tolist()),float)
+        return I,K,Ierror
+
+    def getFK(self):
+        if self.BGCheck:
+            nop = self.NumberOfPeaks+1
+        else:
+            nop = self.NumberOfPeaks
+        peakIndex = np.round(float(self.peak.currentData()),0)
+        columnF = int(1+nop*4+peakIndex*2+1)
+        columnFerror = int(1+nop*4+peakIndex*2+2)
+        rows = np.full(self.KPmax+1, self.currentAzimuth*(self.KPmax+1)).astype(int) + np.linspace(0,self.KPmax,self.KPmax+1).astype(int)
+        K = self.Kperps
+        F = np.fromiter((self.report[i,columnF] for i in rows.tolist()),float)
+        Ferror = np.fromiter((self.report[i,columnFerror] for i in rows.tolist()),float)
+        return F,K,Ferror
+
+    def loadReport(self,path):
+        with open(path,'r') as file:
+            for i, line in enumerate(file):
+                if i == 0:
+                    self.date = line
+                elif i == 2:
+                    self.header = eval(line)
+                else:
+                    pass
+        self.NumberOfPeaks = self.header['NumberOfPeaks']
+        self.BGCheck = self.header['BGCheck']
+        self.report = np.loadtxt(path,delimiter='\t',skiprows=5)
+        self.Angles = np.unique(self.report[:,0])
+        self.Kperps = np.unique(self.report[:,1])
+        self.KPmax = self.Kperps.shape[0]-1
+        self.AZmax = self.Angles.shape[0]-1
+        self.AzimuthStart = self.Angles[0]
+        self.AzimuthEnd = self.Angles[-1]
+        self.RangeStart = self.Kperps[0]
+        self.RangeEnd = self.Kperps[-1]
+        self.KperpSliderScale = self.KPmax/(self.RangeEnd-self.RangeStart)
+        self.KperpSlider.setMaximum(self.KPmax)
+        self.KperpSlider.setValue(0)
+        self.AzimuthLabel.setText("Azimuth Angle = {:5.1f} (\u00B0)".format(self.currentAzimuth*1.8+self.AzimuthStart))
+        self.AzimuthSlider.setMaximum(self.AZmax)
+        self.AzimuthSlider.setValue(0)
+        self.KperpLabel.setText("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
+        if self.BGCheck:
+            self.ReportInformation.setText("Date of the report: "+self.date+\
+            'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
+            .format(self.NumberOfPeaks,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+        else:
+            self.ReportInformation.setText("Date of the report: "+self.date+ \
+            'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
+             .format(self.NumberOfPeaks+1,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+        self.peak.clear()
+        peaks = ['L5','L4','L3','L2','L1','Center','R1','R2','R3','R4','R5','BG']
+        if self.BGCheck:
+            for i in range(5-int((self.NumberOfPeaks-1)/2),5+int((self.NumberOfPeaks-1)/2)+1):
+                self.peak.addItem(peaks[i],str(i-(5-(self.NumberOfPeaks-1)/2)))
+        else:
+            for i in range(5-int((self.NumberOfPeaks-1)/2),5+int((self.NumberOfPeaks-1)/2)):
+                self.peak.addItem(peaks[i],str(i-int((5-(self.NumberOfPeaks-1)/2))))
+        self.peak.setCurrentText('Center')
+        self.updateLog("The report file is loaded")
+
+    def IAPlot(self,I,A,Kp,imin,imax):
+        A2 = A + np.full(len(A),180)
+        Phi = np.append(A,A2)
+        Heights = np.append(I,I)/np.amax(I)
+        fig = plt.figure()
+        ax = plt.subplot(projection='polar')
+        ax.set_title('Intensity vs Azimuth at Kperp = {}'.format(Kp),fontsize=20)
+        ax.scatter(Phi*np.pi/180,Heights,c='b')
+        ax.set_rmin(imin)
+        ax.set_rmax(imax)
+        ax.set_rticks(np.around(np.linspace(imin,imax,5),1))
+
+    def IKPlot(self,I,K,Az):
+        fig = plt.figure()
+        ax = plt.subplot()
+        ax.set_title('Intensity vs Kperp at Phi = {}\u00B0'.format(Az),fontsize=20)
+        ax.plot(K,I,c='b')
+        ax.set_ylabel('Intensity (arb. units)',fontsize = 20)
+        ax.set_xlabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = 20)
+
+    def FAPlot(self,F,A,Kp,fmin,fmax):
+        A2 = A + np.full(len(A),180)
+        Phi = np.append(A,A2)
+        FWHMs = np.append(F,F)/np.amax(F)
+        fig = plt.figure()
+        ax = plt.subplot(projection='polar')
+        ax.set_title('FWHM vs Azimuth at Kperp = {}'.format(Kp),fontsize=20)
+        ax.scatter(Phi*np.pi/180,FWHMs,c='b')
+        ax.set_rmin(fmin)
+        ax.set_rmax(fmax)
+        ax.set_rticks(np.around(np.linspace(fmin,fmax,5),1))
+
+    def FKPlot(self,F,K,Az):
+        fig = plt.figure()
+        ax = plt.subplot()
+        ax.set_title('FWHM vs Kperp at Phi = {}\u00B0'.format(Az),fontsize=20)
+        ax.plot(K,F,c='b')
+        ax.set_ylabel(r'FWHM $(\AA^{-1})$',fontsize = 20)
+        ax.set_xlabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = 20)
+
+    def AzimuthChanged(self):
+        self.currentAzimuth = self.AzimuthSlider.value()
+        self.AzimuthLabel.setText("Azimuth Angle = {:5.1f} (\u00B0)".format(self.currentAzimuth*1.8+self.AzimuthStart))
+
+    def KPChanged(self):
+        self.currentKP = self.KperpSlider.value()
+        self.KperpLabel.setText("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
+
+    def IACheckChanged(self,status):
+        if status == 0:
+            self.intensityRangeSlider.setEnabled(False)
+            if self.FA.checkState() == 0:
+                self.KperpSlider.setEnabled(False)
+        else:
+            self.KperpSlider.setEnabled(True)
+            self.intensityRangeSlider.setEnabled(True)
+        self.checkStartOK()
+
+    def FACheckChanged(self,status):
+        if status == 0:
+            self.FWHMRangeSlider.setEnabled(False)
+            if self.IA.checkState() == 0:
+                self.KperpSlider.setEnabled(False)
+        else:
+            self.KperpSlider.setEnabled(True)
+            self.FWHMRangeSlider.setEnabled(True)
+        self.checkStartOK()
+
+    def IKCheckChanged(self,status):
+        if status == 0 and self.FK.checkState() == 0:
+            self.AzimuthSlider.setEnabled(False)
+        else:
+            self.AzimuthSlider.setEnabled(True)
+        self.checkStartOK()
+
+    def FKCheckChanged(self,status):
+        if status == 0 and self.IK.checkState() == 0:
+            self.AzimuthSlider.setEnabled(False)
+        else:
+            self.AzimuthSlider.setEnabled(True)
+        self.checkStartOK()
+
+    def checkStartOK(self):
+        if self.IA.checkState() == 0 and self.IK.checkState() == 0 and self.FA.checkState() == 0 and self.FK.checkState() == 0:
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(False)
+        else:
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
 
     def Raise_Error(self,message):
         msg = QtWidgets.QMessageBox()
