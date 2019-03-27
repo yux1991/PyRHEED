@@ -7,8 +7,12 @@
 
 # Description
 This application is used for RHEED analysis and simulation.
-A screenshot of the running program is shown below:
+A screenshot of the running 3D reciprocal space construction is shown below:
 ![alt text](https://raw.githubusercontent.com/yux1991/PyRHEED/master/Source/Screenshot.JPG)
+A screenshot of the running the manual fit process is shown below:
+![alt text](https://raw.githubusercontent.com/yux1991/PyRHEED/master/Source/Screenshot2.JPG)
+A screenshot of the running the semi-automatic curve fitting process is shown below:
+![alt text](https://raw.githubusercontent.com/yux1991/PyRHEED/master/Source/Screenshot3.JPG)
 
 # Structure
 - Browser: browse files inside the working directory
