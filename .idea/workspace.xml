@@ -2,12 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="95709aaf-b03b-4a24-92ea-ce273c27d53a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/Source/PlotChart.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/Cursor.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Cursor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Broadening.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Broadening_Plot.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Browser.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Browser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Canvas.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Canvas.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Graph3DSurface.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Graph3DSurface.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Menu.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/ProfileChart.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/ProfileChart.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Properties.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Properties.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/RHEED_3D.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Window.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/configuration.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Source/configuration.ini" afterDir="false" />
     </list>
@@ -21,133 +27,53 @@
     <session id="-172967749">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="25" />
+          <entry key="project.closed" value="53" />
+          <entry key="project.open.time.1" value="4" />
           <entry key="project.open.time.10" value="1" />
           <entry key="project.open.time.13" value="1" />
+          <entry key="project.open.time.2" value="1" />
           <entry key="project.open.time.4" value="1" />
-          <entry key="project.open.time.5" value="3" />
-          <entry key="project.open.time.6" value="9" />
-          <entry key="project.open.time.7" value="8" />
-          <entry key="project.open.time.8" value="2" />
-          <entry key="project.open.time.9" value="1" />
-          <entry key="project.opened" value="26" />
+          <entry key="project.open.time.5" value="4" />
+          <entry key="project.open.time.6" value="18" />
+          <entry key="project.open.time.7" value="15" />
+          <entry key="project.open.time.8" value="6" />
+          <entry key="project.open.time.9" value="3" />
+          <entry key="project.opened" value="54" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="23" />
+          <entry key="py" value="44" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="23" />
+          <entry key="Python" value="44" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="130200" />
+          <entry key="dummy" value="3" />
+          <entry key="py" value="184921" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="130200" />
+          <entry key="PLAIN_TEXT" value="3" />
+          <entry key="Python" value="184921" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Source/Main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="638">
-              <caret line="33" column="63" selection-start-line="33" selection-start-column="63" selection-end-line="33" selection-end-column="63" />
+            <state relative-caret-position="352">
+              <caret line="16" column="45" selection-start-line="16" selection-start-column="45" selection-end-line="16" selection-end-column="45" />
               <folding>
-                <element signature="e#0#20#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/Source/Menu.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-20370">
-              <caret line="843" column="32" selection-start-line="843" selection-start-column="32" selection-end-line="843" selection-end-column="32" />
-              <folding>
-                <element signature="e#0#51#0" expanded="true" />
-                <marker date="1553641072509" expanded="true" signature="47059:47063" ph="..." />
-                <marker date="1553641072509" expanded="true" signature="56142:56375" ph="..." />
-                <marker date="1553641072509" expanded="true" signature="64325:64329" ph="..." />
-                <marker date="1553641072509" expanded="true" signature="74765:76994" ph="..." />
-                <marker date="1553641072509" expanded="true" signature="76548:76624" ph="..." />
-                <marker date="1553641072509" expanded="true" signature="79485:79491" ph="..." />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Source/Configuration.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Source/Process.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2838">
-              <caret line="133" column="57" selection-start-line="133" selection-start-column="57" selection-end-line="133" selection-end-column="57" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-                <marker date="1553358869046" expanded="true" signature="6339:6340" ph="..." />
-                <marker date="1553358869046" expanded="true" signature="6635:6639" ph="..." />
-                <marker date="1553358869046" expanded="true" signature="7256:7257" ph="..." />
-                <marker date="1553358869046" expanded="true" signature="7977:7981" ph="..." />
-                <marker date="1553358869046" expanded="true" signature="9200:9202" ph="..." />
-                <marker date="1553358869046" expanded="true" signature="11964:12099" ph="..." />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Source/Cursor.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="264">
-              <caret line="13" column="42" selection-start-line="13" selection-start-column="42" selection-end-line="13" selection-end-column="42" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Source/Browser.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="132">
-              <caret line="7" column="20" selection-start-line="7" selection-start-column="20" selection-end-line="7" selection-end-column="20" />
-              <folding>
-                <element signature="e#0#35#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Source/Properties.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1254">
-              <caret line="57" column="63" selection-start-line="57" selection-start-column="63" selection-end-line="57" selection-end-column="63" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Source/ProfileChart.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2156">
-              <caret line="100" column="64" selection-start-line="100" selection-start-column="64" selection-end-line="100" selection-end-column="64" />
-              <folding>
-                <element signature="e#0#58#0" expanded="true" />
-                <marker date="1553609775407" expanded="true" signature="1660:1665" ph="..." />
+                <element signature="e#176#196#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -156,22 +82,113 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Source/Canvas.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2684">
-              <caret line="123" column="39" selection-start-line="123" selection-start-column="39" selection-end-line="123" selection-end-column="39" />
+            <state relative-caret-position="-8360" />
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/Window.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="162">
+              <caret line="351" column="32" selection-start-line="351" selection-start-column="32" selection-end-line="351" selection-end-column="32" />
+              <folding>
+                <element signature="e#0#20#0" expanded="true" />
+                <marker date="1555371866632" expanded="true" signature="15507:15565" ph="..." />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Source/Broadening_Plot.py">
+        <entry file="file://$PROJECT_DIR$/Source/Configuration.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="286">
-              <caret line="23" column="34" selection-start-line="23" selection-start-column="34" selection-end-line="23" selection-end-column="34" />
+            <state relative-caret-position="880">
+              <caret line="40" column="64" selection-start-line="40" selection-start-column="64" selection-end-line="40" selection-end-column="64" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/Properties.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/Menu.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="352">
+              <caret line="407" column="13" selection-start-line="407" selection-start-column="13" selection-end-line="407" selection-end-column="13" />
+              <folding>
+                <element signature="e#0#51#0" expanded="true" />
+                <marker date="1555424567239" expanded="true" signature="26163:26305" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="41837:41842" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="60104:60108" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="69811:69816" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="69844:70077" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="78147:78151" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="84032:84037" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="88758:90922" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="90530:90606" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="93359:93365" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="104440:104449" ph="..." />
+                <marker date="1555424567239" expanded="true" signature="104440:104543" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/StatisticalFactor.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="88">
+              <caret line="4" column="87" selection-start-line="4" selection-start-column="87" selection-end-line="4" selection-end-column="87" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/PlotChart.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <folding>
+                <element signature="e#0#58#0" expanded="true" />
+                <marker date="1555016194268" expanded="true" signature="2554:2596" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/ProfileChart.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1804">
+              <caret line="84" column="44" selection-start-line="84" selection-start-column="44" selection-end-line="84" selection-end-column="44" />
+              <folding>
+                <element signature="e#0#58#0" expanded="true" />
+                <marker date="1555020163863" expanded="true" signature="1660:1665" ph="..." />
+                <marker date="1555020163863" expanded="true" signature="5571:5643" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Source/Graph3DSurface.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-5678">
+              <caret line="1" column="7" selection-start-line="1" selection-start-column="7" selection-end-line="1" selection-end-column="7" />
             </state>
           </provider>
         </entry>
       </file>
     </leaf>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -179,23 +196,32 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/Source/Canvas.py" />
-        <option value="$PROJECT_DIR$/Source/Broadening.py" />
         <option value="$PROJECT_DIR$/Source/Process.py" />
         <option value="$PROJECT_DIR$/Source/Cursor.py" />
-        <option value="$PROJECT_DIR$/Source/Graph3DSurface.py" />
-        <option value="$PROJECT_DIR$/Source/Window.py" />
-        <option value="$PROJECT_DIR$/Source/Main.py" />
+        <option value="$PROJECT_DIR$/Source/Canvas.py" />
+        <option value="$PROJECT_DIR$/Source/PolarChart.py" />
+        <option value="$PROJECT_DIR$/Source/Broadening_Plot.py" />
+        <option value="$PROJECT_DIR$/Source/Broadening.py" />
+        <option value="$PROJECT_DIR$/Source/PlotChart.py" />
         <option value="$PROJECT_DIR$/Source/ProfileChart.py" />
+        <option value="$PROJECT_DIR$/Source/Browser.py" />
+        <option value="$PROJECT_DIR$/Source/StatisticalFactor.py" />
+        <option value="$PROJECT_DIR$/Source/Graph3DSurface.py" />
+        <option value="$PROJECT_DIR$/Source/Properties.py" />
+        <option value="$PROJECT_DIR$/Source/Window.py" />
         <option value="$PROJECT_DIR$/Source/Menu.py" />
+        <option value="$PROJECT_DIR$/Source/Main.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="1541" />
-    <option name="y" value="-16" />
+    <option name="x" value="232" />
+    <option name="y" value="-8" />
     <option name="width" value="1034" />
     <option name="height" value="805" />
+  </component>
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -237,7 +263,49 @@
       </list>
     </option>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.PyRHEED">
+    <configuration name="Broadening" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PyRHEED" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Source" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Source/Broadening.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Broadening_Plot" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PyRHEED" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Source" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Source/Broadening_Plot.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="PyRHEED" type="PythonConfigurationType" factoryName="Python">
       <module name="PyRHEED" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -259,6 +327,17 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Python.PyRHEED" />
+      <item itemvalue="Python.Broadening" />
+      <item itemvalue="Python.Broadening_Plot" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.Broadening" />
+        <item itemvalue="Python.Broadening_Plot" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -283,14 +362,34 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="1592" y="-180" width="1936" height="1096" extended-state="6" />
+    <frame x="-8" y="-8" width="1616" height="916" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.12539515" />
+      <window_info id="Structure" order="0" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="1" side_tool="true" />
+      <window_info content_ui="combo" id="Project" order="2" visible="true" weight="0.13688213" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.1483376" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.32992327" />
+      <window_info anchor="bottom" id="Version Control" order="7" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.21227622" />
+      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
+      <window_info anchor="bottom" id="Python Console" order="10" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+    <layout-to-restore>
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.09949303" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.16632016" />
+      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.16624041" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -302,62 +401,12 @@
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-    </layout>
+    </layout-to-restore>
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/Source/Broadening.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="224">
-          <caret line="402" column="39" selection-start-line="402" selection-start-column="39" selection-end-line="402" selection-end-column="39" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Window.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="77" column="108" selection-start-line="77" selection-start-column="108" selection-end-line="77" selection-end-column="108" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Graph3DSurface.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="704">
-          <caret line="40" column="54" selection-start-line="40" selection-start-column="54" selection-end-line="40" selection-end-column="54" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="638">
-          <caret line="33" column="63" selection-start-line="33" selection-start-column="63" selection-end-line="33" selection-end-column="63" />
-          <folding>
-            <element signature="e#0#20#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Configuration.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Process.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2838">
-          <caret line="133" column="57" selection-start-line="133" selection-start-column="57" selection-end-line="133" selection-end-column="57" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-            <marker date="1553358869046" expanded="true" signature="6339:6340" ph="..." />
-            <marker date="1553358869046" expanded="true" signature="6635:6639" ph="..." />
-            <marker date="1553358869046" expanded="true" signature="7256:7257" ph="..." />
-            <marker date="1553358869046" expanded="true" signature="7977:7981" ph="..." />
-            <marker date="1553358869046" expanded="true" signature="9200:9202" ph="..." />
-            <marker date="1553358869046" expanded="true" signature="11964:12099" ph="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Source/Cursor.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="264">
@@ -365,60 +414,116 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Source/Broadening.py" />
+    <entry file="file://$PROJECT_DIR$/Source/Broadening_Plot.py" />
+    <entry file="file://$PROJECT_DIR$/Source/RHEED_3D.py" />
     <entry file="file://$PROJECT_DIR$/Source/Browser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="132">
-          <caret line="7" column="20" selection-start-line="7" selection-start-column="20" selection-end-line="7" selection-end-column="20" />
+        <state relative-caret-position="330">
+          <caret line="16" column="60" selection-start-line="16" selection-start-column="60" selection-end-line="16" selection-end-column="60" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Source/Process.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="396">
+          <caret line="22" selection-start-line="22" selection-end-line="22" />
           <folding>
-            <element signature="e#0#35#0" expanded="true" />
+            <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Properties.py">
+    <entry file="file://$PROJECT_DIR$/Source/Configuration.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1254">
-          <caret line="57" column="63" selection-start-line="57" selection-start-column="63" selection-end-line="57" selection-end-column="63" />
+        <state relative-caret-position="880">
+          <caret line="40" column="64" selection-start-line="40" selection-start-column="64" selection-end-line="40" selection-end-column="64" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Source/Properties.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Source/StatisticalFactor.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="88">
+          <caret line="4" column="87" selection-start-line="4" selection-start-column="87" selection-end-line="4" selection-end-column="87" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Source/PlotChart.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#58#0" expanded="true" />
+            <marker date="1555016194268" expanded="true" signature="2554:2596" ph="..." />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Source/ProfileChart.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2156">
-          <caret line="100" column="64" selection-start-line="100" selection-start-column="64" selection-end-line="100" selection-end-column="64" />
+        <state relative-caret-position="1804">
+          <caret line="84" column="44" selection-start-line="84" selection-start-column="44" selection-end-line="84" selection-end-column="44" />
           <folding>
             <element signature="e#0#58#0" expanded="true" />
-            <marker date="1553609775407" expanded="true" signature="1660:1665" ph="..." />
+            <marker date="1555020163863" expanded="true" signature="1660:1665" ph="..." />
+            <marker date="1555020163863" expanded="true" signature="5571:5643" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Source/Window.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="162">
+          <caret line="351" column="32" selection-start-line="351" selection-start-column="32" selection-end-line="351" selection-end-column="32" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+            <marker date="1555371866632" expanded="true" signature="15507:15565" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Source/Canvas.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2684">
-          <caret line="123" column="39" selection-start-line="123" selection-start-column="39" selection-end-line="123" selection-end-column="39" />
-        </state>
+        <state relative-caret-position="-8360" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Source/Broadening_Plot.py">
+    <entry file="file://$PROJECT_DIR$/Source/Graph3DSurface.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="23" column="34" selection-start-line="23" selection-start-column="34" selection-end-line="23" selection-end-column="34" />
+        <state relative-caret-position="-5678">
+          <caret line="1" column="7" selection-start-line="1" selection-start-column="7" selection-end-line="1" selection-end-column="7" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Source/Menu.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-20370">
-          <caret line="843" column="32" selection-start-line="843" selection-start-column="32" selection-end-line="843" selection-end-column="32" />
+        <state relative-caret-position="352">
+          <caret line="407" column="13" selection-start-line="407" selection-start-column="13" selection-end-line="407" selection-end-column="13" />
           <folding>
             <element signature="e#0#51#0" expanded="true" />
-            <marker date="1553641072509" expanded="true" signature="47059:47063" ph="..." />
-            <marker date="1553641072509" expanded="true" signature="56142:56375" ph="..." />
-            <marker date="1553641072509" expanded="true" signature="64325:64329" ph="..." />
-            <marker date="1553641072509" expanded="true" signature="74765:76994" ph="..." />
-            <marker date="1553641072509" expanded="true" signature="76548:76624" ph="..." />
-            <marker date="1553641072509" expanded="true" signature="79485:79491" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="26163:26305" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="41837:41842" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="60104:60108" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="69811:69816" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="69844:70077" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="78147:78151" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="84032:84037" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="88758:90922" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="90530:90606" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="93359:93365" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="104440:104449" ph="..." />
+            <marker date="1555424567239" expanded="true" signature="104440:104543" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Source/Main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="352">
+          <caret line="16" column="45" selection-start-line="16" selection-start-column="45" selection-end-line="16" selection-end-column="45" />
+          <folding>
+            <element signature="e#176#196#0" expanded="true" />
           </folding>
         </state>
       </provider>

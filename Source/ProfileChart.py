@@ -82,7 +82,7 @@ class ProfileChart(QtChart.QChartView,Process.Image):
             self.axisX = QtChart.QValueAxis()
             self.axisX.setTickCount(10)
             self.axisY = QtChart.QValueAxis()
-            self.axisX.setTitleText("K (\u212B\u207B\u00B9)")
+            self.axisX.setTitleText("K_para (\u212B\u207B\u00B9)")
             self.axisY.setTitleText("Intensity (arb. units)")
             self.axisY.setTickCount(10)
         elif type == "arc":
@@ -98,8 +98,10 @@ class ProfileChart(QtChart.QChartView,Process.Image):
             self.axisY = QtChart.QLogValueAxis()
             self.axisX.setTitleText("Number of Iterations")
             self.axisY.setTitleText("Cost Function")
-        self.axisX.setLabelsFont(QtGui.QFont("Times",pointSize=10,weight=57))
-        self.axisY.setLabelsFont(QtGui.QFont("Times",pointSize=10,weight=57))
+        self.axisX.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
+        self.axisX.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
+        self.axisY.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
+        self.axisY.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
         self.profileChart.addAxis(self.axisX, QtCore.Qt.AlignBottom)
         self.profileChart.addAxis(self.axisY, QtCore.Qt.AlignLeft)
         series.attachAxis(self.axisX)
@@ -108,6 +110,20 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         self.setChart(self.profileChart)
         self.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
         self.chartIsPresent = True
+
+    def adjustFonts(self,fontname,fontsize):
+        self.setFonts(fontname,fontsize)
+        try:
+            self.axisX.setLabelsFont(QtGui.QFont(fontname,fontsize,57))
+            self.axisX.setTitleFont(QtGui.QFont(fontname,fontsize,57))
+            self.axisY.setLabelsFont(QtGui.QFont(fontname,fontsize,57))
+            self.axisY.setTitleFont(QtGui.QFont(fontname,fontsize,57))
+        except:
+            pass
+
+    def setFonts(self,fontname,fontsize):
+        self.fontname = fontname
+        self.fontsize = fontsize
 
     def setImg(self,img):
         self._img = img

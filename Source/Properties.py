@@ -1,6 +1,7 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 class Properties(QtWidgets.QWidget):
+    fontsChanged = QtCore.pyqtSignal(str,int)
 
     def __init__(self,parent,config):
         super(Properties,self).__init__(parent)
@@ -201,6 +202,27 @@ class Properties(QtWidgets.QWidget):
         self.profileOptionsGrid.addWidget(self.tiltAngleSlider,3,1)
         self.profileOptionsGrid.addLayout(self.buttonGrid3,4,0,1,2)
         self.tab.addTab(self.profileOptionsPage,"Profile Options")
+
+        #Appearance Page
+        self.appearance = QtWidgets.QWidget()
+        self.appearance.setMaximumHeight(100)
+        self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
+        self.fontListLabel = QtWidgets.QLabel("Change Font")
+        self.fontList = QtWidgets.QFontComboBox()
+        self.fontList.setCurrentFont(QtGui.QFont("Arial"))
+        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(12))
+        self.fontSizeLabel.setFixedWidth(160)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider.setMinimum(1)
+        self.fontSizeSlider.setMaximum(100)
+        self.fontSizeSlider.setValue(12)
+        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.appearanceGrid.addWidget(self.fontListLabel,0,0)
+        self.appearanceGrid.addWidget(self.fontList,0,1)
+        self.appearanceGrid.addWidget(self.fontSizeLabel,1,0)
+        self.appearanceGrid.addWidget(self.fontSizeSlider,1,1)
+        self.tab.addTab(self.appearance,"Chart Font")
         self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
 
         self.UIgrid = QtWidgets.QGridLayout()
@@ -208,3 +230,10 @@ class Properties(QtWidgets.QWidget):
         self.UIgrid.setContentsMargins(0,0,0,0)
         self.setLayout(self.UIgrid)
         self.show()
+
+    def RefreshFontSize(self):
+        self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
+        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+
+    def RefreshFontName(self):
+        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())

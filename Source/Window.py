@@ -3,7 +3,6 @@ from Browser import *
 from Properties import *
 from Cursor import *
 from Menu import *
-import rawpy
 import ProfileChart
 import os
 import numpy as np
@@ -21,10 +20,11 @@ class Window(QtWidgets.QMainWindow,Process.Image):
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
     menu_DefaultPropertiesRestRequested = QtCore.pyqtSignal()
-    menu_TwoDimensionalMappingRequested = QtCore.pyqtSignal(str)
+    menu_ReciprocalSpaceMappingRequested = QtCore.pyqtSignal(str)
     menu_ThreeDimensionalGraphRequested = QtCore.pyqtSignal(str)
     menu_BroadeningRequested = QtCore.pyqtSignal(str)
     menu_ManualFitRequested = QtCore.pyqtSignal(str,int)
+    menu_StatisticalFactorRequested = QtCore.pyqtSignal()
     menu_GenerateReportRequested = QtCore.pyqtSignal(str)
     window_initialized = QtCore.pyqtSignal()
     propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
@@ -65,8 +65,9 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.menu = QtWidgets.QMenuBar()
         self.menuFile = self.menu.addMenu("File")
         self.menuPreference = self.menu.addMenu("Preference")
-        self.menu2DMap = self.menu.addMenu("2D Map")
+        self.menu2DMap = self.menu.addMenu("Mapping")
         self.menuFit = self.menu.addMenu("Fit")
+        self.menuSimulation = self.menu.addMenu("Simulation")
         self.menuHelp = self.menu.addMenu("Help")
         self.setMenuBar(self.menu)
 
@@ -86,13 +87,16 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.Two_Dimensional_Mapping = self.menu2DMap.addAction("Configuration", \
                                             self.MenuActions_Two_Dimensional_Mapping)
 
-        self.Three_Dimensional_Graph = self.menu2DMap.addAction("3D Graph", \
+        self.Three_Dimensional_Graph = self.menu2DMap.addAction("3D Surface", \
                                         self.MenuActions_Three_Dimensional_Graph)
 
         #Fit Menu
         self.Fit_Broadening = self.menuFit.addAction("Broadening",self.MenuActions_Broadening)
         self.Fit_ManualFit = self.menuFit.addAction("Manual Fit", self.MenuActions_ShowManualFit)
         self.Fit_Report = self.menuFit.addAction("Generate Report", self.MenuActions_GenerateReport)
+
+        #Simulation Menu
+        self.Statistical_Factor = self.menuSimulation.addAction("Statistical Factor",self.MenuActions_Statistical_Factor)
 
         #Help Menu
         self.about = self.menuHelp.addAction("About",self.MenuActions_About)
@@ -241,6 +245,10 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.properties.applyButton3.clicked.connect(self.applyProfileOptions)
         self.properties.resetButton3.clicked.connect(self.resetProfileOptions)
 
+        #Appearance Page Connections
+        self.profile.setFonts(self.properties.fontList.currentFont().family(),self.properties.fontSizeSlider.value())
+        self.properties.fontsChanged.connect(self.profile.adjustFonts)
+
         #Cursor Information Connections
         self.cursorInfo.choosedXYEdit.textChanged.connect(self.editChoosedXY)
         self.cursorInfo.startXYEdit.textChanged.connect(self.editStartXY)
@@ -302,6 +310,8 @@ class Window(QtWidgets.QMainWindow,Process.Image):
             canvas.saveScene()
         except:
             self.Raise_Error("Please open a RHEED pattern first")
+    def MenuActions_Statistical_Factor(self):
+        self.menu_StatisticalFactorRequested.emit()
 
     def MenuActions_Save_As_Text(self):
         self.profile.saveProfileAsText()
@@ -316,10 +326,10 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.menu_DefaultPropertiesRestRequested.emit()
 
     def MenuActions_Two_Dimensional_Mapping(self):
-        self.menu_TwoDimensionalMappingRequested.emit(self.currentPath)
+        self.menu_ReciprocalSpaceMappingRequested.emit(self.currentPath)
 
     def MenuActions_Three_Dimensional_Graph(self):
-        self.menu_ThreeDimensionalGraphRequested.emit(self.currentPath)
+        self.menu_ThreeDimensionalGraphRequested.emit('')
 
     def MenuActions_Broadening(self):
         self.menu_BroadeningRequested.emit(self.currentPath)
@@ -442,9 +452,17 @@ class Window(QtWidgets.QMainWindow,Process.Image):
 
     def getImgPath(self):
         fileDlg = QtWidgets.QFileDialog(self)
-        fileDlg.setDirectory('C:/RHEED/')
-        path = fileDlg.getOpenFileName(filter="NEF (*.nef);;All Files (*.*)")[0]
-        return path
+        fileDlg.setDirectory('./')
+        path = fileDlg.getOpenFileName(filter="NEF (*.nef);;ARW (*.arw);;All Files (*.*)")[0]
+        if not path == '':
+            if not (os.path.splitext(path)[1] == ".nef" or os.path.splitext(path)[1] == ".NEF" \
+                    or os.path.splitext(path)[1] == ".arw" or os.path.splitext(path)[1] == ".ARW"):
+                self.Raise_Error("Not supported raw file type!")
+                return ''
+            else:
+                return path
+        else:
+            return ''
 
     def openImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':

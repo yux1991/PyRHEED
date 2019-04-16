@@ -7,6 +7,7 @@ import Process
 import math
 import ProfileChart
 import matplotlib.pyplot as plt
+import PlotChart
 
 class Preference(QtCore.QObject):
 
@@ -172,16 +173,20 @@ class Preference(QtCore.QObject):
         self.DefaultSettings_DialogGrid.replaceWidget(self.tab,tab_new)
         self.tab = tab_new
 
-class TwoDimensionalMapping(QtCore.QObject,Process.Image):
+class ReciprocalSpaceMapping(QtCore.QObject,Process.Image):
     #Public Signals
     StatusRequested = QtCore.pyqtSignal()
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
     Show3DGraph = QtCore.pyqtSignal(str)
     Show2DContour = QtCore.pyqtSignal(str,bool,float,float,float,float,int,str)
+    fontsChanged = QtCore.pyqtSignal(str,int)
+    drawLineRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
+    drawRectRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    connectToCanvas = QtCore.pyqtSignal()
 
     def __init__(self):
-        super(TwoDimensionalMapping,self).__init__()
+        super(ReciprocalSpaceMapping,self).__init__()
         self.twoDimensionalMappingRegion = [0,0,0,0,0]
         self.config = configparser.ConfigParser()
         self.config.read('./configuration.ini')
@@ -197,13 +202,14 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.levelMin = 0
         self.levelMax = 100
         self.numberOfContourLevels = 5
+        self.range = "5"
         self.startIndex = "0"
         self.endIndex = "100"
         self.defaultFileName = "2D_Map"
         self.path = os.path.dirname(path)
         self.currentSource = self.path
         self.currentDestination = self.currentSource
-        self.Dialog = QtWidgets.QDialog()
+        self.Dialog = QtWidgets.QWidget()
         self.Grid = QtWidgets.QGridLayout(self.Dialog)
         self.LeftFrame = QtWidgets.QFrame()
         self.RightFrame = QtWidgets.QFrame()
@@ -231,7 +237,10 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.fileType.addItem(".xlsx",".xlsx")
         self.profileCentered = QtWidgets.QLabel("Centered?")
         self.centeredCheck = QtWidgets.QCheckBox()
-        self.centeredCheck.setChecked(False)
+        self.centeredCheck.setChecked(True)
+        self.saveResultsLabel = QtWidgets.QLabel("Save Results?")
+        self.saveResults = QtWidgets.QCheckBox()
+        self.saveResults.setChecked(False)
         self.coordinateLabel = QtWidgets.QLabel("Choose coordinate system:")
         self.coordinate = QtWidgets.QButtonGroup()
         self.coordinate.setExclusive(True)
@@ -257,6 +266,8 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.destinationGrid.addWidget(self.coordinateFrame,3,1)
         self.destinationGrid.addWidget(self.profileCentered,4,0)
         self.destinationGrid.addWidget(self.centeredCheck,4,1)
+        self.destinationGrid.addWidget(self.saveResultsLabel,5,0)
+        self.destinationGrid.addWidget(self.saveResults,5,1)
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
         self.parametersBox = QtWidgets.QGroupBox("Choose Image")
         self.parametersBox.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -265,10 +276,42 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.startImageIndexEdit = QtWidgets.QLineEdit(self.startIndex)
         self.endImageIndexLabel = QtWidgets.QLabel("End Image Index")
         self.endImageIndexEdit = QtWidgets.QLineEdit(self.endIndex)
+        self.dimensionLabel = QtWidgets.QLabel("3D")
+        self.dimension = QtWidgets.QCheckBox()
+        self.dimension.setChecked(False)
+        self.dimension.stateChanged.connect(self.dimensionChanged)
+        self.rangeLabel = QtWidgets.QLabel("Range (\u212B\u207B\u00B9)")
+        self.rangeEdit = QtWidgets.QLineEdit(self.range)
+        self.rangeEdit.setEnabled(False)
         self.parametersGrid.addWidget(self.startImageIndexLabel,0,0)
         self.parametersGrid.addWidget(self.startImageIndexEdit,0,1)
         self.parametersGrid.addWidget(self.endImageIndexLabel,1,0)
         self.parametersGrid.addWidget(self.endImageIndexEdit,1,1)
+        self.parametersGrid.addWidget(self.dimensionLabel,2,0)
+        self.parametersGrid.addWidget(self.dimension,2,1)
+        self.parametersGrid.addWidget(self.rangeLabel,3,0)
+        self.parametersGrid.addWidget(self.rangeEdit,3,1)
+
+        self.appearance = QtWidgets.QGroupBox("Appearance")
+        self.appearance.setMaximumHeight(100)
+        self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
+        self.fontListLabel = QtWidgets.QLabel("Change Font")
+        self.fontList = QtWidgets.QFontComboBox()
+        self.fontList.setCurrentFont(QtGui.QFont("Arial"))
+        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(12))
+        self.fontSizeLabel.setFixedWidth(160)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider.setMinimum(1)
+        self.fontSizeSlider.setMaximum(100)
+        self.fontSizeSlider.setValue(12)
+        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.appearanceGrid.addWidget(self.fontListLabel,0,0)
+        self.appearanceGrid.addWidget(self.fontList,0,1)
+        self.appearanceGrid.addWidget(self.fontSizeLabel,1,0)
+        self.appearanceGrid.addWidget(self.fontSizeSlider,1,1)
+
         self.plotOptions = QtWidgets.QGroupBox("Contour Plot Options")
         self.plotOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.plotOptionsGrid = QtWidgets.QGridLayout(self.plotOptions)
@@ -357,30 +400,34 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
             connect(self.Reset)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.\
-            connect(self.Dialog.reject)
-        self.Show3DGraphButton = QtWidgets.QPushButton("Show 3D Graph")
+            connect(self.Reject)
+        self.Show3DGraphButton = QtWidgets.QPushButton("Show 3D Surface")
         self.Show3DGraphButton.setEnabled(False)
         self.Show3DGraphButton.clicked.connect(self.Show3DGraphButtonClicked)
         self.Show2DContourButton = QtWidgets.QPushButton("Show 2D Contour")
         self.Show2DContourButton.setEnabled(False)
         self.Show2DContourButton.clicked.connect(self.Show2DContourButtonClicked)
         self.chart = ProfileChart.ProfileChart(self.config)
+        self.fontsChanged.connect(self.chart.adjustFonts)
+        self.chart.setFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.kperpLabel = QtWidgets.QLabel("")
         self.LeftGrid.addWidget(self.chooseSource,0,0)
         self.LeftGrid.addWidget(self.chooseDestination,1,0)
         self.LeftGrid.addWidget(self.parametersBox,2,0)
-        self.LeftGrid.addWidget(self.plotOptions,3,0)
-        self.LeftGrid.addWidget(self.ButtonBox,4,0)
-        self.LeftGrid.addWidget(self.Show2DContourButton,5,0)
-        self.LeftGrid.addWidget(self.Show3DGraphButton,6,0)
-        self.RightGrid.addWidget(self.chart,0,0)
-        self.RightGrid.addWidget(self.statusBar,1,0)
-        self.RightGrid.addWidget(self.progressBar,2,0)
+        self.LeftGrid.addWidget(self.appearance,3,0)
+        self.LeftGrid.addWidget(self.plotOptions,4,0)
+        self.LeftGrid.addWidget(self.ButtonBox,5,0)
+        self.LeftGrid.addWidget(self.Show2DContourButton,6,0)
+        self.LeftGrid.addWidget(self.Show3DGraphButton,7,0)
+        self.RightGrid.addWidget(self.kperpLabel,0,0)
+        self.RightGrid.addWidget(self.chart,1,0)
+        self.RightGrid.addWidget(self.statusBar,2,0)
+        self.RightGrid.addWidget(self.progressBar,3,0)
         self.Grid.addWidget(self.LeftFrame,0,0)
         self.Grid.addWidget(self.RightFrame,0,1)
-        self.Dialog.setWindowTitle("2D Map")
+        self.Dialog.setWindowTitle("Reciprocal Space Mapping")
         self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
         self.Dialog.showNormal()
-        self.Dialog.exec_()
 
     def Show3DGraphButtonClicked(self):
         self.Show3DGraph.emit(self.graphTextPath)
@@ -389,6 +436,12 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.Show2DContour.emit(self.graphTextPath, False, self.levelMinSlider.value()/100,self.levelMaxSlider.value()/100,\
                                 self.radiusMinSlider.value()/100,self.radiusMaxSlider.value()/100,self.numberOfContourLevelsSlider.value(),\
                                 self.colormap.currentText())
+
+    def dimensionChanged(self,state):
+        if state == 0:
+            self.rangeEdit.setEnabled(False)
+        elif state ==2:
+            self.rangeEdit.setEnabled(True)
 
     def Start(self):
         self.StatusRequested.emit()
@@ -401,8 +454,6 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         else:
             self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Ready to Start!")
         image_list = []
-        map_2D1=np.array([0,0,0])
-        map_2D2=np.array([0,0,0])
         path = os.path.join(self.currentSource,'*.nef')
         autoWB = self.status["autoWB"]
         brightness = self.status["brightness"]
@@ -413,6 +464,7 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         scale_factor = self.status["sensitivity"]/np.sqrt(self.status["energy"])
         startIndex = int(self.startImageIndexEdit.text())
         endIndex = int(self.endImageIndexEdit.text())
+        analysisRange = float(self.rangeEdit.text())
         saveFileName = self.destinationNameEdit.text()
         fileType = self.fileType.currentData()
         if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
@@ -420,9 +472,16 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
             or self.status["width"] =="":
             self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0ERROR: Please choose the region!")
             self.Raise_Error("Please choose the region!")
+        elif self.status["choosedX"] == "" or self.status["choosedY"] == "":
+            self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0ERROR: Please choose the origin!")
+            self.Raise_Error("Please choose the origin!")
         else:
+            self.connectToCanvas.emit()
             start = QtCore.QPointF()
             end = QtCore.QPointF()
+            origin = QtCore.QPointF()
+            origin.setX(self.status["choosedX"])
+            origin.setY(self.status["choosedY"])
             start.setX(self.status["startX"])
             start.setY(self.status["startY"])
             end.setX(self.status["endX"])
@@ -430,67 +489,172 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
             width = self.status["width"]*scale_factor
             for filename in glob.glob(path):
                 image_list.append(filename)
-            for nimg in range(startIndex,endIndex+1):
-                qImg, img = self.getImage(16,image_list[nimg-startIndex],autoWB,brightness,blackLevel,image_crop)
-                if width==0.0:
-                    RC,I = self.getLineScan(start,end,img,scale_factor)
-                    Phi1 = np.full(len(RC),nimg*1.8)
-                    Phi2 = np.full(len(RC),nimg*1.8)
-                    maxPos = np.argmax(I)
-                    for iphi in range(0,maxPos):
-                        Phi1[iphi]=nimg*1.8+180
-                    if maxPos<(len(RC)-1)/2:
-                        x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
-                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
-                        x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos], I[0:(2*maxPos+1)]/I[maxPos]
-                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
+            if self.dimension.checkState() == 0:
+                Kperp = (np.abs((end.y()-start.y())*origin.x()-(end.x()-start.x())*origin.y()+end.x()*start.y()-end.y()*start.x())/ \
+                         np.sqrt((end.y()-start.y())**2+(end.x()-start.x())**2))/scale_factor
+                map_2D1=np.array([0,0,0])
+                map_2D2=np.array([0,0,0])
+                self.kperpLabel.setText("Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
+                for nimg in range(startIndex,endIndex+1):
+                    qImg, img = self.getImage(16,image_list[nimg-startIndex],autoWB,brightness,blackLevel,image_crop)
+                    if width==0.0:
+                        RC,I = self.getLineScan(start,end,img,scale_factor)
+                        Phi1 = np.full(len(RC),nimg*1.8)
+                        Phi2 = np.full(len(RC),nimg*1.8)
+                        maxPos = np.argmax(I)
+                        for iphi in range(0,maxPos):
+                            Phi1[iphi]=nimg*1.8+180
+                        if maxPos<(len(RC)-1)/2:
+                            x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
+                            map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
+                            x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos], I[0:(2*maxPos+1)]/I[maxPos]
+                            map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
+                        else:
+                            x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                            map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
+                            x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                            map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
                     else:
-                        x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
-                        x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
-                else:
-                    RC,I = self.getIntegral(start,end,width,img,scale_factor)
-                    Phi1 = np.full(len(RC),nimg*1.8)
-                    Phi2 = np.full(len(RC),nimg*1.8)
-                    maxPos = np.argmax(I)
-                    for iphi in range(0,maxPos):
-                        Phi1[iphi]=nimg*1.8+180
-                    if maxPos<(len(RC)-1)/2:
-                        x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
-                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
-                        x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
-                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
+                        RC,I = self.getIntegral(start,end,width,img,scale_factor)
+                        Phi1 = np.full(len(RC),nimg*1.8)
+                        Phi2 = np.full(len(RC),nimg*1.8)
+                        maxPos = np.argmax(I)
+                        for iphi in range(0,maxPos):
+                            Phi1[iphi]=nimg*1.8+180
+                        if maxPos<(len(RC)-1)/2:
+                            x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
+                            map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
+                            x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
+                            map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
+                        else:
+                            x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                            map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
+                            x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                            map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
+                    self.progressAdvance.emit(0,100,(nimg+1-startIndex)*100/(endIndex-startIndex+1))
+                    self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0The file being processed right now is: "+image_list[nimg-startIndex])
+                    if self.centeredCheck.checkState():
+                        self.chart.addChart(x2,y2)
                     else:
-                        x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                        map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
-                        x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                        map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
-                self.progressAdvance.emit(0,100,(nimg+1-startIndex)*100/(endIndex-startIndex+1))
-                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0The file being processed right now is: "+image_list[nimg-startIndex])
+                        self.chart.addChart(x1,y1)
+                    QtCore.QCoreApplication.processEvents()
                 if self.centeredCheck.checkState():
-                    self.chart.addChart(x2,y2)
+                    map_2D_polar = np.delete(map_2D2,0,0)
                 else:
-                    self.chart.addChart(x1,y1)
+                    map_2D_polar = np.delete(map_2D1,0,0)
+                map_2D_cart = np.empty(map_2D_polar.shape)
+                map_2D_cart[:,2] = map_2D_polar[:,2]
+                map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*math.pi/180)
+                map_2D_cart[:,1] = map_2D_polar[:,0]*np.sin((map_2D_polar[:,1])*math.pi/180)
+                self.graphTextPath = self.currentDestination+"/"+saveFileName+fileType
+                if self.saveResults.checkState() == 2:
+                    if self.cartesian.checkState():
+                        np.savetxt(self.graphTextPath,map_2D_cart,fmt='%4.3f')
+                    else:
+                        np.savetxt(self.graphTextPath,map_2D_polar,fmt='%4.3f')
+                self.progressEnd.emit()
+                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Completed!")
+                self.Raise_Attention("2D Mapping Completed!")
+                self.Show3DGraphButton.setEnabled(True)
+                self.Show2DContourButton.setEnabled(True)
+            else:
+                map_3D1=np.array([0,0,0,0])
+                map_3D2=np.array([0,0,0,0])
+                for nimg in range(startIndex,endIndex+1):
+                    qImg, img = self.getImage(16,image_list[nimg-startIndex],autoWB,brightness,blackLevel,image_crop)
+                    x0,y0,xn,yn = start.x(),start.y(),end.x(),end.y()
+                    newStart = QtCore.QPointF()
+                    newEnd = QtCore.QPointF()
+                    if width==0.0:
+                        step = 5
+                        nos = int(analysisRange*scale_factor/step)
+                    else:
+                        nos = int(analysisRange*scale_factor/width)
+                        step = width
+                    for i in range(1,nos+1):
+                        if x0 == xn:
+                            newStart.setX(x0+i*step)
+                            newStart.setY(y0)
+                            newEnd.setX(xn+i*step)
+                            newEnd.setY(yn)
+                        else:
+                            angle = np.arctan((y0-yn)/(xn-x0))
+                            newStart.setX(int(x0+i*step*np.sin(angle)))
+                            newStart.setY(int(y0+i*step*np.cos(angle)))
+                            newEnd.setX(int(xn+i*step*np.sin(angle)))
+                            newEnd.setY(int(yn+i*step*np.cos(angle)))
+                        Kperp = (np.abs((newEnd.y()-newStart.y())*origin.x()-(newEnd.x()-newStart.x())*origin.y()+newEnd.x()*newStart.y()-newEnd.y()*newStart.x())/ \
+                                 np.sqrt((newEnd.y()-newStart.y())**2+(newEnd.x()-newStart.x())**2))/scale_factor
+                        self.kperpLabel.setText("Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
+                        if width==0.0:
+                            RC,I = self.getLineScan(newStart,newEnd,img,scale_factor)
+                            self.drawLineRequested.emit(newStart,newEnd,False)
+                            Phi1 = np.full(len(RC),nimg*1.8)
+                            Phi2 = np.full(len(RC),nimg*1.8)
+                            maxPos = np.argmax(I)
+                            for iphi in range(0,maxPos):
+                                Phi1[iphi]=nimg*1.8+180
+                            if maxPos<(len(RC)-1)/2:
+                                x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
+                                K = np.full(len(x1),Kperp)
+                                map_3D1 = np.vstack((map_3D1,np.vstack((K,x1,Phi1[0:(2*maxPos+1)],y1)).T))
+                                x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos], I[0:(2*maxPos+1)]/I[maxPos]
+                                map_3D2 = np.vstack((map_3D2,np.vstack((K,x2,Phi2[0:(2*maxPos+1)],y2)).T))
+                            else:
+                                x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                                K = np.full(len(x1),Kperp)
+                                map_3D1 = np.vstack((map_3D1,np.vstack((K,x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
+                                x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                                map_3D2 = np.vstack((map_3D2,np.vstack((K,x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
+                        else:
+                            RC,I = self.getIntegral(newStart,newEnd,width,img,scale_factor)
+                            self.drawRectRequested.emit(newStart,newEnd,width,False)
+                            Phi1 = np.full(len(RC),nimg*1.8)
+                            Phi2 = np.full(len(RC),nimg*1.8)
+                            maxPos = np.argmax(I)
+                            for iphi in range(0,maxPos):
+                                Phi1[iphi]=nimg*1.8+180
+                            if maxPos<(len(RC)-1)/2:
+                                x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
+                                K = np.full(len(x1),Kperp)
+                                map_3D1 = np.vstack((map_3D1,np.vstack((K,x1,Phi1[0:(2*maxPos+1)],y1)).T))
+                                x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
+                                map_3D2 = np.vstack((map_3D2,np.vstack((K,x2,Phi2[0:(2*maxPos+1)],y2)).T))
+                            else:
+                                x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                                K = np.full(len(x1),Kperp)
+                                map_3D1 = np.vstack((map_3D1,np.vstack((K,x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
+                                x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                                map_3D2 = np.vstack((map_3D2,np.vstack((K,x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
+                        self.progressAdvance.emit(0,100,(i+nos*(nimg-startIndex))*100/((endIndex-startIndex+1)*nos))
+                        self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0The file being processed right now is: "+image_list[nimg-startIndex])
+                        if self.centeredCheck.checkState():
+                            self.chart.addChart(x2,y2)
+                        else:
+                            self.chart.addChart(x1,y1)
+                        QtCore.QCoreApplication.processEvents()
+                    QtCore.QCoreApplication.processEvents()
                 QtCore.QCoreApplication.processEvents()
-            if self.centeredCheck.checkState():
-                map_2D_polar = np.delete(map_2D2,0,0)
-            else:
-                map_2D_polar = np.delete(map_2D1,0,0)
-            map_2D_cart = np.empty(map_2D_polar.shape)
-            map_2D_cart[:,2] = map_2D_polar[:,2]
-            map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*math.pi/180)
-            map_2D_cart[:,1] = map_2D_polar[:,0]*np.sin((map_2D_polar[:,1])*math.pi/180)
-            self.graphTextPath = self.currentDestination+"/"+saveFileName+fileType
-            if self.cartesian.checkState():
-                np.savetxt(self.graphTextPath,map_2D_cart,fmt='%4.3f')
-            else:
-                np.savetxt(self.graphTextPath,map_2D_polar,fmt='%4.3f')
-            self.progressEnd.emit()
-            self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Completed!")
-            self.Raise_Attention("2D Map Completed!")
-            self.Show3DGraphButton.setEnabled(True)
-            self.Show2DContourButton.setEnabled(True)
+                if self.centeredCheck.checkState():
+                    map_3D_polar = np.delete(map_3D2,0,0)
+                else:
+                    map_3D_polar = np.delete(map_3D1,0,0)
+                map_3D_cart = np.empty(map_3D_polar.shape)
+                map_3D_cart[:,0] = map_3D_polar[:,0]
+                map_3D_cart[:,3] = map_3D_polar[:,3]
+                map_3D_cart[:,1] = map_3D_polar[:,1]*np.cos((map_3D_polar[:,2])*math.pi/180)
+                map_3D_cart[:,2] = map_3D_polar[:,1]*np.sin((map_3D_polar[:,2])*math.pi/180)
+                self.graphTextPath = self.currentDestination+"/"+saveFileName+fileType
+                if self.saveResults.checkState() == 2:
+                    if self.cartesian.checkState():
+                        np.savetxt(self.graphTextPath,map_3D_cart,fmt='%4.3f')
+                    else:
+                        np.savetxt(self.graphTextPath,map_3D_polar,fmt='%4.3f')
+                self.progressEnd.emit()
+                self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Completed!")
+                self.Raise_Attention("3D Mapping Completed!")
+                self.Show3DGraphButton.setEnabled(True)
+                self.Show2DContourButton.setEnabled(True)
 
     def Reset(self):
         self.levelMin = 0
@@ -513,6 +677,9 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.logBox.clear()
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Reset Successful!")
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Ready to Start!")
+
+    def Reject(self):
+        self.Dialog.close()
 
     def Choose_Source(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose source directory",self.currentSource,QtWidgets.QFileDialog.ShowDirsOnly)
@@ -581,6 +748,14 @@ class TwoDimensionalMapping(QtCore.QObject,Process.Image):
         self.progressBar.reset()
         self.progressBar.setVisible(False)
 
+    def RefreshFontSize(self):
+        self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
+        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+
+    def RefreshFontName(self):
+        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+
+
 class Broadening(QtCore.QObject,Process.Image,Process.Fit):
 
     #Public Signals
@@ -590,7 +765,8 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
     connectToCanvas = QtCore.pyqtSignal()
     drawLineRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     drawRectRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
-    color = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','yellow','darkYellow','black']
+    color = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
+    fontsChanged = QtCore.pyqtSignal(str,int)
 
     def __init__(self):
         super(Broadening,self).__init__()
@@ -617,7 +793,7 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.path = os.path.dirname(path)
         self.currentSource = self.path
         self.currentDestination = self.currentSource
-        self.Dialog = QtWidgets.QDialog()
+        self.Dialog = QtWidgets.QWidget()
         self.Grid = QtWidgets.QGridLayout(self.Dialog)
         self.LeftFrame = QtWidgets.QFrame()
         self.RightFrame = QtWidgets.QFrame()
@@ -646,12 +822,17 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
         self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseDestinationButton.clicked.connect(self.Choose_Destination)
+        self.saveResultLabel = QtWidgets.QLabel("Save Results?")
+        self.saveResult = QtWidgets.QCheckBox()
+        self.saveResult.setChecked(False)
         self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0)
         self.destinationGrid.addWidget(self.chooseDestinationButton,0,1)
         self.destinationGrid.addWidget(self.destinationNameLabel,1,0)
         self.destinationGrid.addWidget(self.destinationNameEdit,1,1)
         self.destinationGrid.addWidget(self.fileTypeLabel,2,0)
         self.destinationGrid.addWidget(self.fileType,2,1)
+        self.destinationGrid.addWidget(self.saveResultLabel,3,0)
+        self.destinationGrid.addWidget(self.saveResult,3,1)
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
         self.parametersBox = QtWidgets.QGroupBox("Choose Image")
         self.parametersBox.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -668,6 +849,27 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.parametersGrid.addWidget(self.endImageIndexEdit,1,1)
         self.parametersGrid.addWidget(self.rangeLabel,2,0)
         self.parametersGrid.addWidget(self.rangeEdit,2,1)
+
+        self.appearance = QtWidgets.QGroupBox("Appearance")
+        self.appearance.setMaximumHeight(100)
+        self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
+        self.fontListLabel = QtWidgets.QLabel("Change Font")
+        self.fontList = QtWidgets.QFontComboBox()
+        self.fontList.setCurrentFont(QtGui.QFont("Arial"))
+        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(30))
+        self.fontSizeLabel.setFixedWidth(160)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider.setMinimum(1)
+        self.fontSizeSlider.setMaximum(100)
+        self.fontSizeSlider.setValue(30)
+        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.appearanceGrid.addWidget(self.fontListLabel,0,0)
+        self.appearanceGrid.addWidget(self.fontList,0,1)
+        self.appearanceGrid.addWidget(self.fontSizeLabel,1,0)
+        self.appearanceGrid.addWidget(self.fontSizeSlider,1,1)
+
         self.fitOptions = QtWidgets.QGroupBox("Fit Options")
         self.fitOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.fitOptionsGrid = QtWidgets.QGridLayout(self.fitOptions)
@@ -759,14 +961,18 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
             connect(self.Reset)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.\
-            connect(self.Dialog.reject)
+            connect(self.Reject)
         self.GenerateReportButton = QtWidgets.QPushButton("Generate Report")
         self.GenerateReportButton.setEnabled(False)
         self.GenerateReportButton.clicked.connect(self.GenerateBroadeningReport)
         self.chartTitle = QtWidgets.QLabel('Profile')
         self.chart = ProfileChart.ProfileChart(self.config)
+        self.chart.setFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.fontsChanged.connect(self.chart.adjustFonts)
         self.costChartTitle = QtWidgets.QLabel('Cost Function')
         self.costChart = ProfileChart.ProfileChart(self.config)
+        self.costChart.setFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.fontsChanged.connect(self.costChart.adjustFonts)
         self.table = QtWidgets.QTableWidget()
         self.table.setColumnCount(9)
         self.table.setHorizontalHeaderItem(0,QtWidgets.QTableWidgetItem('C'))
@@ -790,9 +996,10 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.LeftGrid.addWidget(self.chooseSource,0,0)
         self.LeftGrid.addWidget(self.chooseDestination,1,0)
         self.LeftGrid.addWidget(self.parametersBox,2,0)
-        self.LeftGrid.addWidget(self.fitOptions,3,0)
-        self.LeftGrid.addWidget(self.ButtonBox,4,0)
-        self.LeftGrid.addWidget(self.GenerateReportButton,5,0)
+        self.LeftGrid.addWidget(self.appearance,3,0)
+        self.LeftGrid.addWidget(self.fitOptions,4,0)
+        self.LeftGrid.addWidget(self.ButtonBox,5,0)
+        self.LeftGrid.addWidget(self.GenerateReportButton,6,0)
         self.RightGrid.addWidget(self.chartTitle,0,0)
         self.RightGrid.addWidget(self.costChartTitle,0,1)
         self.RightGrid.addWidget(self.chart,1,0)
@@ -806,7 +1013,6 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         self.Dialog.setMinimumHeight(800)
         self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
         self.Dialog.showNormal()
-        self.Dialog.exec_()
 
     def Choose_Source(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose source directory",self.currentSource,QtWidgets.QFileDialog.ShowDirsOnly)
@@ -817,6 +1023,13 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",self.currentDestination,QtWidgets.QFileDialog.ShowDirsOnly)
         self.currentDestination = path
         self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
+
+    def RefreshFontSize(self):
+        self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
+        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+
+    def RefreshFontName(self):
+        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
     def Start(self):
         if self.TableIsReady():
@@ -844,9 +1057,10 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
             analysisRange = float(self.rangeEdit.text())
             self.initialparameters = self.initialParameters()
             self.reportPath = self.currentDestination+"/"+saveFileName+fileType
-            output = open(self.reportPath,mode='w')
-            output.write(QtCore.QDateTime.currentDateTime().toString("MMMM d, yyyy  hh:mm:ss ap")+"\n")
-            output.write("The source directory is: "+self.currentSource+"\n")
+            if self.saveResult.checkState() == 2:
+                output = open(self.reportPath,mode='w')
+                output.write(QtCore.QDateTime.currentDateTime().toString("MMMM d, yyyy  hh:mm:ss ap")+"\n")
+                output.write("The source directory is: "+self.currentSource+"\n")
             index = []
             for index_i in range(1,int(self.numberOfPeaksCombo.currentData())+1):
                 index.append(str(index_i))
@@ -861,10 +1075,11 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
             information['GTol'] = float(self.GTolEdit.text())
             information['method'] = self.method.currentData()
             information['loss_function'] = self.loss.currentData()
-            output.write(str(information))
-            output.write('\n\n')
-            results_head =str('Phi').ljust(12)+'\t'+str('Kperp').ljust(12)+'\t'+'\t'.join(str(label+i).ljust(12)+'\t'+str(label+i+'_error').ljust(12) for label in ['H','C','W'] for i in index )+'\t'+str('Offset').ljust(12)+'\t'+str('Offset_error').ljust(12)+'\n'
-            output.write(results_head)
+            if self.saveResult.checkState() == 2:
+                output.write(str(information))
+                output.write('\n\n')
+                results_head =str('Phi').ljust(12)+'\t'+str('Kperp').ljust(12)+'\t'+'\t'.join(str(label+i).ljust(12)+'\t'+str(label+i+'_error').ljust(12) for label in ['H','C','W'] for i in index )+'\t'+str('Offset').ljust(12)+'\t'+str('Offset_error').ljust(12)+'\n'
+                output.write(results_head)
             if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
                     self.status["endY"] == ""\
                 or self.status["width"] =="":
@@ -936,16 +1151,21 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
                         if i == 1:
                             self.initialparameters = results.x
                         fitresults =str(nimg*1.8).ljust(12)+'\t'+str(np.round(Kperp,3)).ljust(12)+'\t'+'\t'.join(str(np.round(e[0],3)).ljust(12)+'\t'+str(np.round(e[1],3)).ljust(12) for e in value_variance.T)+'\n'
-                        output.write(fitresults)
+                        if self.saveResult.checkState() == 2:
+                            output.write(fitresults)
                         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
                                            "\u00A0\u00A0\u00A0\u00A0MESSAGE:"+results.message)
                         self.plotResults(RC,I)
                         self.progressAdvance.emit(0,100,((nimg-startIndex)*nos+i)*100/nos/(endIndex-startIndex+1))
                 self.progressEnd.emit()
-                output.close()
+                if self.saveResult.checkState() == 2:
+                    output.close()
                 self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Completed!")
                 self.Raise_Attention("Broadening Analysis Completed!")
                 self.GenerateReportButton.setEnabled(True)
+
+    def Reject(self):
+        self.Dialog.close()
 
     def initialParameters(self):
         para = []
@@ -1109,15 +1329,15 @@ class Broadening(QtCore.QObject,Process.Image,Process.Fit):
 
     def ShowManualFit(self):
         self.StatusRequested.emit()
-        window = ManualFit()
-        window.FitSatisfied.connect(self.updateResults)
-        window.Set_Status(self.status)
+        self.ManualFitWindow = ManualFit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.ManualFitWindow.FitSatisfied.connect(self.updateResults)
+        self.ManualFitWindow.Set_Status(self.status)
         path = os.path.join(self.currentSource,'*.nef')
         startIndex = int(self.startImageIndexEdit.text())
         image_list = []
         for filename in glob.glob(path):
             image_list.append(filename)
-        window.Main(image_list[startIndex],self.table.rowCount(),self.BGCheck.checkState())
+        self.ManualFitWindow.Main(image_list[startIndex],self.table.rowCount(),self.BGCheck.checkState())
 
     def Set_Status(self,status):
         self.status = status
@@ -1156,10 +1376,12 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
     FitSatisfied = QtCore.pyqtSignal(list)
     color = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','yellow','darkYellow','black']
 
-    def __init__(self):
+    def __init__(self,fontname='Arial',fontsize=10):
         super(ManualFit,self).__init__()
         self.config = configparser.ConfigParser()
         self.config.read('./configuration.ini')
+        self.fontname = fontname
+        self.fontsize = fontsize
 
     def Set_Status(self,status):
         self.status = status
@@ -1192,7 +1414,7 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
         else:
             self.Raise_Error('Please open a pattern!')
             return
-        self.Dialog = QtWidgets.QDialog()
+        self.Dialog = QtWidgets.QWidget()
         self.Grid = QtWidgets.QGridLayout(self.Dialog)
         self.LeftFrame = QtWidgets.QFrame()
         self.RightFrame = QtWidgets.QFrame()
@@ -1230,6 +1452,7 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
         self.AcceptButton.clicked.connect(self.Accept)
         self.FitChartTitle = QtWidgets.QLabel('Profile')
         self.FitChart = ProfileChart.ProfileChart(self.config)
+        self.FitChart.setFonts(self.fontname,self.fontsize)
         self.FitChart.addChart(self.RC,self.I)
         self.FitChart.profileChart.setMinimumWidth(650)
         self.updateGuess()
@@ -1245,13 +1468,15 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
         self.Dialog.setMinimumHeight(600)
         self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
         self.Dialog.showNormal()
-        self.Dialog.exec_()
 
     def Accept(self):
-        self.Dialog.reject()
+        self.Reject()
         results = self.flatten(self.guess)
         results.append(float(self.OffsetSlider.value()))
         self.FitSatisfied.emit(results)
+
+    def Reject(self):
+        self.Dialog.close()
 
     def flatten(self,input):
         new_list=[]
@@ -1361,7 +1586,7 @@ class ManualFit(QtCore.QObject,Process.Image,Process.Fit):
         info.exec()
 
 class DoubleSlider(QtWidgets.QWidget):
-    valueChanged = QtCore.pyqtSignal(float,float)
+    valueChanged = QtCore.pyqtSignal()
 
     def __init__(self,minimum,maximum,scale,head,tail,text,unit,direction='horizontal'):
         super(DoubleSlider,self).__init__()
@@ -1409,14 +1634,14 @@ class DoubleSlider(QtWidgets.QWidget):
         if self.currentMin > self.currentMax:
             self.maxSlider.setValue(self.currentMin)
         self.minLabel.setText(self.text+"_min = {:5.2f} ".format(self.currentMin*self.scale)+"("+self.unit+")")
-        self.valueChanged.emit(self.currentMin*self.scale, self.currentMax*self.scale)
+        self.valueChanged.emit()
 
     def maxChanged(self):
         self.currentMax = self.maxSlider.value()
         if self.currentMin > self.currentMax:
             self.minSlider.setValue(self.currentMax)
         self.maxLabel.setText(self.text+"_max = {:5.2f} ".format(self.currentMax*self.scale)+"("+self.unit+")")
-        self.valueChanged.emit(self.currentMin*self.scale, self.currentMax*self.scale)
+        self.valueChanged.emit()
 
     def setEnabled(self,enable):
         self.minSlider.setEnabled(enable)
@@ -1482,6 +1707,15 @@ class LabelSlider(QtWidgets.QWidget):
 class GenerateReport(QtCore.QObject):
 
     StatusRequested = QtCore.pyqtSignal()
+    PolarIRequested = QtCore.pyqtSignal()
+    PolarFRequested = QtCore.pyqtSignal()
+    RefreshPolarI = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,dict)
+    RefreshPolarF = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,dict)
+    NormalIRequested = QtCore.pyqtSignal()
+    NormalFRequested = QtCore.pyqtSignal()
+    RefreshNormalI = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,dict)
+    RefreshNormalF = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,dict)
+    fontsChanged = QtCore.pyqtSignal(str,int)
 
     def __init__(self):
         super(GenerateReport,self).__init__()
@@ -1511,7 +1745,11 @@ class GenerateReport(QtCore.QObject):
         self.Fmax = 2
         self.currentFmin = 0
         self.currentFmax = 1
-        self.Dialog = QtWidgets.QDialog()
+        self.IAIsPresent = False
+        self.FAIsPresent = False
+        self.IKIsPresent = True
+        self.FKIsPresent = True
+        self.Dialog = QtWidgets.QWidget()
         self.Grid = QtWidgets.QGridLayout(self.Dialog)
         self.LeftFrame = QtWidgets.QFrame()
         self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
@@ -1544,9 +1782,9 @@ class GenerateReport(QtCore.QObject):
         self.typeFrame = QtWidgets.QFrame()
         self.typeGrid = QtWidgets.QGridLayout(self.typeFrame)
         self.IA = QtWidgets.QCheckBox("Intensity vs Azimuth")
-        self.FA = QtWidgets.QCheckBox("FWHM vs Azimuth")
+        self.FA = QtWidgets.QCheckBox("HWHM vs Azimuth")
         self.IK = QtWidgets.QCheckBox("Intensity vs Kperp")
-        self.FK = QtWidgets.QCheckBox("FWHM vs Kperp")
+        self.FK = QtWidgets.QCheckBox("HWHM vs Kperp")
         self.typeGrid.addWidget(self.IA,0,0)
         self.typeGrid.addWidget(self.FA,1,0)
         self.typeGrid.addWidget(self.IK,2,0)
@@ -1563,6 +1801,11 @@ class GenerateReport(QtCore.QObject):
         self.peakLabel = QtWidgets.QLabel("Choose the peak to be analyzed:")
         self.peak = QtWidgets.QComboBox()
         self.peak.addItem('Center','0')
+        self.figureGeneratorLabel = QtWidgets.QLabel("Choose the type of figure generator:")
+        self.figureGenerator = QtWidgets.QComboBox()
+        self.figureGenerator.addItem('Qt','Qt')
+        self.figureGenerator.addItem('Matplotlib','Matplotlib')
+        self.figureGenerator.currentTextChanged.connect(self.connectOKButton)
         self.KperpLabel = QtWidgets.QLabel("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
         self.KperpSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.KperpSlider.setMinimum(self.KPmin)
@@ -1580,17 +1823,41 @@ class GenerateReport(QtCore.QObject):
 
         self.intensityRangeSlider = DoubleSlider(minimum=0,maximum=200,scale=0.01,head=0,tail=1,text="Intensity",unit='arb. units')
         self.intensityRangeSlider.setEnabled(False)
-        self.FWHMRangeSlider = DoubleSlider(minimum=0,maximum=200,scale=0.01,head=0,tail=1,text="FWHM",unit='\u212B\u207B\u00B9')
-        self.FWHMRangeSlider.setEnabled(False)
+        self.intensityRangeSlider.valueChanged.connect(self.RefreshPlots)
+        self.HWHMRangeSlider = DoubleSlider(minimum=0,maximum=200,scale=0.01,head=0,tail=1,text="HWHM",unit='\u212B\u207B\u00B9')
+        self.HWHMRangeSlider.setEnabled(False)
+        self.HWHMRangeSlider.valueChanged.connect(self.RefreshPlots)
 
         self.optionGrid.addWidget(self.peakLabel,0,0)
         self.optionGrid.addWidget(self.peak,0,1)
-        self.optionGrid.addWidget(self.KperpLabel,1,0,1,2)
-        self.optionGrid.addWidget(self.KperpSlider,2,0,1,2)
-        self.optionGrid.addWidget(self.AzimuthLabel,3,0,1,2)
-        self.optionGrid.addWidget(self.AzimuthSlider,4,0,1,2)
-        self.optionGrid.addWidget(self.intensityRangeSlider,5,0,1,2)
-        self.optionGrid.addWidget(self.FWHMRangeSlider,6,0,1,2)
+        self.optionGrid.addWidget(self.figureGeneratorLabel,1,0)
+        self.optionGrid.addWidget(self.figureGenerator,1,1)
+        self.optionGrid.addWidget(self.KperpLabel,2,0,1,2)
+        self.optionGrid.addWidget(self.KperpSlider,3,0,1,2)
+        self.optionGrid.addWidget(self.AzimuthLabel,4,0,1,2)
+        self.optionGrid.addWidget(self.AzimuthSlider,5,0,1,2)
+        self.optionGrid.addWidget(self.intensityRangeSlider,6,0,1,2)
+        self.optionGrid.addWidget(self.HWHMRangeSlider,7,0,1,2)
+
+        self.appearance = QtWidgets.QGroupBox("Appearance")
+        self.appearance.setMaximumHeight(100)
+        self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
+        self.fontListLabel = QtWidgets.QLabel("Change Font")
+        self.fontList = QtWidgets.QFontComboBox()
+        self.fontList.setCurrentFont(QtGui.QFont("Arial"))
+        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(30))
+        self.fontSizeLabel.setFixedWidth(160)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider.setMinimum(1)
+        self.fontSizeSlider.setMaximum(100)
+        self.fontSizeSlider.setValue(30)
+        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.appearanceGrid.addWidget(self.fontListLabel,0,0)
+        self.appearanceGrid.addWidget(self.fontList,0,1)
+        self.appearanceGrid.addWidget(self.fontSizeLabel,1,0)
+        self.appearanceGrid.addWidget(self.fontSizeSlider,1,1)
 
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -1612,17 +1879,16 @@ class GenerateReport(QtCore.QObject):
         self.ButtonBox.addButton("OK",QtWidgets.QDialogButtonBox.AcceptRole)
         self.ButtonBox.addButton("Cancel",QtWidgets.QDialogButtonBox.DestructiveRole)
         self.ButtonBox.setCenterButtons(True)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked.\
-            connect(self.Start)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
-            connect(self.Dialog.reject)
+            connect(self.Reject)
 
         self.LeftGrid.addWidget(self.chooseSource,0,0,1,2)
         self.LeftGrid.addWidget(self.ReportInformationBox,1,0)
         self.LeftGrid.addWidget(self.typeOfReportBox,1,1)
         self.LeftGrid.addWidget(self.optionBox,3,0,1,2)
-        self.LeftGrid.addWidget(self.statusBar,4,0,1,2)
-        self.LeftGrid.addWidget(self.ButtonBox,5,0,1,2)
+        self.LeftGrid.addWidget(self.appearance,4,0,1,2)
+        self.LeftGrid.addWidget(self.statusBar,5,0,1,2)
+        self.LeftGrid.addWidget(self.ButtonBox,6,0,1,2)
         self.Grid.addWidget(self.LeftFrame,0,0)
 
         self.IA.stateChanged.connect(self.IACheckChanged)
@@ -1631,44 +1897,210 @@ class GenerateReport(QtCore.QObject):
         self.FK.stateChanged.connect(self.FKCheckChanged)
         self.IA.setChecked(True)
 
+        self.connectOKButton(self.figureGenerator.currentText())
         if preload:
             self.loadReport(self.path)
 
         self.Dialog.setWindowTitle("Generate Report")
         self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
         self.Dialog.showNormal()
-        self.Dialog.exec_()
+
+    def RefreshFontSize(self):
+        self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
+        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+
+    def RefreshFontName(self):
+        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+
+    def connectOKButton(self,text):
+        self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].disconnect()
+        if text == 'Qt':
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked. \
+                connect(self.PolarStart)
+        elif text == 'Matplotlib':
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked. \
+                connect(self.Start)
 
     def updateLog(self,msg):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
+
+    def Reject(self):
+        self.Dialog.close()
 
     def Choose_Source(self):
         path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The Report File",self.path)
         self.path = path[0]
         self.pathExtension = os.path.splitext(self.path)[1]
-        if not self.pathExtension == ".txt":
-            self.Raise_Error('[Error: wrong file type] Please choose a *.txt file')
-            self.updateLog('[Error: wrong file type] Please choose a *.txt file')
+        if not self.path=="":
+            if not self.pathExtension == ".txt":
+                self.Raise_Error('[Error: wrong file type] Please choose a *.txt file')
+                self.updateLog('[Error: wrong file type] Please choose a *.txt file')
+            else:
+                self.chooseSourceLabel.setText("The path of the report is:\n"+self.path)
+                self.loadReport(self.path)
         else:
-            self.chooseSourceLabel.setText("The path of the report is:\n"+self.path)
-        self.loadReport(self.path)
+            self.Raise_Error('[Error: No file] Please choose a *.txt file')
+            self.updateLog('[Error: No file] Please choose a *.txt file')
+
 
     def Start(self):
         Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
         Az = self.currentAzimuth*1.8+self.AzimuthStart
+        if self.IK.checkState() == 2 and self.FK.checkState() == 2:
+            I, K1, Ierror = self.getIK()
+            F, K2, Ferror = self.getFK()
+            self.PlotIFK(I,F,K1,Az)
+        elif self.IK.checkState() == 2:
+            I, K, Ierror = self.getIK()
+            self.PlotIK(I,K,Az)
+        elif self.FK.checkState() == 2:
+            F, K, Ferror = self.getFK()
+            self.PlotFK(F,K,Az)
         if self.IA.checkState() == 2:
             I, A, Ierror = self.getIA()
-            self.IAPlot(I,A,Kp,self.intensityRangeSlider.values()[0],self.intensityRangeSlider.values()[1])
-        if self.IK.checkState() == 2:
-            I, K, Ierror = self.getIK()
-            self.IKPlot(I,K,Az)
+            self.PlotIA(I,A,Kp,self.intensityRangeSlider.values()[0],self.intensityRangeSlider.values()[1])
         if self.FA.checkState() == 2:
             F, A, Ferror = self.getFA()
-            self.FAPlot(F,A,Kp,self.FWHMRangeSlider.values()[0],self.FWHMRangeSlider.values()[1])
-        if self.FK.checkState() == 2:
-            F, K, Ferror = self.getFK()
-            self.FKPlot(F,K,Az)
+            self.PlotFA(F,A,Kp,self.HWHMRangeSlider.values()[0],self.HWHMRangeSlider.values()[1])
         plt.show()
+
+    def PolarStart(self):
+        Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
+        Az = self.currentAzimuth*1.8+self.AzimuthStart
+        self.IAPlot = PlotChart.PlotChart(self.config,'Polar')
+        self.FAPlot = PlotChart.PlotChart(self.config,'Polar')
+        self.IKPlot = PlotChart.PlotChart(self.config,'Normal')
+        self.FKPlot = PlotChart.PlotChart(self.config,'Normal')
+        self.PolarIRequested.connect(self.IAPlot.Main)
+        self.PolarFRequested.connect(self.FAPlot.Main)
+        self.NormalIRequested.connect(self.IKPlot.Main)
+        self.NormalFRequested.connect(self.FKPlot.Main)
+        self.RefreshPolarI.connect(self.IAPlot.addChart)
+        self.RefreshPolarF.connect(self.FAPlot.addChart)
+        self.RefreshNormalI.connect(self.IKPlot.addChart)
+        self.RefreshNormalF.connect(self.FKPlot.addChart)
+        self.fontsChanged.connect(self.IAPlot.adjustFonts)
+        self.fontsChanged.connect(self.FAPlot.adjustFonts)
+        self.fontsChanged.connect(self.FKPlot.adjustFonts)
+        self.fontsChanged.connect(self.IKPlot.adjustFonts)
+        self.Window = QtWidgets.QWidget()
+        self.Window.setWindowTitle('Summary of Broadening Analysis')
+        self.WindowLayout = QtWidgets.QGridLayout(self.Window)
+        self.WindowLayout.addWidget(self.IAPlot,0,1)
+        self.WindowLayout.addWidget(self.FAPlot,0,0)
+        self.WindowLayout.addWidget(self.IKPlot,1,1)
+        self.WindowLayout.addWidget(self.FKPlot,1,0)
+        self.Window.setWindowModality(QtCore.Qt.WindowModal)
+        self.Window.setMinimumSize(1000,800)
+        self.Window.show()
+        if self.IA.checkState() == 2:
+            I, A, Ierror = self.getIA()
+            self.PolarIRequested.emit()
+            self.IAIsPresent = True
+            self.RefreshPolarI.emit(I,A,'Intensity',self.fontList.currentFont().family(),self.fontSizeSlider.value(),\
+                                    {'Kp':Kp,'low':self.intensityRangeSlider.values()[0],\
+                                     'high':self.intensityRangeSlider.values()[1]})
+        if self.IK.checkState() == 2:
+            I,K,Ierror = self.getIK()
+            self.NormalIRequested.emit()
+            self.IKIsPresent = True
+            self.RefreshNormalI.emit(K,I,'Intensity',self.fontList.currentFont().family(),self.fontSizeSlider.value(),{'Az':Az})
+        if self.FA.checkState() == 2:
+            F, A, Ferror = self.getFA()
+            self.PolarFRequested.emit()
+            self.FAIsPresent = True
+            self.RefreshPolarF.emit(F,A,'HWHM',self.fontList.currentFont().family(),self.fontSizeSlider.value(),{'Kp':Kp,'low':self.HWHMRangeSlider.values()[0],\
+                                                'high':self.HWHMRangeSlider.values()[1]})
+        if self.FK.checkState() == 2:
+            F,K,Ferror = self.getFK()
+            self.NormalFRequested.emit()
+            self.FKIsPresent = True
+            self.RefreshNormalF.emit(K,F,'HWHM',self.fontList.currentFont().family(),self.fontSizeSlider.value(),{'Az':Az})
+
+    def PlotIA(self,I,A,Kp,imin,imax):
+        A2 = A + np.full(len(A),180)
+        Phi = np.append(A,A2)
+        Heights = np.append(I,I)/np.amax(I)
+        fig = plt.figure()
+        ax = plt.subplot(projection='polar')
+        ax.set_title('Intensity vs Azimuth at Kperp = {:5.2f} (\u212B\u207B\u00B9)'.format(Kp),fontsize=20)
+        ax.plot(Phi*np.pi/180,Heights,color='b')
+        ax.set_rmin(imin)
+        ax.set_rmax(imax)
+        ax.set_rlabel_position(0)
+        ax.set_theta_direction(-1)
+        ax.set_theta_zero_location('N')
+        ax.set_thetagrids((0,30,60,90,120,150,180,210,240,270,300,330))
+        ax.set_rticks(np.around(np.linspace(imin,imax,5),1))
+        ax.tick_params(which='both', labelsize=16)
+
+    def PlotIK(self,I,K,Az):
+        fig = plt.figure()
+        ax = plt.subplot()
+        ax.set_title('Intensity vs Kperp at Phi = {:5.2f}\u00B0'.format(Az),fontsize=20)
+        ax.plot(I,K,c='b')
+        ax.set_xlabel('Intensity (arb. units)',fontsize = 20)
+        ax.set_ylabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = 20)
+        ax.tick_params(which='both', labelsize=16)
+
+    def PlotFA(self,F,A,Kp,fmin,fmax):
+        A2 = A + np.full(len(A),180)
+        Phi = np.append(A,A2)
+        HWHMs = np.append(F,F)
+        fig = plt.figure()
+        ax = plt.subplot(projection='polar')
+        ax.set_title('HWHM vs Azimuth at Kperp = {:5.2f} (\u212B\u207B\u00B9)'.format(Kp),fontsize=20)
+        ax.plot(Phi*np.pi/180,HWHMs,color='r')
+        ax.set_rmin(fmin)
+        ax.set_rmax(fmax)
+        ax.set_rlabel_position(0)
+        ax.set_theta_direction(-1)
+        ax.set_theta_zero_location('N')
+        ax.set_thetagrids((0,30,60,90,120,150,180,210,240,270,300,330))
+        ax.set_rticks(np.around(np.linspace(fmin,fmax,5),1))
+        ax.tick_params(which='both', labelsize=16)
+
+    def PlotFK(self,F,K,Az):
+        fig = plt.figure()
+        ax = plt.subplot()
+        ax.set_title('HWHM vs Kperp at Phi = {:5.2f}\u00B0'.format(Az),fontsize=20)
+        ax.plot(F,K,c='r')
+        ax.set_xlabel(r'HWHM $(\AA^{-1})$',fontsize = 20)
+        ax.set_ylabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = 20)
+        ax.tick_params(which='both', labelsize=16)
+
+    def PlotIFK(self,I,F,K,Az):
+        fig, ax1 = plt.subplots()
+        fig.suptitle('Intensity and HWHM vs Kperp at Phi = {:5.2f}\u00B0'.format(Az),fontsize=20)
+        ax1.set_xlabel('Intensity (arb. units)',fontsize = 20,color='b')
+        ax1.set_ylabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = 20)
+        ax1.plot(I,K,c='b')
+        ax1.tick_params(axis='x',labelcolor='b')
+        ax1.tick_params(axis='both',labelsize=16)
+        ax2 = ax1.twiny()
+        ax2.set_xlabel(r'HWHM $(\AA^{-1})$',fontsize = 20,color='r')
+        ax2.plot(F,K,c='r')
+        ax2.tick_params(axis='x',labelcolor='r')
+        ax2.tick_params(axis='both',labelsize=16)
+        fig.tight_layout()
+
+    def RefreshPlots(self):
+        Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
+        Az = self.currentAzimuth*1.8+self.AzimuthStart
+        if self.IAIsPresent:
+            I, A, Ierror = self.getIA()
+            self.RefreshPolarI.emit(I,A,'Intensity',self.fontList.currentFont().family(),self.fontSizeSlider.value(),{'Kp':Kp,'low':self.intensityRangeSlider.values()[0], \
+                                                     'high':self.intensityRangeSlider.values()[1]})
+        if self.FAIsPresent:
+            F, A, Ferror = self.getFA()
+            self.RefreshPolarF.emit(F,A,'HWHM',self.fontList.currentFont().family(),self.fontSizeSlider.value(),{'Kp':Kp,'low':self.HWHMRangeSlider.values()[0], \
+                                                'high':self.HWHMRangeSlider.values()[1]})
+        if self.IKIsPresent:
+            I,K,Ierror = self.getIK()
+            self.RefreshNormalI.emit(K,I,'Intensity',self.fontList.currentFont().family(),self.fontSizeSlider.value(),{'Az':Az})
+        if self.FKIsPresent:
+            F,K,Ferror = self.getFK()
+            self.RefreshNormalF.emit(K,F,'HWHM',self.fontList.currentFont().family(),self.fontSizeSlider.value(),{'Az':Az})
 
     def getIA(self):
         peakIndex = np.round(float(self.peak.currentData()),0)
@@ -1690,8 +2122,8 @@ class GenerateReport(QtCore.QObject):
         columnFerror = int(1+nop*4+peakIndex*2+2)
         rows = np.full(self.AZmax+1, self.currentKP).astype(int) + np.linspace(0,self.AZmax,self.AZmax+1).astype(int)*(self.KPmax+1)
         A = self.Angles
-        F = np.fromiter((self.report[i,columnF] for i in rows.tolist()),float)
-        Ferror = np.fromiter((self.report[i,columnFerror] for i in rows.tolist()),float)
+        F = np.fromiter((self.report[i,columnF]/2 for i in rows.tolist()),float)
+        Ferror = np.fromiter((self.report[i,columnFerror]/2 for i in rows.tolist()),float)
         return F,A,Ferror
 
     def getIK(self):
@@ -1718,8 +2150,8 @@ class GenerateReport(QtCore.QObject):
         columnFerror = int(1+nop*4+peakIndex*2+2)
         rows = np.full(self.KPmax+1, self.currentAzimuth*(self.KPmax+1)).astype(int) + np.linspace(0,self.KPmax,self.KPmax+1).astype(int)
         K = self.Kperps
-        F = np.fromiter((self.report[i,columnF] for i in rows.tolist()),float)
-        Ferror = np.fromiter((self.report[i,columnFerror] for i in rows.tolist()),float)
+        F = np.fromiter((self.report[i,columnF]/2 for i in rows.tolist()),float)
+        Ferror = np.fromiter((self.report[i,columnFerror]/2 for i in rows.tolist()),float)
         return F,K,Ferror
 
     def loadReport(self,path):
@@ -1768,53 +2200,17 @@ class GenerateReport(QtCore.QObject):
         self.peak.setCurrentText('Center')
         self.updateLog("The report file is loaded")
 
-    def IAPlot(self,I,A,Kp,imin,imax):
-        A2 = A + np.full(len(A),180)
-        Phi = np.append(A,A2)
-        Heights = np.append(I,I)/np.amax(I)
-        fig = plt.figure()
-        ax = plt.subplot(projection='polar')
-        ax.set_title('Intensity vs Azimuth at Kperp = {}'.format(Kp),fontsize=20)
-        ax.scatter(Phi*np.pi/180,Heights,c='b')
-        ax.set_rmin(imin)
-        ax.set_rmax(imax)
-        ax.set_rticks(np.around(np.linspace(imin,imax,5),1))
 
-    def IKPlot(self,I,K,Az):
-        fig = plt.figure()
-        ax = plt.subplot()
-        ax.set_title('Intensity vs Kperp at Phi = {}\u00B0'.format(Az),fontsize=20)
-        ax.plot(K,I,c='b')
-        ax.set_ylabel('Intensity (arb. units)',fontsize = 20)
-        ax.set_xlabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = 20)
-
-    def FAPlot(self,F,A,Kp,fmin,fmax):
-        A2 = A + np.full(len(A),180)
-        Phi = np.append(A,A2)
-        FWHMs = np.append(F,F)/np.amax(F)
-        fig = plt.figure()
-        ax = plt.subplot(projection='polar')
-        ax.set_title('FWHM vs Azimuth at Kperp = {}'.format(Kp),fontsize=20)
-        ax.scatter(Phi*np.pi/180,FWHMs,c='b')
-        ax.set_rmin(fmin)
-        ax.set_rmax(fmax)
-        ax.set_rticks(np.around(np.linspace(fmin,fmax,5),1))
-
-    def FKPlot(self,F,K,Az):
-        fig = plt.figure()
-        ax = plt.subplot()
-        ax.set_title('FWHM vs Kperp at Phi = {}\u00B0'.format(Az),fontsize=20)
-        ax.plot(K,F,c='b')
-        ax.set_ylabel(r'FWHM $(\AA^{-1})$',fontsize = 20)
-        ax.set_xlabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = 20)
 
     def AzimuthChanged(self):
         self.currentAzimuth = self.AzimuthSlider.value()
         self.AzimuthLabel.setText("Azimuth Angle = {:5.1f} (\u00B0)".format(self.currentAzimuth*1.8+self.AzimuthStart))
+        self.RefreshPlots()
 
     def KPChanged(self):
         self.currentKP = self.KperpSlider.value()
         self.KperpLabel.setText("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
+        self.RefreshPlots()
 
     def IACheckChanged(self,status):
         if status == 0:
@@ -1828,12 +2224,12 @@ class GenerateReport(QtCore.QObject):
 
     def FACheckChanged(self,status):
         if status == 0:
-            self.FWHMRangeSlider.setEnabled(False)
+            self.HWHMRangeSlider.setEnabled(False)
             if self.IA.checkState() == 0:
                 self.KperpSlider.setEnabled(False)
         else:
             self.KperpSlider.setEnabled(True)
-            self.FWHMRangeSlider.setEnabled(True)
+            self.HWHMRangeSlider.setEnabled(True)
         self.checkStartOK()
 
     def IKCheckChanged(self,status):

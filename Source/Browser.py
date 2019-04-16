@@ -14,7 +14,7 @@ class Browser(QtWidgets.QWidget):
     def initUI(self,path=QtCore.QDir.currentPath()):
         self.model = QtWidgets.QFileSystemModel()
         self.model.setRootPath(path)
-        self.model.setNameFilters({"*.nef"})
+        self.model.setNameFilters({"*.nef","*.NEF","*.arw","*.ARW"})
         self.model.setNameFilterDisables(False)
         self.tree = QtWidgets.QTreeView()
         self.tree.setModel(self.model)

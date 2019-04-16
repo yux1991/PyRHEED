@@ -26,6 +26,7 @@ class Canvas(QtWidgets.QGraphicsView):
         self._zoom = 0
         self._scaleFactor = 1
         self._empty = True
+        self._numberOfMoves = 0
 
         #Defaults
         canvasDefault = dict(config['canvasDefault'].items())
@@ -223,7 +224,6 @@ class Canvas(QtWidgets.QGraphicsView):
                 if self._mode == "arc":
                     self._drawingArc = True
                 if not self._mode =="pan":
-                    self.photoMousePress.emit(self.start)
                     self._mouseIsPressed = True
         super(Canvas, self).mousePressEvent(event)
 
@@ -241,7 +241,10 @@ class Canvas(QtWidgets.QGraphicsView):
                     self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
             if not self._mode == "pan":
                 if self._mouseIsPressed:
+                    if self._numberOfMoves == 0:
+                        self.photoMousePress.emit(self.start)
                     self._mouseIsMoved = True
+                    self._numberOfMoves+=1
             position = QtCore.QPointF(self.mapToScene(event.pos()))
             self.photoMouseMovement.emit(position.toPoint())
         super(Canvas, self).mouseMoveEvent(event)
@@ -269,6 +272,7 @@ class Canvas(QtWidgets.QGraphicsView):
         self._drawingArc = False
         self._mouseIsPressed = False
         self._mouseIsMoved = False
+        self._numberOfMoves = 0
         super(Canvas, self).mouseReleaseEvent(event)
 
     def keyPressEvent(self,event):
