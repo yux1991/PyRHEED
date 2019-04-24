@@ -18,7 +18,7 @@ class Configuration():
                                     'electronEnergy': 20,\
                                     'azimuth': 0,\
                                     'scaleBarLength': 5,\
-                                    'brightness': 30,\
+                                    'brightness': 20,\
                                     'brightnessMinimum': 0,\
                                     'brightnessMaximum': 100,\
                                     'blackLevel': 50,\

@@ -1,7 +1,8 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 class Properties(QtWidgets.QWidget):
-    fontsChanged = QtCore.pyqtSignal(str,int)
+    chartFontsChanged = QtCore.pyqtSignal(str,int)
+    canvasFontsChanged = QtCore.pyqtSignal(str,int)
 
     def __init__(self,parent,config):
         super(Properties,self).__init__(parent)
@@ -158,7 +159,7 @@ class Properties(QtWidgets.QWidget):
         self.imageAdjustGrid.addWidget(self.autoWBLabel,2,0)
         self.imageAdjustGrid.addWidget(self.autoWBCheckBox,2,1)
         self.imageAdjustGrid.addLayout(self.buttonGrid2,3,0,1,2)
-        self.tab.addTab(self.imageAdjustPage,"Image Adjust")
+        self.tab.addTab(self.imageAdjustPage,"Adjust Image")
 
         #profile options page
         self.profileOptionsPage = QtWidgets.QWidget()
@@ -207,22 +208,31 @@ class Properties(QtWidgets.QWidget):
         self.appearance = QtWidgets.QWidget()
         self.appearance.setMaximumHeight(100)
         self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
-        self.fontListLabel = QtWidgets.QLabel("Change Font")
+        self.fontListLabel = QtWidgets.QLabel("Choose Font Family")
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.RefreshFontName)
-        self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(12))
-        self.fontSizeLabel.setFixedWidth(160)
-        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.fontSizeSlider.setMinimum(1)
-        self.fontSizeSlider.setMaximum(100)
-        self.fontSizeSlider.setValue(12)
-        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.chartFontSizeLabel = QtWidgets.QLabel("Adjust Chart Font Size ({})".format(12))
+        self.chartFontSizeLabel.setFixedWidth(160)
+        self.chartFontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.chartFontSizeSlider.setMinimum(1)
+        self.chartFontSizeSlider.setMaximum(100)
+        self.chartFontSizeSlider.setValue(12)
+        self.chartFontSizeSlider.valueChanged.connect(self.RefreshChartFontSize)
+        self.canvasFontSizeLabel = QtWidgets.QLabel("Adjust Canvas Font Size ({})".format(50))
+        self.canvasFontSizeLabel.setFixedWidth(160)
+        self.canvasFontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.canvasFontSizeSlider.setMinimum(1)
+        self.canvasFontSizeSlider.setMaximum(100)
+        self.canvasFontSizeSlider.setValue(50)
+        self.canvasFontSizeSlider.valueChanged.connect(self.RefreshCanvasFontSize)
         self.appearanceGrid.addWidget(self.fontListLabel,0,0)
         self.appearanceGrid.addWidget(self.fontList,0,1)
-        self.appearanceGrid.addWidget(self.fontSizeLabel,1,0)
-        self.appearanceGrid.addWidget(self.fontSizeSlider,1,1)
-        self.tab.addTab(self.appearance,"Chart Font")
+        self.appearanceGrid.addWidget(self.chartFontSizeLabel,1,0)
+        self.appearanceGrid.addWidget(self.chartFontSizeSlider,1,1)
+        self.appearanceGrid.addWidget(self.canvasFontSizeLabel,2,0)
+        self.appearanceGrid.addWidget(self.canvasFontSizeSlider,2,1)
+        self.tab.addTab(self.appearance,"Adjust Font")
         self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
 
         self.UIgrid = QtWidgets.QGridLayout()
@@ -231,9 +241,14 @@ class Properties(QtWidgets.QWidget):
         self.setLayout(self.UIgrid)
         self.show()
 
-    def RefreshFontSize(self):
-        self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+    def RefreshChartFontSize(self):
+        self.chartFontSizeLabel.setText("Adjust Chart Font Size ({})".format(self.chartFontSizeSlider.value()))
+        self.chartFontsChanged.emit(self.fontList.currentFont().family(),self.chartFontSizeSlider.value())
+
+    def RefreshCanvasFontSize(self):
+        self.canvasFontSizeLabel.setText("Adjust Canvas Font Size ({})".format(self.canvasFontSizeSlider.value()))
+        self.canvasFontsChanged.emit(self.fontList.currentFont().family(),self.canvasFontSizeSlider.value())
 
     def RefreshFontName(self):
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.chartFontsChanged.emit(self.fontList.currentFont().family(),self.chartFontSizeSlider.value())
+        self.canvasFontsChanged.emit(self.fontList.currentFont().family(),self.canvasFontSizeSlider.value())

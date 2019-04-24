@@ -1,8 +1,11 @@
 import numpy as np
-from PyQt5 import QtGui,QtCore
+from PyQt5 import QtGui
 from scipy.optimize import least_squares
 import rawpy
 import math
+import os
+import itertools
+from lxml import etree as ET
 
 class Image(object):
 
@@ -267,3 +270,123 @@ class Fit(object):
         optim = least_squares(fun=self.errfunc,x0=guess,\
                 bounds=bounds,method=method,loss=loss, ftol=FTol,xtol=XTol,gtol=GTol,args=(x,y),verbose=0)
         return optim, self.cost_values
+
+class Convertor(object):
+    def __init__(self):
+        super(Convertor,self).__init__()
+
+    def txt2vtp(self,path,type):
+        raw_data = np.loadtxt(path)
+        if type == "Polar":
+            data = np.empty(raw_data.shape)
+            data[:,2] = raw_data[:,2]
+            data[:,3] = raw_data[:,3]
+            data[:,0] = raw_data[:,0]*np.cos((raw_data[:,1])*math.pi/180)
+            data[:,1] = raw_data[:,0]*np.sin((raw_data[:,1])*math.pi/180)
+        elif type == "Cartesian":
+            data = raw_data
+        vtkFile = ET.Element('VTKFile')
+        vtkFile.set('type', 'PolyData')
+        vtkFile.set('version', '0.1')
+        vtkFile.set('byte_order', 'LittleEndian')
+        polyData = ET.SubElement(vtkFile, 'PolyData')
+        piece = ET.SubElement(polyData, 'Piece')
+        piece.set('NumberOfPoints', str(np.shape(data)[0]))
+        piece.set('NumberOfVerts', str(np.shape(data)[0]))
+        pointData = ET.SubElement(piece, 'PointData')
+        pointData.set('Scalars', 'Intensity')
+        intensity = ET.SubElement(pointData, 'DataArray')
+        intensity.set('type', 'Float32')
+        intensity.set('Name', 'Intensity')
+        intensity.set('format', 'ascii')
+        intensity.set('RangeMin', str(np.amin(data[:,3])))
+        intensity.set('RangeMax', str(np.amax(data[:,3])))
+        intensity.text = ' '.join(map(str, data[:,3]))
+        cellData = ET.SubElement(piece, 'CellData')
+        points = ET.SubElement(piece, 'Points')
+        coordinates = ET.SubElement(points, 'DataArray')
+        coordinates.set('type', 'Float32')
+        coordinates.set('Name', 'Points')
+        coordinates.set('NumberOfComponents', '3')
+        coordinates.set('format', 'ascii')
+        coordinates.set('RangeMin', str(np.amin(data[:, 0:3])))
+        coordinates.set('RangeMax', str(np.amax(data[:, 0:3])))
+        coordinates.text = ' '.join(map(str, data[:, 0:3].flatten()))
+        verts = ET.SubElement(piece, 'Verts')
+        connect = ET.SubElement(verts, 'DataArray')
+        connect.set('type', 'Int32')
+        connect.set('Name', 'connectivity')
+        connect.set('format', 'ascii')
+        connect.set('RangeMin', '0')
+        connect.set('RangeMax', str(np.shape(data)[0]-1))
+        connect.text = ' '.join(map(str, range(np.shape(data)[0])))
+        offsets = ET.SubElement(verts, 'DataArray')
+        offsets.set('type', 'Int32')
+        offsets.set('Name', 'offsets')
+        offsets.set('format', 'ascii')
+        offsets.set('RangeMin', '1')
+        offsets.set('RangeMax', str(np.shape(data)[0]))
+        offsets.text = ' '.join(map(str, range(1, np.shape(data)[0]+1)))
+        filename = os.path.dirname(path)+'/'+os.path.basename(path).split(".")[0]+".vtp"
+        tree = ET.ElementTree(vtkFile)
+        tree.write(open(filename, 'wb'))
+
+    def mtx2vtp(self,dir,name,matrix,KRange,N_para,N_perp):
+        x_linear = np.linspace(KRange[0][0],KRange[0][1],N_para)
+        y_linear = np.linspace(KRange[1][0],KRange[1][1],N_para)
+        z_linear = np.linspace(KRange[2][0],KRange[2][1],N_perp)
+        max_intensity = np.amax(np.amax(np.amax(matrix)))
+        Kx,Ky,Kz = np.meshgrid(x_linear,y_linear,z_linear)
+        data = np.full((N_para*N_para*N_perp,4),-1.11,dtype='float64')
+        for i, j, k in itertools.product(list(range(N_para)),list(range(N_para)),list(range(N_perp))):
+            data[i*N_para*N_perp+j*N_perp+k,0] = Kx[i,j,k]
+            data[i*N_para*N_perp+j*N_perp+k,1] = Ky[i,j,k]
+            data[i*N_para*N_perp+j*N_perp+k,2] = Kz[i,j,k]
+            data[i*N_para*N_perp+j*N_perp+k,3] = matrix[i,j,k]/max_intensity
+            #print("({},{},{}): {} {} {} {}".format(i,j,k,data[i+j+k,0],data[i+j+k,1],data[i+j+k,2],data[i+j+k,3]))
+        vtkFile = ET.Element('VTKFile')
+        vtkFile.set('type', 'PolyData')
+        vtkFile.set('version', '0.1')
+        vtkFile.set('byte_order', 'LittleEndian')
+        polyData = ET.SubElement(vtkFile, 'PolyData')
+        piece = ET.SubElement(polyData, 'Piece')
+        piece.set('NumberOfPoints', str(np.shape(data)[0]))
+        piece.set('NumberOfVerts', str(np.shape(data)[0]))
+        pointData = ET.SubElement(piece, 'PointData')
+        pointData.set('Scalars', 'Intensity')
+        intensity = ET.SubElement(pointData, 'DataArray')
+        intensity.set('type', 'Float64')
+        intensity.set('Name', 'Intensity')
+        intensity.set('format', 'ascii')
+        intensity.set('RangeMin', str(np.amin(data[:,3])))
+        intensity.set('RangeMax', str(np.amax(data[:,3])))
+        intensity.text = ' '.join(map(str, data[:,3]))
+        cellData = ET.SubElement(piece, 'CellData')
+        points = ET.SubElement(piece, 'Points')
+        coordinates = ET.SubElement(points, 'DataArray')
+        coordinates.set('type', 'Float64')
+        coordinates.set('Name', 'Points')
+        coordinates.set('NumberOfComponents', '3')
+        coordinates.set('format', 'ascii')
+        coordinates.set('RangeMin', str(np.amin(data[:, 0:3])))
+        coordinates.set('RangeMax', str(np.amax(data[:, 0:3])))
+        coordinates.text = ' '.join(map(str, data[:, 0:3].flatten()))
+        verts = ET.SubElement(piece, 'Verts')
+        connect = ET.SubElement(verts, 'DataArray')
+        connect.set('type', 'Int32')
+        connect.set('Name', 'connectivity')
+        connect.set('format', 'ascii')
+        connect.set('RangeMin', '0')
+        connect.set('RangeMax', str(np.shape(data)[0]-1))
+        connect.text = ' '.join(map(str, range(np.shape(data)[0])))
+        offsets = ET.SubElement(verts, 'DataArray')
+        offsets.set('type', 'Int32')
+        offsets.set('Name', 'offsets')
+        offsets.set('format', 'ascii')
+        offsets.set('RangeMin', '1')
+        offsets.set('RangeMax', str(np.shape(data)[0]))
+        offsets.text = ' '.join(map(str, range(1, np.shape(data)[0]+1)))
+        filename = dir+'/'+name+".vtp"
+        tree = ET.ElementTree(vtkFile)
+        tree.write(open(filename, 'wb'))
+        np.savetxt(dir+'/'+name+".txt",data,delimiter='\t')

@@ -15,8 +15,8 @@ class Window(QtWidgets.QMainWindow,Process.Image):
     imgCreated = QtCore.pyqtSignal(np.ndarray)
     scaleFactorChanged = QtCore.pyqtSignal(float)
     canvasScaleFactorChanged = QtCore.pyqtSignal(float)
-    labelChanged = QtCore.pyqtSignal(float,float)
-    calibrationChanged = QtCore.pyqtSignal(float,float)
+    labelChanged = QtCore.pyqtSignal(float,float,str,int)
+    calibrationChanged = QtCore.pyqtSignal(float,float,str,int)
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
     menu_DefaultPropertiesRestRequested = QtCore.pyqtSignal()
@@ -25,6 +25,7 @@ class Window(QtWidgets.QMainWindow,Process.Image):
     menu_BroadeningRequested = QtCore.pyqtSignal(str)
     menu_ManualFitRequested = QtCore.pyqtSignal(str,int)
     menu_StatisticalFactorRequested = QtCore.pyqtSignal()
+    menu_DiffractionPatternRequested = QtCore.pyqtSignal()
     menu_GenerateReportRequested = QtCore.pyqtSignal(str)
     window_initialized = QtCore.pyqtSignal()
     propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
@@ -97,6 +98,7 @@ class Window(QtWidgets.QMainWindow,Process.Image):
 
         #Simulation Menu
         self.Statistical_Factor = self.menuSimulation.addAction("Statistical Factor",self.MenuActions_Statistical_Factor)
+        self.Diffraction_pattern = self.menuSimulation.addAction("Diffraction Pattern",self.MenuActions_Diffraction_Pattern)
 
         #Help Menu
         self.about = self.menuHelp.addAction("About",self.MenuActions_About)
@@ -246,8 +248,8 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.properties.resetButton3.clicked.connect(self.resetProfileOptions)
 
         #Appearance Page Connections
-        self.profile.setFonts(self.properties.fontList.currentFont().family(),self.properties.fontSizeSlider.value())
-        self.properties.fontsChanged.connect(self.profile.adjustFonts)
+        self.profile.setFonts(self.properties.fontList.currentFont().family(),self.properties.chartFontSizeSlider.value())
+        self.properties.chartFontsChanged.connect(self.profile.adjustFonts)
 
         #Cursor Information Connections
         self.cursorInfo.choosedXYEdit.textChanged.connect(self.editChoosedXY)
@@ -310,8 +312,12 @@ class Window(QtWidgets.QMainWindow,Process.Image):
             canvas.saveScene()
         except:
             self.Raise_Error("Please open a RHEED pattern first")
+
     def MenuActions_Statistical_Factor(self):
         self.menu_StatisticalFactorRequested.emit()
+
+    def MenuActions_Diffraction_Pattern(self):
+        self.menu_DiffractionPatternRequested.emit()
 
     def MenuActions_Save_As_Text(self):
         self.profile.saveProfileAsText()
@@ -348,32 +354,51 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.scaleFactorChanged.emit(self.scaleFactor)
         self.canvasScaleFactorChanged.emit(self.scaleFactor)
 
+    def checkInput(self,text,type="int"):
+        if type == "int":
+            try:
+                int(text)
+                return True
+            except ValueError:
+                self.Raise_Error("Please input a integer number!")
+                return False
+        elif type == "float":
+            try:
+                float(text)
+                return True
+            except ValueError:
+                self.Raise_Error("Please input a float number!")
+                return False
+
     def changeSensitivity(self,sensitivity):
-        if not sensitivity == "":
+        if self.checkInput(sensitivity,"float"):
             self.scaleFactor = float(sensitivity)/np.sqrt(float(self.properties.energyEdit.text()))
-        self.scaleFactorChanged.emit(self.scaleFactor)
-        self.canvasScaleFactorChanged.emit(self.scaleFactor)
+            self.scaleFactorChanged.emit(self.scaleFactor)
+            self.canvasScaleFactorChanged.emit(self.scaleFactor)
 
     def changeEnergy(self,energy):
-        if not energy == "":
+        if self.checkInput(energy,"float"):
             self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(energy))
-        self.scaleFactorChanged.emit(self.scaleFactor)
-        self.canvasScaleFactorChanged.emit(self.scaleFactor)
-        self.energy = float(energy)
+            self.scaleFactorChanged.emit(self.scaleFactor)
+            self.canvasScaleFactorChanged.emit(self.scaleFactor)
+            self.energy = float(energy)
 
     def changeAzimuth(self,azimuth):
-        if not azimuth == "":
+        if self.checkInput(azimuth,"float"):
             self.azimuth = float(azimuth)
 
     def changeScaleBar(self,scaleBar):
-        if not scaleBar == "":
+        if self.checkInput(scaleBar,"float"):
             self.scaleBarLength = float(scaleBar)
 
     def labelImage(self):
-        self.labelChanged.emit(self.energy,self.azimuth)
+        self.labelChanged.emit(self.energy,self.azimuth,self.properties.fontList.currentFont().family(),\
+                               self.properties.canvasFontSizeSlider.value())
 
     def calibrateImage(self):
-        self.calibrationChanged.emit(self.scaleFactor,self.scaleBarLength)
+        self.calibrationChanged.emit(self.scaleFactor,self.scaleBarLength,self.properties.fontList.currentFont().family(),\
+                               self.properties.canvasFontSizeSlider.value())
+
 
     def changeBrightness(self,brightness):
         self.properties.brightnessLabel.setText('Brightness ({})'.format(brightness))
@@ -451,12 +476,17 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.properties.integralHalfWidthSlider.setValue(int(width)*self.widthSliderScale)
 
     def getImgPath(self):
+        supportedFormats = {'.3fr','.ari','.arw','.srf','.sr2','.bay','.cri','.crw','.cr2','.cr3','.cap','.iiq','.eip',\
+                            '.dcs','.dcr','.drf','.k25','.kdc','.dng','.erf','.fff','.mef','.mdc','.mos','.mrw','.nef',\
+                            '.nrw','.orf','.pef','.ptx','.pxn','.r3d','.raf','.raw','.rw2','.rwl','.rwz','.srw','.x3f',\
+                            '.3FR','.ARI','.ARW','.SRF','.SR2','.BAY','.CRI','.CRW','.CR2','.CR3','.CAP','.IIQ','.EIP',\
+                            '.DCS','.DCR','.DRF','.K25','.KDC','.DNG','.ERF','.FFF','.MEF','.MDC','.MOS','.MRW','.NEF',\
+                            '.NRW','.ORF','.PEF','.PTX','.PXN','.R3D','.RAF','.RAW','.RW2','.RWL','.RWZ','.SRW','.X3F'}
         fileDlg = QtWidgets.QFileDialog(self)
         fileDlg.setDirectory('./')
-        path = fileDlg.getOpenFileName(filter="NEF (*.nef);;ARW (*.arw);;All Files (*.*)")[0]
+        path = fileDlg.getOpenFileName(filter="Nikon (*.nef;*.nrw);;Sony (*.arw;*.srf;*.sr2);;Canon (*.crw;*.cr2;*.cr3);;All Files (*.*)")[0]
         if not path == '':
-            if not (os.path.splitext(path)[1] == ".nef" or os.path.splitext(path)[1] == ".NEF" \
-                    or os.path.splitext(path)[1] == ".arw" or os.path.splitext(path)[1] == ".ARW"):
+            if not (os.path.splitext(path)[1] in supportedFormats):
                 self.Raise_Error("Not supported raw file type!")
                 return ''
             else:
@@ -539,6 +569,7 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.calibrationChanged.connect(canvas.calibrate)
         self.canvasScaleFactorChanged.connect(canvas.setScaleFactor)
         self.canvasRefresh.connect(canvas.refresh)
+        self.properties.canvasFontsChanged.connect(canvas.adjustFonts)
 
     def disconnectCanvas(self):
         self.zoomIn.disconnect()
@@ -603,9 +634,10 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         for i in range(0,self.mainTab.count()):
             self.mainTab.widget(i).toggleMode(cursormode)
         if cursormode == "arc":
-            self.cursorInfo.startXYEdit.setText('Center (X,Y)')
-            self.cursorInfo.endXYLabel.setText('Radius')
+            self.cursorInfo.startXYLabel.setText('Center (X,Y)')
+            self.cursorInfo.endXYLabel.setText('Radius (px)')
         else:
+            self.cursorInfo.startXYLabel.setText('Start (X,Y)')
             self.cursorInfo.endXYLabel.setText('End (X,Y)')
         self.clearCursorInfo()
         self._mode = cursormode
@@ -672,7 +704,8 @@ class Window(QtWidgets.QMainWindow,Process.Image):
                 "chiRange": self.properties.chiRangeSlider.value(),\
                 "radius": self.properties.radiusSlider.value()/self.properties.radiusSliderScale,\
                 "tiltAngle": self.properties.tiltAngleSlider.value()/self.properties.tiltAngleSliderScale,\
-                "autoWB": self.properties.autoWBCheckBox.isChecked()}
+                "autoWB": self.properties.autoWBCheckBox.isChecked(),\
+                "mode": self._mode}
         try:
             status["choosedX"] = int(self.cursorInfo.choosedXYEdit.text().split(',')[0])
             status["choosedY"] = int(self.cursorInfo.choosedXYEdit.text().split(',')[1])

@@ -85,31 +85,45 @@ class Canvas(QtWidgets.QGraphicsView):
                              viewrect.height() / scenerect.height())
                 self.scale(factor, factor)
 
-    def label(self,energy,azimuth):
+    def label(self,energy,azimuth,fontname,fontsize):
         if self.hasPhoto():
             self._labelText.setPlainText("Energy = {} keV\n\u03C6 = {}\u00B0".format(energy,azimuth))
-            self._labelText.setFont(QtGui.QFont("Helvetica[Cronyx]",40))
+            self._labelText.setFont(QtGui.QFont(fontname,fontsize))
             self._labelText.setPos(40,40)
             self._labelText.show()
 
-    def calibrate(self,scaleFactor,scaleBarLength):
+    def calibrate(self,scaleFactor,scaleBarLength,fontname,fontsize):
         if self.hasPhoto():
-            photorect = self._photo.boundingRect()
+            self.photorect = self._photo.boundingRect()
             self._scaleBarText.setPlainText("{} \u212B\u207B\u00B9".format(scaleBarLength))
-            self._scaleBarText.setFont(QtGui.QFont("Helvetica[Cronyx]",40))
-            self._scaleBarText.setPos(180,photorect.height()-160)
+            self._scaleBarText.setFont(QtGui.QFont(fontname,fontsize))
+            self._scaleBarText.setPos(180,self.photorect.height()-200)
             self._scaleBarText.show()
-            length = scaleBarLength*scaleFactor
-            x1,y1,x2,y2 =180+self._scaleBarText.boundingRect().width()/2-length/2,\
-                         photorect.height()-80,\
-                         180+self._scaleBarText.boundingRect().width()/2+length/2,\
-                         photorect.height()-80
+            self.scaleBarLength = scaleBarLength*scaleFactor
+            x1,y1,x2,y2 =180+self._scaleBarText.boundingRect().width()/2-self.scaleBarLength/2,\
+                         self.photorect.height()-160+fontsize*4/3,\
+                         180+self._scaleBarText.boundingRect().width()/2+self.scaleBarLength/2,\
+                         self.photorect.height()-160+fontsize*4/3
             if x1 < 30:
-                self._scaleBarText.setPos(180+30-x1,photorect.height()-160)
+                self._scaleBarText.setPos(180+30-x1,self.photorect.height()-200)
                 x2 += 30-x1
                 x1 = 30
             self._scaleBarLine.setLine(QtCore.QLineF(x1,y1,x2,y2))
             self._scaleBarLine.show()
+
+    def adjustFonts(self,fontname,fontsize):
+        if self.hasPhoto():
+            x1,y1,x2,y2 =180+self._scaleBarText.boundingRect().width()/2-self.scaleBarLength/2,\
+                         self.photorect.height()-160+fontsize*4/3,\
+                         180+self._scaleBarText.boundingRect().width()/2+self.scaleBarLength/2,\
+                         self.photorect.height()-160+fontsize*4/3
+            if x1 < 30:
+                self._scaleBarText.setPos(180+30-x1,self.photorect.height()-200)
+                x2 += 30-x1
+                x1 = 30
+            self._labelText.setFont(QtGui.QFont(fontname,fontsize))
+            self._scaleBarText.setFont(QtGui.QFont(fontname,fontsize))
+            self._scaleBarLine.setLine(QtCore.QLineF(x1,y1,x2,y2))
 
     def clearAnnotations(self):
         self._labelText.hide()

@@ -1,13 +1,10 @@
 import unittest
-import Graph3DSurface
+import SimulateRHEED
 
-class Test3DGraph(unittest.TestCase):
+class Test(unittest.TestCase):
 
     def setUp(self):
-        self.graph = Graph3DSurface.SurfaceGraph()
-
-    def test_fillTwoDimensionalMappingProxy(self):
-        self.graph.fillTwoDimensionalMappingProxy()
+        self.simuRHEED = SimulateRHEED.SimulateRHEEDPattern.Main()
 
 if __name__ == '__main__':
     unittest.main()

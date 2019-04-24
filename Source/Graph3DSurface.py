@@ -200,6 +200,9 @@ class Graph(QtWidgets.QWidget):
         self.mainVLayout.addWidget(self.statusBar)
 
         self.show()
+        desktopRect = QtWidgets.QApplication.desktop().availableGeometry(self)
+        center = desktopRect.center()
+        self.move(center.x()-self.width()*0.5,center.y()-self.height()*0.5)
 
         self.themeList.currentIndexChanged.connect(self.graph.changeTheme)
         self.gradientBtoYPB.pressed.connect(self.graph.setBlackToYellowGradient)
@@ -213,6 +216,9 @@ class Graph(QtWidgets.QWidget):
             self.graph.fillTwoDimensionalMappingProxy(path)
             self.graph.enableTwoDimensionalMappingModel(True)
             self.show2DContourButton.setEnabled(True)
+            self.gradientBtoYPB.setEnabled(True)
+            self.gradientGtoRPB.setEnabled(True)
+            self.gradientBtoRPB.setEnabled(True)
 
     def Choose_Graph(self):
         path = QtWidgets.QFileDialog.getOpenFileName(None,"choose the graph",self.graphPath)
@@ -295,7 +301,14 @@ class Graph(QtWidgets.QWidget):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
 
     def convertToRTI(self,path):
-        data =  np.loadtxt(path)
+        raw_data =  np.loadtxt(path)
+        if np.amin(raw_data[:,0])<0:
+            data = np.empty(raw_data.shape)
+            data[:,0] = np.abs(raw_data[:,0])
+            data[:,1] = np.where(raw_data[:,0]>0,0,180)+raw_data[:,1]
+            data[:,2] = raw_data[:,2]
+        else:
+            data = raw_data
         df = pd.DataFrame(data,columns = ['radius','theta','intensity'])
         table = df.pivot_table(values = 'intensity',index='radius',columns='theta')
         return table.index.tolist(),[a/180*math.pi for a in table.columns.tolist()],table

@@ -61,11 +61,11 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         self.profileChart.setTheme(self.theme)
 
     def addChart(self,radius,profile,type="line"):
-        pen = QtGui.QPen(QtCore.Qt.SolidLine)
-        pen.setColor(QtGui.QColor(QtCore.Qt.blue))
-        pen.setWidth(3)
+        #pen = QtGui.QPen(QtCore.Qt.SolidLine)
+        #pen.setColor(QtGui.QColor(QtCore.Qt.blue))
+        #pen.setWidth(3)
         series = QtChart.QLineSeries()
-        series.setPen(pen)
+        #series.setPen(pen)
         self.currentRadius = []
         self.currentProfile = []
         for x,y in zip(radius,profile):
