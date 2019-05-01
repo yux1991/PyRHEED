@@ -22,14 +22,15 @@ class Window(QtWidgets.QWidget,Process.Convertor):
     progressEnd = QtCore.pyqtSignal()
     refreshPlotFonts = QtCore.pyqtSignal(str,int)
     refreshPlotFWHM = QtCore.pyqtSignal(bool)
+    refreshPlotColormap = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super(Window,self).__init__()
 
     def Main(self):
         self.graph = ScatterGraph()
-        self.AFF = pd.read_excel(open('AtomicFormFactors.xlsx','rb'),sheet_name="Atomic Form Factors",index_col=0)
-        self.AR = pd.read_excel(open('AtomicRadii.xlsx','rb'),sheet_name="Atomic Radius",index_col=0)
+        self.AFF = pd.read_excel(open('../doc/AtomicFormFactors.xlsx','rb'),sheet_name="Atomic Form Factors",index_col=0)
+        self.AR = pd.read_excel(open('../doc/AtomicRadii.xlsx','rb'),sheet_name="Atomic Radius",index_col=0)
         self.colors = ['magenta','cyan','green','yellow','red','black','darkGreen','darkYellow','darkCyan','darkMagenta','darkRed','darkBlue','darkGray']
         self.structure_index = 0
         self.real_space_specification_dict = {}
@@ -167,6 +168,7 @@ class Window(QtWidgets.QWidget,Process.Convertor):
         for colormap in plt.colormaps():
             self.reciprocalMapColormapCombo.addItem(colormap)
         self.reciprocalMapColormapCombo.setCurrentText("jet")
+        self.reciprocalMapColormapCombo.currentTextChanged.connect(self.updatePlotColormap)
         self.show_XY_plot_button = QtWidgets.QPushButton("Show XY Slices")
         self.show_XY_plot_button.clicked.connect(self.showXYPlot)
         self.show_XY_plot_button.setEnabled(False)
@@ -509,31 +511,34 @@ class Window(QtWidgets.QWidget,Process.Convertor):
 
     def showXYPlot(self):
         for i in range(int(self.KzIndex.values()[0]),int(self.KzIndex.values()[1]+1)):
-            TwoDimPlot = TwoDimensionalMapping('XY',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i,\
+            TwoDimPlot = TwoDimensionalMapping(self,'XY',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i,\
                          self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                          self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
+            TwoDimPlot.showPlot()
             self.refreshPlotFonts.connect(TwoDimPlot.refreshFonts)
             self.refreshPlotFWHM.connect(TwoDimPlot.refreshFWHM)
-            TwoDimPlot.showPlot()
+            self.refreshPlotColormap.connect(TwoDimPlot.refreshColormap)
         self.updateLog("Simulated diffraction patterns obtained!")
 
     def showXZPlot(self):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
-            TwoDimPlot = TwoDimensionalMapping('XZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
+            TwoDimPlot = TwoDimensionalMapping(self,'XZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                                                     self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
+            TwoDimPlot.showPlot()
             self.refreshPlotFonts.connect(TwoDimPlot.refreshFonts)
             self.refreshPlotFWHM.connect(TwoDimPlot.refreshFWHM)
-            TwoDimPlot.showPlot()
+            self.refreshPlotColormap.connect(TwoDimPlot.refreshColormap)
         self.updateLog("Simulated diffraction patterns obtained!")
 
     def showYZPlot(self):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
-            TwoDimPlot = TwoDimensionalMapping('YZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
+            TwoDimPlot = TwoDimensionalMapping(self,'YZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                                                     self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
             self.refreshPlotFonts.connect(TwoDimPlot.refreshFonts)
             self.refreshPlotFWHM.connect(TwoDimPlot.refreshFWHM)
+            self.refreshPlotColormap.connect(TwoDimPlot.refreshColormap)
             TwoDimPlot.showPlot()
         self.updateLog("Simulated diffraction patterns obtained!")
 
@@ -746,74 +751,6 @@ class Window(QtWidgets.QWidget,Process.Convertor):
         else:
             self.Raise_Error("Save destination is empty!")
 
-    def show_2D(self,type,intensity,nkz,fontname,fontsize,colormap,showFWHM=False):
-        figure = MplCanvas()
-        if type == 'XY':
-            matrix = intensity[:,:,nkz]
-            max_intensity = np.amax(np.amax(matrix))
-            cs = figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=colormap)
-            if showFWHM:
-                min_x = np.amin(self.x_linear)
-                max_y = np.amax(self.y_linear)
-                csHM = figure.axes.contour(self.x_linear,self.y_linear,matrix.T/max_intensity,levels=[0.5],colors=['black'],linestyles='dashed',linewidths=2)
-                FWHM = 1.0
-                ratio = 1.0
-                for collection in csHM.collections:
-                    path = collection.get_paths()
-                    for item in path:
-                        x = item.vertices[:,0]
-                        y = item.vertices[:,1]
-                        w = np.sqrt(x**2+y**2)
-                        ratio = np.amax(w)/np.amin(w)
-                        FWHM = np.amax(w)+np.amin(w)
-                figure.axes.text(min_x*0.96,max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
-                        format(FWHM,ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
-            figure.axes.set_aspect(1)
-            figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
-                       format(self.z_linear[nkz]),fontsize=fontsize,pad=30)
-            figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=fontname,fontsize=fontsize)
-            figure.axes.set_ylabel(r'$K_{y}$ $(\AA^{-1})$',fontname=fontname,fontsize=fontsize)
-            figure.axes.tick_params(which='both', labelsize=fontsize)
-            cbar = figure.fig.colorbar(cs,format='%.2f')
-            cbar.ax.set_ylabel("Normalized Intensity",fontname=fontname,fontsize=fontsize)
-            cbar.ax.tick_params(labelsize=fontsize)
-        elif type == 'XZ':
-            matrix = intensity[:,nkz,:]
-            max_intensity = np.amax(np.amax(matrix))
-            cs = figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=colormap)
-            figure.axes.set_aspect(1)
-            figure.axes.set_title('Simulated 2D reciprocal space map\nKy = {:5.2f} (\u212B\u207B\u00B9)'. \
-                                  format(self.y_linear[nkz]),fontsize=fontsize,pad=30)
-            figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=fontname,fontsize=fontsize)
-            figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=fontname,fontsize=fontsize)
-            figure.axes.tick_params(which='both', labelsize=fontsize)
-            cbar = figure.fig.colorbar(cs,format='%.2f')
-            cbar.ax.set_ylabel("Normalized Intensity",fontname=fontname,fontsize=fontsize)
-            cbar.ax.tick_params(labelsize=fontsize)
-        elif type == 'YZ':
-            matrix = intensity[nkz,:,:]
-            max_intensity = np.amax(np.amax(matrix))
-            cs = figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=colormap)
-            figure.axes.set_aspect(1)
-            figure.axes.set_title('Simulated 2D reciprocal space map\nKx = {:5.2f} (\u212B\u207B\u00B9)'. \
-                                  format(self.x_linear[nkz]),fontsize=fontsize,pad=30)
-            figure.axes.set_xlabel(r'$K_{y}$ $(\AA^{-1})$',fontname=fontname,fontsize=fontsize)
-            figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=fontname,fontsize=fontsize)
-            figure.axes.tick_params(which='both', labelsize=fontsize)
-            cbar = figure.fig.colorbar(cs,format='%.2f')
-            cbar.ax.set_ylabel("Normalized Intensity",fontname=fontname,fontsize=fontsize)
-            cbar.ax.tick_params(labelsize=fontsize)
-        self.TwoDimMappingWindow = QtWidgets.QWidget()
-        self.TwoDimMappingWindow.setWindowTitle('Summary of Broadening Analysis')
-        self.TwoDimMappingWindowLayout = QtWidgets.QGridLayout(self.TwoDimMappingWindow)
-        toolbar = NavigationToolbar(figure,self.TwoDimMappingWindow)
-        self.TwoDimMappingWindowLayout.addWidget(figure,0,0)
-        self.TwoDimMappingWindowLayout.addWidget(toolbar,1,0)
-        self.TwoDimMappingWindow.setWindowModality(QtCore.Qt.WindowModal)
-        self.TwoDimMappingWindow.setMinimumSize(1000,800)
-        self.TwoDimMappingWindow.show()
-
-
     def get_extended_structure(self,molecule,a,b,c,alpha,beta,gamma,images=(1,1,1), rotation=0,cls=None,offset=None):
 
         if offset is None:
@@ -863,6 +800,9 @@ class Window(QtWidgets.QWidget,Process.Convertor):
 
     def updatePlotFont(self,font):
         self.refreshPlotFonts.emit(font.family(),self.reciprocalMapfontSizeSlider.value())
+
+    def updatePlotColormap(self,colormap):
+        self.refreshPlotColormap.emit(colormap)
 
     def updateReciprocalMapFontSize(self,value):
         self.reciprocalMapfontSizeLabel.setText("Font Size ({})".format(value))
@@ -1431,9 +1371,9 @@ class MplCanvas(FigureCanvas):
         self.axes = self.fig.add_subplot(111)
 
 class TwoDimensionalMapping(QtWidgets.QWidget):
-    def __init__(self,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False):
-        super(TwoDimensionalMapping,self).__init__()
-        self.figure = MplCanvas()
+    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False):
+        super(TwoDimensionalMapping,self).__init__(parent)
+        self.figure = MplCanvas(self)
         self.x_linear = x
         self.y_linear = y
         self.z_linear = z
@@ -1460,7 +1400,13 @@ class TwoDimensionalMapping(QtWidgets.QWidget):
     def refreshFonts(self,fontname,fontsize):
         self.fontname = fontname
         self.fontsize = fontsize
+        plt.ion()
         if self.type == 'XY':
+            if self.showFWHM:
+                self.figureText.set_visible(False)
+                self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
+                                                        format(self.FWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+                self.csHM.set_alpha(1)
             self.figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
                format(self.z_linear[self.nkz]),fontsize=self.fontsize,pad=30)
             self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
@@ -1479,6 +1425,7 @@ class TwoDimensionalMapping(QtWidgets.QWidget):
         self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
         self.cbar.ax.set_ylabel("Normalized Intensity",fontname=self.fontname,fontsize=self.fontsize)
         self.cbar.ax.tick_params(labelsize=self.fontsize)
+        self.figure.draw()
 
     def refreshFWHM(self,showFWHM):
         if showFWHM == self.showFWHM:
@@ -1486,9 +1433,32 @@ class TwoDimensionalMapping(QtWidgets.QWidget):
         else:
             self.showFWHM = showFWHM
         if self.type == 'XY':
+            plt.ion()
             if self.showFWHM:
-                self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
+                matrix = self.intensity[:,:,self.nkz]
+                max_intensity = np.amax(np.amax(matrix))
+                self.min_x = np.amin(self.x_linear)
+                self.max_y = np.amax(self.y_linear)
+                self.csHM = self.figure.axes.contour(self.x_linear,self.y_linear,matrix.T/max_intensity,levels=[0.5],colors=['black'],linestyles='dashed',linewidths=2)
+                self.FWHM = 1.0
+                self.ratio = 1.0
+                for collection in self.csHM.collections:
+                    path = collection.get_paths()
+                    for item in path:
+                        x0 = item.vertices[:,0]
+                        y0 = item.vertices[:,1]
+                        w = np.sqrt(x0**2+y0**2)
+                        self.ratio = np.amax(w)/np.amin(w)
+                        self.FWHM = np.amax(w)+np.amin(w)
+                self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
                                       format(self.FWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+                self.csHM.set_alpha(1)
+            else:
+                try:
+                    self.figureText.set_visible(False)
+                    self.csHM.set_alpha(0)
+                except: pass
+        self.figure.draw()
 
     def replot(self,type,x,y,z,colormap,intensity,nkz):
         self.x_linear = x
@@ -1503,21 +1473,6 @@ class TwoDimensionalMapping(QtWidgets.QWidget):
             matrix = self.intensity[:,:,self.nkz]
             max_intensity = np.amax(np.amax(matrix))
             self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=self.colormap)
-            if self.showFWHM:
-                self.min_x = np.amin(self.x_linear)
-                self.max_y = np.amax(self.y_linear)
-                csHM = self.figure.axes.contour(self.x_linear,self.y_linear,matrix.T/max_intensity,levels=[0.5],colors=['black'],linestyles='dashed',linewidths=2)
-                self.FWHM = 1.0
-                self.ratio = 1.0
-                self.ratio = 1.0
-                for collection in csHM.collections:
-                    path = collection.get_paths()
-                    for item in path:
-                        x0 = item.vertices[:,0]
-                        y0 = item.vertices[:,1]
-                        w = np.sqrt(x0**2+y0**2)
-                        self.ratio = np.amax(w)/np.amin(w)
-                        self.FWHM = np.amax(w)+np.amin(w)
         elif self.type == 'XZ':
             matrix = self.intensity[:,self.nkz,:]
             max_intensity = np.amax(np.amax(matrix))
@@ -1527,8 +1482,12 @@ class TwoDimensionalMapping(QtWidgets.QWidget):
             max_intensity = np.amax(np.amax(matrix))
             self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         self.cbar = self.figure.fig.colorbar(self.cs,format='%.2f')
-        self.refreshFonts(self.fontname,self.fontsize)
         self.refreshFWHM(self.showFWHM)
+        self.refreshFonts(self.fontname,self.fontsize)
+
+    def refreshColormap(self,colormap):
+        self.colormap = colormap
+        self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)
 
 def Test():
     app = QtWidgets.QApplication(sys.argv)
