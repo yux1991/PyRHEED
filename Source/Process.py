@@ -1,5 +1,5 @@
 import numpy as np
-from PyQt5 import QtGui
+from PyQt5 import QtGui,QtCore
 from scipy.optimize import least_squares
 import rawpy
 import math
@@ -331,7 +331,7 @@ class Convertor(object):
         tree = ET.ElementTree(vtkFile)
         tree.write(open(filename, 'wb'))
 
-    def mtx2vtp(self,dir,name,matrix,KRange,N_para,N_perp):
+    def mtx2vtp(self,dir,name,matrix,KRange,N_para,N_perp,specification,species):
         x_linear = np.linspace(KRange[0][0],KRange[0][1],N_para)
         y_linear = np.linspace(KRange[1][0],KRange[1][1],N_para)
         z_linear = np.linspace(KRange[2][0],KRange[2][1],N_perp)
@@ -389,4 +389,27 @@ class Convertor(object):
         filename = dir+'/'+name+".vtp"
         tree = ET.ElementTree(vtkFile)
         tree.write(open(filename, 'wb'))
-        np.savetxt(dir+'/'+name+".txt",data,delimiter='\t')
+        information = {}
+        information['Kx_min'] = KRange[0][0]
+        information['Kx_max'] = KRange[0][1]
+        information['Ky_min'] = KRange[1][0]
+        information['Ky_max'] = KRange[1][1]
+        information['Kz_min'] = KRange[2][0]
+        information['Kz_max'] = KRange[2][1]
+        information['N_para'] = N_para
+        information['N_perp'] = N_perp
+        output = open(dir+'/'+name+".txt",mode='w')
+        output.write('Time: \n')
+        output.write(QtCore.QDateTime.currentDateTime().toString("MMMM d, yyyy  hh:mm:ss ap")+"\n\n")
+        output.write('Real space specification: \n')
+        output.write(str(specification))
+        output.write('\n\n')
+        output.write('Reciprocal space specification: \n')
+        output.write(str(information))
+        output.write('\n\n')
+        output.write('Atomic species: \n')
+        output.write(str(species))
+        output.write('\n\n')
+        results = "\n".join("\t".join(str(data[i,j]) for j in range(4)) for i in range(N_para*N_para*N_perp))
+        output.write(results)
+        output.close()
