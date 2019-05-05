@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
 import numpy as np
 import matplotlib.pyplot as plt
+from MyWidgets import LabelSlider
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -135,15 +136,15 @@ class Window(QtWidgets.QWidget):
 
     def unitChanged(self,unit):
         if unit == "Brillouin Zone %":
-            self.x_range.reset(0,400,10,10)
-            self.x_step.reset(10,400,0.1,2000)
-            self.z_range.reset(0,400,10,10)
-            self.z_step.reset(10,400,0.1,2000)
+            self.x_range.set(0,400,10,10)
+            self.x_step.set(10,400,0.1,2000)
+            self.z_range.set(0,400,10,10)
+            self.z_step.set(10,400,0.1,2000)
         elif unit == "\u212B\u207B\u00B9":
-            self.x_range.reset(0,400,0.1,1000)
-            self.x_step.reset(10,400,0.001,200000)
-            self.z_range.reset(0,400,0.1,1000)
-            self.z_step.reset(10,400,0.001,200000)
+            self.x_range.set(0,400,0.1,1000)
+            self.x_step.set(10,400,0.001,200000)
+            self.z_range.set(0,400,0.1,1000)
+            self.z_step.set(10,400,0.001,200000)
 
     def graphChangeTheme(self,theme):
         self.graph.changeTheme(theme)
@@ -246,61 +247,6 @@ class Window(QtWidgets.QWidget):
 
     def updateLog(self,msg):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
-
-class LabelSlider(QtWidgets.QWidget):
-
-    valueChanged = QtCore.pyqtSignal(float)
-
-    def __init__(self,min,max,initial,scale,text,orientation = QtCore.Qt.Horizontal):
-        super(LabelSlider, self).__init__()
-        self.scale = scale
-        self.label_text = text
-        self.min = min
-        self.max = max
-        if 1/self.scale >= 0.1:
-            self.label = QtWidgets.QLabel(self.label_text+" = {:6.1f}".format(initial))
-        elif 1/self.scale >= 0.01:
-            self.label = QtWidgets.QLabel(self.label_text+" = {:6.2f}".format(initial))
-        elif 1/self.scale >= 0.001:
-            self.label = QtWidgets.QLabel(self.label_text+" = {:6.3f}".format(initial))
-        else:
-            self.label = QtWidgets.QLabel(self.label_text+" = {:6.4f}".format(initial))
-        self.valueSlider = QtWidgets.QSlider(orientation)
-        self.valueSlider.setMinimum(min)
-        self.valueSlider.setMaximum(max)
-        self.valueSlider.setValue(initial*scale)
-        self.valueSlider.setTickInterval(1)
-        self.valueSlider.valueChanged.connect(self.value_changed)
-        self.grid = QtWidgets.QGridLayout()
-        self.grid.addWidget(self.label,0,0)
-        self.grid.addWidget(self.valueSlider,0,1)
-        self.setLayout(self.grid)
-
-    def reset(self,min,max,initial,scale):
-        self.scale = scale
-        self.min = min
-        self.max = max
-        self.valueSlider.setMinimum(min)
-        self.valueSlider.setMaximum(max)
-        self.valueSlider.setValue(initial*scale)
-        self.value_changed(initial*scale)
-
-    def value_changed(self,value):
-        if 1/self.scale >= 0.1:
-            self.label.setText(self.label_text+" = {:6.1f}".format(value/self.scale))
-        elif 1/self.scale >= 0.01:
-            self.label.setText(self.label_text+" = {:6.2f}".format(value/self.scale))
-        elif 1/self.scale >= 0.001:
-            self.label.setText(self.label_text+" = {:6.3f}".format(value/self.scale))
-        elif 1/self.scale >= 0.0001:
-            self.label.setText(self.label_text+" = {:6.4f}".format(value/self.scale))
-        else:
-            self.label.setText(self.label_text+" = {:7.5f}".format(value/self.scale))
-        self.valueChanged.emit(value/self.scale)
-
-    def getValue(self):
-        return self.valueSlider.value()/self.scale
-
 
 class SurfaceGraph(QtDataVisualization.Q3DSurface):
 

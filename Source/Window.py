@@ -2,13 +2,13 @@ from Canvas import *
 from Browser import *
 from Properties import *
 from Cursor import *
-from Menu import *
 import ProfileChart
+import configparser
 import os
 import numpy as np
-import Process
+from Process import Image
 
-class Window(QtWidgets.QMainWindow,Process.Image):
+class Window(QtWidgets.QMainWindow):
 
     #Public Signals
     fileOpened = QtCore.pyqtSignal(str)
@@ -19,14 +19,14 @@ class Window(QtWidgets.QMainWindow,Process.Image):
     calibrationChanged = QtCore.pyqtSignal(float,float,str,int)
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
-    menu_DefaultPropertiesRestRequested = QtCore.pyqtSignal()
-    menu_ReciprocalSpaceMappingRequested = QtCore.pyqtSignal(str)
-    menu_ThreeDimensionalGraphRequested = QtCore.pyqtSignal(str)
-    menu_BroadeningRequested = QtCore.pyqtSignal(str)
-    menu_ManualFitRequested = QtCore.pyqtSignal(str,int)
-    menu_StatisticalFactorRequested = QtCore.pyqtSignal()
-    menu_DiffractionPatternRequested = QtCore.pyqtSignal()
-    menu_GenerateReportRequested = QtCore.pyqtSignal(str)
+    DefaultPropertiesRestRequested = QtCore.pyqtSignal()
+    ReciprocalSpaceMappingRequested = QtCore.pyqtSignal(str)
+    ThreeDimensionalGraphRequested = QtCore.pyqtSignal(str)
+    BroadeningRequested = QtCore.pyqtSignal(str)
+    ManualFitRequested = QtCore.pyqtSignal(str,int)
+    StatisticalFactorRequested = QtCore.pyqtSignal()
+    DiffractionPatternRequested = QtCore.pyqtSignal()
+    GenerateReportRequested = QtCore.pyqtSignal(str)
     window_initialized = QtCore.pyqtSignal()
     propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
     canvasRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
@@ -42,6 +42,7 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.pathList = []
         self.tabClosed = False
         self.config = config
+        self.image_worker = Image()
 
         #Defaults
         self.windowDefault = dict(self.config['windowDefault'].items())
@@ -189,6 +190,10 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.progressBar.setMaximumWidth(200)
         self.progressBar.setVisible(False)
         self.progressBar.setOrientation(QtCore.Qt.Horizontal)
+        self.progressBarSizePolicy = self.progressBar.sizePolicy()
+        self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
+        self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Expanding)
+        self.progressBar.setSizePolicy(self.progressBarSizePolicy)
         self.editPixInfo = QtWidgets.QLabel(self)
         self.editPixInfo.setAlignment(QtCore.Qt.AlignRight)
         self.editPixInfo.setMinimumWidth(150)
@@ -314,10 +319,10 @@ class Window(QtWidgets.QMainWindow,Process.Image):
             self.Raise_Error("Please open a RHEED pattern first")
 
     def MenuActions_Statistical_Factor(self):
-        self.menu_StatisticalFactorRequested.emit()
+        self.StatisticalFactorRequested.emit()
 
     def MenuActions_Diffraction_Pattern(self):
-        self.menu_DiffractionPatternRequested.emit()
+        self.DiffractionPatternRequested.emit()
 
     def MenuActions_Save_As_Text(self):
         self.profile.saveProfileAsText()
@@ -329,22 +334,22 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         self.profile.saveProfileAsSVG()
 
     def MenuActions_Preference_DefaultSettings(self):
-        self.menu_DefaultPropertiesRestRequested.emit()
+        self.DefaultPropertiesRestRequested.emit()
 
     def MenuActions_Two_Dimensional_Mapping(self):
-        self.menu_ReciprocalSpaceMappingRequested.emit(self.currentPath)
+        self.ReciprocalSpaceMappingRequested.emit(self.currentPath)
 
     def MenuActions_Three_Dimensional_Graph(self):
-        self.menu_ThreeDimensionalGraphRequested.emit('')
+        self.ThreeDimensionalGraphRequested.emit('')
 
     def MenuActions_Broadening(self):
-        self.menu_BroadeningRequested.emit(self.currentPath)
+        self.BroadeningRequested.emit(self.currentPath)
 
     def MenuActions_ShowManualFit(self):
-        self.menu_ManualFitRequested.emit(self.currentPath,0)
+        self.ManualFitRequested.emit(self.currentPath,0)
 
     def MenuActions_GenerateReport(self):
-        self.menu_GenerateReportRequested.emit(self.currentPath)
+        self.GenerateReportRequested.emit(self.currentPath)
 
     def MenuActions_About(self):
         self.Raise_Attention(information="Author: Yu Xiang\nEmail: yux1991@gmail.com")
@@ -602,7 +607,7 @@ class Window(QtWidgets.QMainWindow,Process.Image):
         QtWidgets.QApplication.sendPostedEvents()
         self.messageLoadingImage.setVisible(True)
         QtWidgets.QApplication.sendPostedEvents()
-        qImg,img_array = self.getImage(bitDepth,path, enableAutoWB, brightness, blackLevel,self.image_crop)
+        qImg,img_array = self.image_worker.getImage(bitDepth,path, enableAutoWB, brightness, blackLevel,self.image_crop)
         qPixImg = QtGui.QPixmap(qImg.size())
         QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.MonoOnly)
         canvas.setPhoto(QtGui.QPixmap(qPixImg))

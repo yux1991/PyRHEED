@@ -4,10 +4,14 @@
 from Window import *
 import sys
 from Configuration import *
-import Menu
 import Graph3DSurface
 import StatisticalFactor
 import SimulateRHEED
+import ReciprocalSpaceMapping
+import GenerateReport
+import ManualFit
+import Broadening
+import Preference
 
 class Main():
     """The main class"""
@@ -20,45 +24,55 @@ class Main():
         self.window = Window(config)    #Initialze the main window using the default values in the configuration
         self.window.showMaximized()
         self.window.show()
-        self.menuPreferences = Menu.Preference()    #Create an instance of the Preference class
-        self.menuReciprocalSpaceMapping = Menu.ReciprocalSpaceMapping() #Create an instance of the ReciprocalSpacing class
-        self.menuBroadening = Menu.Broadening()     #Create an instance of the Broadening class
-        self.menuManualFit = Menu.ManualFit()       #Create an instance of the ManualFit class
-        self.menuGenerateReport = Menu.GenerateReport()     #Create an instance of the GenerateReport class
         #Connect the signals emitted by the window object
-        self.window.menu_DefaultPropertiesRestRequested.connect(self.menuPreferences.Main)
-        self.window.menu_ReciprocalSpaceMappingRequested.connect(self.menuReciprocalSpaceMapping.Main)
-        self.window.menu_BroadeningRequested.connect(self.menuBroadening.Main)
-        self.window.menu_ManualFitRequested.connect(self.menuManualFit.Main)
-        self.window.menu_GenerateReportRequested.connect(self.menuGenerateReport.Main)
-        self.window.menu_StatisticalFactorRequested.connect(self.runStatisticalFactor)
-        self.window.menu_DiffractionPatternRequested.connect(self.runSimulateRHEED)
-        self.window.menu_ThreeDimensionalGraphRequested.connect(self.run3DGraph)
-        self.window.returnStatus.connect(self.menuReciprocalSpaceMapping.Set_Status)
-        self.window.returnStatus.connect(self.menuBroadening.Set_Status)
-        self.window.returnStatus.connect(self.menuManualFit.Set_Status)
-        self.window.returnStatus.connect(self.menuGenerateReport.Set_Status)
-        #Connect the signals emitted by the Prefrence object
-        self.menuPreferences.DefaultSettingsChanged.connect(self.window.refresh)
-        self.menuPreferences.DefaultSettingsChanged.connect(self.menuReciprocalSpaceMapping.refresh)
-        self.menuPreferences.DefaultSettingsChanged.connect(self.menuBroadening.refresh)
-        self.menuPreferences.DefaultSettingsChanged.connect(self.menuManualFit.refresh)
-        #Connect the signals emitted by the Broadening object
-        self.menuBroadening.StatusRequested.connect(self.window.status)
-        self.menuBroadening.connectToCanvas.connect(self.connect_broadening_to_canvas)
-        #Connect the signals emitted by the ManualFit object
-        self.menuManualFit.StatusRequested.connect(self.window.status)
-        #Connect the signals emitted by the GenerateReport object
-        self.menuGenerateReport.StatusRequested.connect(self.window.status)
-        #Connect the signals emitted by the ReciprocalSpaceMapping object
-        self.menuReciprocalSpaceMapping.StatusRequested.connect(self.window.status)
-        self.menuReciprocalSpaceMapping.Show3DGraph.connect(self.run3DGraph)
-        self.menuReciprocalSpaceMapping.Show2DContour.connect(self.run2DContour)
-        self.menuReciprocalSpaceMapping.connectToCanvas.connect(self.connect_mapping_to_canvas)
+        self.window.DefaultPropertiesRestRequested.connect(self.runPreference)
+        self.window.ReciprocalSpaceMappingRequested.connect(self.runReciprocalSpaceMapping)
+        self.window.BroadeningRequested.connect(self.runBroadening)
+        self.window.ManualFitRequested.connect(self.runManualFit)
+        self.window.GenerateReportRequested.connect(self.runGenerateReport)
+        self.window.StatisticalFactorRequested.connect(self.runStatisticalFactor)
+        self.window.DiffractionPatternRequested.connect(self.runSimulateRHEED)
+        self.window.ThreeDimensionalGraphRequested.connect(self.run3DGraph)
+        self.Preference = Preference.Window()
+        self.Preference.DefaultSettingsChanged.connect(self.window.refresh)
         sys.exit(app.exec_())
 
+    def runPreference(self):
+        self.Preference.Main()
+
+    def runReciprocalSpaceMapping(self,path):
+        self.ReciprocalSpaceMapping = ReciprocalSpaceMapping.Window()
+        self.ReciprocalSpaceMapping.Main(path)
+        self.ReciprocalSpaceMapping.StatusRequested.connect(self.window.status)
+        self.ReciprocalSpaceMapping.Show3DGraph.connect(self.run3DGraph)
+        self.ReciprocalSpaceMapping.Show2DContour.connect(self.run2DContour)
+        self.ReciprocalSpaceMapping.connectToCanvas.connect(self.connect_mapping_to_canvas)
+        self.window.returnStatus.connect(self.ReciprocalSpaceMapping.Set_Status)
+        self.Preference.DefaultSettingsChanged.connect(self.ReciprocalSpaceMapping.refresh)
+
+    def runGenerateReport(self,path):
+        self.GenerateReport = GenerateReport.Window()
+        self.GenerateReport.Main(path)
+        self.GenerateReport.StatusRequested.connect(self.window.status)
+        self.window.returnStatus.connect(self.GenerateReport.Set_Status)
+
+    def runManualFit(self,path,nop):
+        self.ManualFit = ManualFit.Window()
+        self.ManualFit.Main(path,nop)
+        self.ManualFit.StatusRequested.connect(self.window.status)
+        self.window.returnStatus.connect(self.ManualFit.Set_Status)
+        self.Preference.DefaultSettingsChanged.connect(self.ManualFit.refresh)
+
+    def runBroadening(self,path):
+        self.Broadening = Broadening.Window()
+        self.Broadening.Main(path)
+        self.Broadening.StatusRequested.connect(self.window.status)
+        self.Broadening.connectToCanvas.connect(self.connect_broadening_to_canvas)
+        self.window.returnStatus.connect(self.Broadening.Set_Status)
+        self.Preference.DefaultSettingsChanged.connect(self.Broadening.refresh)
+
     def runStatisticalFactor(self):
-        self.StatisticalFactor = StatisticalFactor.Window()     #Create an instance of the StatisticalFactor class
+        self.StatisticalFactor = StatisticalFactor.Window()
         self.StatisticalFactor.Main()
 
     def runSimulateRHEED(self):
@@ -103,13 +117,13 @@ class Main():
 
     def connect_broadening_to_canvas(self):
         """Signal Connection"""
-        self.menuBroadening.drawLineRequested.connect(self.window.mainTab.currentWidget().drawLine)
-        self.menuBroadening.drawRectRequested.connect(self.window.mainTab.currentWidget().drawRect)
+        self.Broadening.drawLineRequested.connect(self.window.mainTab.currentWidget().drawLine)
+        self.Broadening.drawRectRequested.connect(self.window.mainTab.currentWidget().drawRect)
 
     def connect_mapping_to_canvas(self):
         """Signal Connection"""
-        self.menuReciprocalSpaceMapping.drawLineRequested.connect(self.window.mainTab.currentWidget().drawLine)
-        self.menuReciprocalSpaceMapping.drawRectRequested.connect(self.window.mainTab.currentWidget().drawRect)
+        self.ReciprocalSpaceMapping.drawLineRequested.connect(self.window.mainTab.currentWidget().drawLine)
+        self.ReciprocalSpaceMapping.drawRectRequested.connect(self.window.mainTab.currentWidget().drawRect)
 
 if __name__ == '__main__':
     Main()

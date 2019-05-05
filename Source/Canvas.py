@@ -27,6 +27,8 @@ class Canvas(QtWidgets.QGraphicsView):
         self._scaleFactor = 1
         self._empty = True
         self._numberOfMoves = 0
+        self._scaleBarIsPresent = False
+        self._labelIsPresent = False
 
         #Defaults
         canvasDefault = dict(config['canvasDefault'].items())
@@ -91,6 +93,7 @@ class Canvas(QtWidgets.QGraphicsView):
             self._labelText.setFont(QtGui.QFont(fontname,fontsize))
             self._labelText.setPos(40,40)
             self._labelText.show()
+            self._labelIsPresent = True
 
     def calibrate(self,scaleFactor,scaleBarLength,fontname,fontsize):
         if self.hasPhoto():
@@ -110,25 +113,30 @@ class Canvas(QtWidgets.QGraphicsView):
                 x1 = 30
             self._scaleBarLine.setLine(QtCore.QLineF(x1,y1,x2,y2))
             self._scaleBarLine.show()
+            self._scaleBarIsPresent = True
 
     def adjustFonts(self,fontname,fontsize):
         if self.hasPhoto():
-            x1,y1,x2,y2 =180+self._scaleBarText.boundingRect().width()/2-self.scaleBarLength/2,\
-                         self.photorect.height()-160+fontsize*4/3,\
-                         180+self._scaleBarText.boundingRect().width()/2+self.scaleBarLength/2,\
-                         self.photorect.height()-160+fontsize*4/3
-            if x1 < 30:
-                self._scaleBarText.setPos(180+30-x1,self.photorect.height()-200)
-                x2 += 30-x1
-                x1 = 30
-            self._labelText.setFont(QtGui.QFont(fontname,fontsize))
-            self._scaleBarText.setFont(QtGui.QFont(fontname,fontsize))
-            self._scaleBarLine.setLine(QtCore.QLineF(x1,y1,x2,y2))
+            if self._labelIsPresent:
+                self._labelText.setFont(QtGui.QFont(fontname,fontsize))
+            if self._scaleBarIsPresent:
+                x1,y1,x2,y2 =180+self._scaleBarText.boundingRect().width()/2-self.scaleBarLength/2,\
+                             self.photorect.height()-160+fontsize*4/3,\
+                             180+self._scaleBarText.boundingRect().width()/2+self.scaleBarLength/2,\
+                             self.photorect.height()-160+fontsize*4/3
+                if x1 < 30:
+                    self._scaleBarText.setPos(180+30-x1,self.photorect.height()-200)
+                    x2 += 30-x1
+                    x1 = 30
+                self._scaleBarText.setFont(QtGui.QFont(fontname,fontsize))
+                self._scaleBarLine.setLine(QtCore.QLineF(x1,y1,x2,y2))
 
     def clearAnnotations(self):
         self._labelText.hide()
         self._scaleBarText.hide()
         self._scaleBarLine.hide()
+        self._scaleBarIsPresent = False
+        self._labelIsPresent = False
 
     def fitCanvas(self):
         if self.hasPhoto():

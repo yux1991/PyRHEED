@@ -1,8 +1,8 @@
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart, QtSvg
-import Process
 import numpy as np
+from Process import Image
 
-class ProfileChart(QtChart.QChartView,Process.Image):
+class ProfileChart(QtChart.QChartView):
 
     progressAdvance = QtCore.pyqtSignal(int,int,int)
     progressEnd = QtCore.pyqtSignal()
@@ -37,6 +37,7 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
         self.profileChart.setTheme(self.theme)
         self.setChart(self.profileChart)
+        self.image_worker = Image()
 
     def refresh(self,config):
         chartDefault = dict(config['chartDefault'].items())
@@ -132,15 +133,15 @@ class ProfileChart(QtChart.QChartView,Process.Image):
         self._scaleFactor = s
 
     def lineScan(self,start,end):
-        x,y = self.getLineScan(start,end,self._img,self._scaleFactor)
+        x,y = self.image_worker.getLineScan(start,end,self._img,self._scaleFactor)
         self.addChart(x,y,"line")
 
     def integral(self,start,end,width):
-        x,y = self.getIntegral(start,end,width,self._img,self._scaleFactor)
+        x,y = self.image_worker.getIntegral(start,end,width,self._img,self._scaleFactor)
         self.addChart(x,y,"rectangle")
 
     def chiScan(self,center,radius,width,chiRange,tilt,chiStep=1):
-        x,y = self.getChiScan(center,radius,width,chiRange,tilt,self._img,chiStep)
+        x,y = self.image_worker.getChiScan(center,radius,width,chiRange,tilt,self._img,chiStep)
         self.addChart(x,y,"arc")
 
     def mouseMoveEvent(self, event):

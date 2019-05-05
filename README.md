@@ -10,7 +10,7 @@
 # Description
 This application is used for RHEED analysis and simulation. It is written with Python 3.6.6. Major features include:
 ## RHEED raw image process and intensity profile extraction. Construction of 2D reciprocal space map and pole figure is automated. The 3D data could be saved as *.vtp format, which could be processed by [Paraview](https://www.paraview.org). A screenshot of the example is shown below:
-![alt text](https://raw.githubusercontent.com/yux1991/PyRHEED/master/sreenshots/Screenshot_main.JPG)
+![alt text](https://raw.githubusercontent.com/yux1991/PyRHEED/master/screenshots/Screenshot_main.JPG)
 ## Batch fit RHEED line profiles with pre-defined peak functions (only Gaussian is supported right now) and save the formatted results. A screenshot of the example is shown below:
 ![alt text](https://raw.githubusercontent.com/yux1991/PyRHEED/master/screenshots/Screenshot_broadening.JPG)
 ## Visualize the fit results and generate a report. A screenshot of the example is shown below:
@@ -22,11 +22,11 @@ This application is used for RHEED analysis and simulation. It is written with P
 
 # Requirements
 - PyQt5
-- Numpy
-- Matplotlib
-- Rawpy
-- Pandas
-- Scipy
+- numpy
+- matplotlib
+- rawpy
+- pandas
+- scipy
 - pymatgen
 - lxml
 
@@ -35,16 +35,22 @@ This application is used for RHEED analysis and simulation. It is written with P
     python Main.py
 
 # Modules 
+- Broadening: batch automatic fit of the RHEED line profiles
 - Browser: browse files inside the working directory
 - Canvas: display images, draw shapes and take user input
 - Configuration: change default configurations
 - Cursor: display cursor-related information
+- GenerateReport: generate a report that visualize the fitting results
 - Graph3DSurface: visualize the 3D surface in reciprocal space
 - Main: the main module
-- Menu: define menubar and the menu actions
-- Process: processes raw image
-- ProfileChart: display line scan profiles
+- ManualFit: manually fit the RHEED line profile to initialize the fitting parameters
+- MyWidgets: customized widgets
+- PlotChart: a customized widget based on QChart, for visualization of the fitting results
+- Preference: modify default settings
+- Process: the backend processes
+- ProfileChart: a customized widget based on QChart, for visualization of the line scan profiles
 - Properties: control the dynamic parameters of the program
+- ReciprocalSpaceMapping: construct the 2D/3D reciprocal space map and the pole figure
 - SimulateRHEED: simulate the diffraction pattern from a given atomic structure 
 - StatisticalFactor: calculate the statistical factor assuming a Markov process 
 - Test: the test module
