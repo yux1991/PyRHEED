@@ -11,12 +11,12 @@ class Window(QtCore.QObject):
     StatusRequested = QtCore.pyqtSignal()
     PolarIRequested = QtCore.pyqtSignal()
     PolarFRequested = QtCore.pyqtSignal()
-    RefreshPolarI = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,dict)
-    RefreshPolarF = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,dict)
+    RefreshPolarI = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
+    RefreshPolarF = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
     NormalIRequested = QtCore.pyqtSignal()
     NormalFRequested = QtCore.pyqtSignal()
-    RefreshNormalI = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,dict)
-    RefreshNormalF = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,dict)
+    RefreshNormalI = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
+    RefreshNormalF = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
     fontsChanged = QtCore.pyqtSignal(str,int)
 
     def __init__(self):
@@ -282,10 +282,11 @@ class Window(QtCore.QObject):
     def PolarStart(self):
         Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
         Az = self.currentAzimuth*1.8+self.AzimuthStart
-        self.IAPlot = PlotChart.PlotChart(self.config,'Polar')
-        self.FAPlot = PlotChart.PlotChart(self.config,'Polar')
-        self.IKPlot = PlotChart.PlotChart(self.config,'Normal')
-        self.FKPlot = PlotChart.PlotChart(self.config,'Normal')
+        theme = int(dict(self.config['chartDefault'].items())['theme'])
+        self.IAPlot = PlotChart.PlotChart(theme,'Polar')
+        self.FAPlot = PlotChart.PlotChart(theme,'Polar')
+        self.IKPlot = PlotChart.PlotChart(theme,'Normal')
+        self.FKPlot = PlotChart.PlotChart(theme,'Normal')
         self.PolarIRequested.connect(self.IAPlot.Main)
         self.PolarFRequested.connect(self.FAPlot.Main)
         self.NormalIRequested.connect(self.IKPlot.Main)
@@ -317,7 +318,7 @@ class Window(QtCore.QObject):
             self.PolarIRequested.emit()
             self.IAIsPresent = True
             self.RefreshPolarI.emit(I,A,'IA',self.fontList.currentFont().family(),self.fontSizeSlider.value(),\
-                                    self.IAColor.getColor(),\
+                                    self.IAColor.getColor(),False,\
                                     {'Kp':Kp,'low':self.intensityRangeSlider.values()[0],\
                                      'high':self.intensityRangeSlider.values()[1]})
         if self.IK.checkState() == 2:
@@ -325,14 +326,14 @@ class Window(QtCore.QObject):
             self.NormalIRequested.emit()
             self.IKIsPresent = True
             self.RefreshNormalI.emit(K,I,'IK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                     self.IKColor.getColor(),\
+                                     self.IKColor.getColor(),True,\
                                      {'Az':Az})
         if self.FA.checkState() == 2:
             F, A, Ferror = self.getFA()
             self.PolarFRequested.emit()
             self.FAIsPresent = True
             self.RefreshPolarF.emit(F,A,'FA',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                    self.FAColor.getColor(),\
+                                    self.FAColor.getColor(),False,\
                                     {'Kp':Kp,'low':self.HWHMRangeSlider.values()[0],\
                                                 'high':self.HWHMRangeSlider.values()[1]})
         if self.FK.checkState() == 2:
@@ -340,7 +341,7 @@ class Window(QtCore.QObject):
             self.NormalFRequested.emit()
             self.FKIsPresent = True
             self.RefreshNormalF.emit(K,F,'FK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                     self.FKColor.getColor(),\
+                                     self.FKColor.getColor(),True,\
                                      {'Az':Az})
 
     def PlotIA(self,I,A,Kp,imin,imax):
@@ -416,24 +417,24 @@ class Window(QtCore.QObject):
         if self.IAIsPresent:
             I, A, Ierror = self.getIA()
             self.RefreshPolarI.emit(I,A,'IA',self.fontList.currentFont().family(),self.fontSizeSlider.value(),\
-                                    self.IAColor.getColor(),\
+                                    self.IAColor.getColor(),False,\
                                     {'Kp':Kp,'low':self.intensityRangeSlider.values()[0], \
                                                      'high':self.intensityRangeSlider.values()[1]})
         if self.FAIsPresent:
             F, A, Ferror = self.getFA()
             self.RefreshPolarF.emit(F,A,'FA',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                    self.FAColor.getColor(),\
+                                    self.FAColor.getColor(),False,\
                                     {'Kp':Kp,'low':self.HWHMRangeSlider.values()[0], \
                                                 'high':self.HWHMRangeSlider.values()[1]})
         if self.IKIsPresent:
             I,K,Ierror = self.getIK()
             self.RefreshNormalI.emit(K,I,'IK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                     self.IKColor.getColor(),\
+                                     self.IKColor.getColor(),True,\
                                      {'Az':Az})
         if self.FKIsPresent:
             F,K,Ferror = self.getFK()
             self.RefreshNormalF.emit(K,F,'FK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                     self.FKColor.getColor(),\
+                                     self.FKColor.getColor(),True,\
                                      {'Az':Az})
 
     def getIA(self):

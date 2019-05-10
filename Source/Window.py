@@ -481,18 +481,21 @@ class Window(QtWidgets.QMainWindow):
         self.properties.integralHalfWidthSlider.setValue(int(width)*self.widthSliderScale)
 
     def getImgPath(self):
-        supportedFormats = {'.3fr','.ari','.arw','.srf','.sr2','.bay','.cri','.crw','.cr2','.cr3','.cap','.iiq','.eip',\
+        supportedRawFormats = {'.3fr','.ari','.arw','.srf','.sr2','.bay','.cri','.crw','.cr2','.cr3','.cap','.iiq','.eip',\
                             '.dcs','.dcr','.drf','.k25','.kdc','.dng','.erf','.fff','.mef','.mdc','.mos','.mrw','.nef',\
                             '.nrw','.orf','.pef','.ptx','.pxn','.r3d','.raf','.raw','.rw2','.rwl','.rwz','.srw','.x3f',\
                             '.3FR','.ARI','.ARW','.SRF','.SR2','.BAY','.CRI','.CRW','.CR2','.CR3','.CAP','.IIQ','.EIP',\
                             '.DCS','.DCR','.DRF','.K25','.KDC','.DNG','.ERF','.FFF','.MEF','.MDC','.MOS','.MRW','.NEF',\
                             '.NRW','.ORF','.PEF','.PTX','.PXN','.R3D','.RAF','.RAW','.RW2','.RWL','.RWZ','.SRW','.X3F'}
+        supportedImageFormats = {'.bmp','.eps','.gif','.icns','.ico','.im','.jpg','.jpeg','.jpeg2000','.msp','.pcx', \
+                                      '.png','.ppm','.sgi','.tiff','.tif','.xbm','.BMP','.EPS','.GIF','.ICNS','.ICO','.IM','.JPG','.JPEG','.JPEG2000','.MSP','.PCX', \
+                                      '.PNG','.PPM','.SGI','.TIFF','.TIF','.XBM'}
         fileDlg = QtWidgets.QFileDialog(self)
         fileDlg.setDirectory('./')
-        path = fileDlg.getOpenFileName(filter="Nikon (*.nef;*.nrw);;Sony (*.arw;*.srf;*.sr2);;Canon (*.crw;*.cr2;*.cr3);;All Files (*.*)")[0]
+        path = fileDlg.getOpenFileName(filter="Nikon (*.nef;*.nrw);;Sony (*.arw;*.srf;*.sr2);;Canon (*.crw;*.cr2;*.cr3);;JPEG (*.jpg;*.jpeg;*.jpeg2000);;GIF (*.gif);;PNG (*.png);;TIF (*.tif;*.tiff);;BMP (*.bmp);;All Files (*.*)")[0]
         if not path == '':
-            if not (os.path.splitext(path)[1] in supportedFormats):
-                self.Raise_Error("Not supported raw file type!")
+            if not (os.path.splitext(path)[1] in supportedRawFormats or os.path.splitext(path)[1] in supportedImageFormats):
+                self.Raise_Error("Not supported image type!")
                 return ''
             else:
                 return path

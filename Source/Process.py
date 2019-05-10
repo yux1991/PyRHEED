@@ -6,6 +6,7 @@ import math
 import os
 import glob
 import itertools
+import PIL.Image as pilImage
 from math import pi as Pi
 from lxml import etree as ET
 
@@ -13,18 +14,37 @@ class Image(object):
 
     def __init__(self):
         super(Image,self).__init__()
+        self.supportedRawFormats = {'.3fr','.ari','.arw','.srf','.sr2','.bay','.cri','.crw','.cr2','.cr3','.cap','.iiq','.eip', \
+                            '.dcs','.dcr','.drf','.k25','.kdc','.dng','.erf','.fff','.mef','.mdc','.mos','.mrw','.nef', \
+                            '.nrw','.orf','.pef','.ptx','.pxn','.r3d','.raf','.raw','.rw2','.rwl','.rwz','.srw','.x3f', \
+                            '.3FR','.ARI','.ARW','.SRF','.SR2','.BAY','.CRI','.CRW','.CR2','.CR3','.CAP','.IIQ','.EIP', \
+                            '.DCS','.DCR','.DRF','.K25','.KDC','.DNG','.ERF','.FFF','.MEF','.MDC','.MOS','.MRW','.NEF', \
+                            '.NRW','.ORF','.PEF','.PTX','.PXN','.R3D','.RAF','.RAW','.RW2','.RWL','.RWZ','.SRW','.X3F'}
+        self.supportedImageFormats = {'.bmp','.eps','.gif','.icns','.ico','.im','.jpg','.jpeg','.jpeg2000','.msp','.pcx',\
+                                      '.png','.ppm','.sgi','.tiff','.tif','.xbm','.BMP','.EPS','.GIF','.ICNS','.ICO','.IM','.JPG','.JPEG','.JPEG2000','.MSP','.PCX',\
+                                      '.PNG','.PPM','.SGI','.TIFF','.TIF','.XBM'}
 
     def getImage(self,bit_depth,img_path,EnableAutoWB, Brightness, UserBlack, image_crop):
-        img_raw = rawpy.imread(img_path)
-        img_rgb = img_raw.postprocess(demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD, output_bps = bit_depth, use_auto_wb = EnableAutoWB,bright=Brightness/100,user_black=UserBlack)
-        img_bw = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
-        img_array = img_bw[image_crop[0]:image_crop[1],image_crop[2]:image_crop[3]]
-        if bit_depth == 16:
-            img_array = np.uint8(img_array/256)
-        if bit_depth == 8:
-            img_array = np.uint8(img_array)
-        qImg = QtGui.QImage(img_array,img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
-        return qImg, img_array
+        pathExtension = os.path.splitext(img_path)[1]
+        if pathExtension in self.supportedRawFormats:
+            img_raw = rawpy.imread(img_path)
+            img_rgb = img_raw.postprocess(demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD, output_bps = bit_depth, use_auto_wb = EnableAutoWB,bright=Brightness/100,user_black=UserBlack)
+            img_bw = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
+            img_array = img_bw[image_crop[0]:image_crop[1],image_crop[2]:image_crop[3]]
+            if bit_depth == 16:
+                img_array = np.uint8(img_array/256)
+            if bit_depth == 8:
+                img_array = np.uint8(img_array)
+            qImg = QtGui.QImage(img_array,img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
+            return qImg, img_array
+        elif pathExtension in self.supportedImageFormats:
+            img = pilImage.open(img_path)
+            img_rgb = np.fromstring(img.tobytes(),dtype=np.uint8)
+            img_rgb = img_rgb.reshape((img.size[1],img.size[0],3))
+            img_array = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
+            #img_array = img_bw[image_crop[0]:image_crop[1],image_crop[2]:image_crop[3]]
+            qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
+            return qImg, img_array
 
     def getLineScan(self,start,end,img,scale_factor):
         x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()

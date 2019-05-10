@@ -5,25 +5,24 @@ class PlotChart(QtWidgets.QWidget):
 
     chartIsPresent = False
 
-    def __init__(self,config,coord):
+    def __init__(self,theme,coord):
         super(PlotChart,self).__init__()
-        chartDefault = dict(config['chartDefault'].items())
         self.type = coord
-        if int(chartDefault['theme']) == 0:
+        if theme == 0:
             self.theme = QtChart.QChart.ChartThemeLight
-        if int(chartDefault['theme']) == 1:
+        if theme == 1:
             self.theme = QtChart.QChart.ChartThemeBlueCerulean
-        if int(chartDefault['theme']) == 2:
+        if theme == 2:
             self.theme = QtChart.QChart.ChartThemeDark
-        if int(chartDefault['theme']) == 3:
+        if theme == 3:
             self.theme = QtChart.QChart.ChartThemeBrownSand
-        if int(chartDefault['theme']) == 4:
+        if theme == 4:
             self.theme = QtChart.QChart.ChartThemeBlueNcs
-        if int(chartDefault['theme']) == 5:
+        if theme == 5:
             self.theme = QtChart.QChart.ChartThemeHighContrast
-        if int(chartDefault['theme']) == 6:
+        if theme == 6:
             self.theme = QtChart.QChart.ChartThemeBlueIcy
-        if int(chartDefault['theme']) == 7:
+        if theme == 7:
             self.theme = QtChart.QChart.ChartThemeQt
         self.chartView = PlotChartView()
 
@@ -58,49 +57,55 @@ class PlotChart(QtWidgets.QWidget):
     def clearCoordinate(self):
         self.coordinate.setText("")
 
-    def refresh(self,config):
-        chartDefault = dict(config['chartDefault'].items())
-        if int(chartDefault['theme']) == 0:
+    def refresh(self,theme):
+        if theme == 0:
             self.theme = QtChart.QChart.ChartThemeLight
-        elif int(chartDefault['theme']) == 1:
+        elif theme == 1:
             self.theme = QtChart.QChart.ChartThemeBlueCerulean
-        elif int(chartDefault['theme']) == 2:
+        elif theme == 2:
             self.theme = QtChart.QChart.ChartThemeDark
-        elif int(chartDefault['theme']) == 3:
+        elif theme == 3:
             self.theme = QtChart.QChart.ChartThemeBrownSand
-        elif int(chartDefault['theme']) == 4:
+        elif theme == 4:
             self.theme = QtChart.QChart.ChartThemeBlueNcs
-        elif int(chartDefault['theme']) == 5:
+        elif theme == 5:
             self.theme = QtChart.QChart.ChartThemeHighContrast
-        elif int(chartDefault['theme']) == 6:
+        elif theme == 6:
             self.theme = QtChart.QChart.ChartThemeBlueIcy
-        elif int(chartDefault['theme']) == 7:
+        elif theme == 7:
             self.theme = QtChart.QChart.ChartThemeQt
         else:
             self.Raise_Error("Wrong theme")
         self.profileChart.setTheme(self.theme)
 
-    def addChart(self,radius,profile,type,fontname,fontsize,color,kwargs):
+    def addChart(self,radius,profile,preset,fontname,fontsize,color,switchXY,kwargs):
         if self.type == 'Polar':
-            Phi = np.append(profile,profile + np.full(len(profile),180))
             pen = QtGui.QPen(QtCore.Qt.SolidLine)
             pen.setWidth(3)
-            if type == 'IA' or 'IK':
+            if preset == 'IA':
+                Phi = np.append(profile,profile + np.full(len(profile),180))
                 Radius = np.append(radius,radius)/np.amax(radius)
-            elif type == 'FA' or 'FK':
+            elif preset == 'FA':
+                Phi = np.append(profile,profile + np.full(len(profile),180))
                 Radius = np.append(radius,radius)
+            elif preset == 'general':
+                Phi = profile
+                Radius = radius
             pen.setColor(QtGui.QColor(color))
-            z = kwargs['Kp']
-            low = kwargs['low']
-            high = kwargs['high']
             series = QtChart.QLineSeries()
             series.setPen(pen)
             self.currentRadius = []
             self.currentProfile = []
-            for x,y in zip(Phi,Radius):
-                series.append(x,y)
-                self.currentRadius.append(x)
-                self.currentProfile.append(y)
+            if not switchXY:
+                for x,y in zip(Phi,Radius):
+                    series.append(x,y)
+                    self.currentRadius.append(x)
+                    self.currentProfile.append(y)
+            else:
+                for y,x in zip(Phi,Radius):
+                    series.append(x,y)
+                    self.currentRadius.append(x)
+                    self.currentProfile.append(y)
             self.profileChart = QtChart.QPolarChart()
             self.profileChart.setTheme(self.theme)
             self.profileChart.setBackgroundRoundness(0)
@@ -112,7 +117,6 @@ class PlotChart(QtWidgets.QWidget):
             self.axisR = QtChart.QValueAxis()
             self.axisR.setTickCount(10)
             self.axisR.setLabelFormat("%.1f")
-            self.axisR.setRange(low,high)
             self.axisR.setLabelsFont(QtGui.QFont(fontname,fontsize,57))
             self.axisR.setTitleFont(QtGui.QFont(fontname,fontsize,57))
             self.axisP = QtChart.QValueAxis()
@@ -121,12 +125,29 @@ class PlotChart(QtWidgets.QWidget):
             self.axisP.setRange(0,360)
             self.axisP.setLabelsFont(QtGui.QFont(fontname,fontsize,57))
             self.axisP.setTitleFont(QtGui.QFont(fontname,fontsize,57))
-            if type == 'IA':
+            if preset == 'IA':
+                z = kwargs['Kp']
+                low = kwargs['low']
+                high = kwargs['high']
                 self.profileChart.setTitle('Intensity vs Azimuth at Kperp = {:6.2f} (\u212B\u207B\u00B9)'.format(z))
                 self.axisR.setTitleText('Intensity (arb. units)')
-            elif type == 'FA':
+                self.axisR.setRange(low,high)
+            elif preset == 'FA':
+                z = kwargs['Kp']
+                low = kwargs['low']
+                high = kwargs['high']
                 self.profileChart.setTitle('HWHM vs Azimuth at Kperp = {:6.2f} (\u212B\u207B\u00B9)'.format(z))
                 self.axisR.setTitleText('HWHM (\u212B\u207B\u00B9)')
+                self.axisR.setRange(low,high)
+            elif preset == 'general':
+                title = kwargs['title']
+                r_label = kwargs['r_label']
+                r_unit = kwargs['r_unit']
+                low = kwargs['low']
+                high = kwargs['high']
+                self.profileChart.setTitle(title)
+                self.axisR.setTitleText(r_label+" ("+r_unit+")")
+                self.axisR.setRange(low,high)
             self.profileChart.addAxis(self.axisR, QtChart.QPolarChart.PolarOrientationRadial)
             self.profileChart.addAxis(self.axisP, QtChart.QPolarChart.PolarOrientationAngular)
             series.attachAxis(self.axisR)
@@ -135,7 +156,6 @@ class PlotChart(QtWidgets.QWidget):
             self.chartView.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
             self.chartIsPresent = True
         elif self.type == 'Normal':
-            Az = kwargs['Az']
             pen = QtGui.QPen(QtCore.Qt.SolidLine)
             pen.setWidth(3)
             pen.setColor(QtGui.QColor(color))
@@ -143,10 +163,16 @@ class PlotChart(QtWidgets.QWidget):
             series.setPen(pen)
             self.currentRadius = []
             self.currentProfile = []
-            for y,x in zip(radius,profile):
-                series.append(x,y)
-                self.currentRadius.append(x)
-                self.currentProfile.append(y)
+            if not switchXY:
+                for x,y in zip(radius,profile):
+                    series.append(x,y)
+                    self.currentRadius.append(x)
+                    self.currentProfile.append(y)
+            else:
+                for y,x in zip(radius,profile):
+                    series.append(x,y)
+                    self.currentRadius.append(x)
+                    self.currentProfile.append(y)
             self.profileChart = QtChart.QChart()
             self.profileChart.setTheme(self.theme)
             self.profileChart.setBackgroundRoundness(0)
@@ -163,13 +189,25 @@ class PlotChart(QtWidgets.QWidget):
             self.axisY.setTickCount(10)
             self.axisY.setLabelsFont(QtGui.QFont(fontname,fontsize,57))
             self.axisY.setTitleFont(QtGui.QFont(fontname,fontsize,57))
-            self.axisY.setTitleText("Kperp (\u212B\u207B\u00B9)")
-            if type == "IK":
+            if preset == "IK":
+                Az = kwargs['Az']
                 self.profileChart.setTitle('Intensity vs Kperp at \u03C6 = {:5.1f} (\u00BA)'.format(Az))
                 self.axisX.setTitleText("Intensity (arb. units)")
-            elif type == "FK":
+                self.axisY.setTitleText("Kperp (\u212B\u207B\u00B9)")
+            elif preset == "FK":
+                Az = kwargs['Az']
                 self.profileChart.setTitle('HWHM vs Kperp at \u03C6 = {:5.1f} (\u00BA)'.format(Az))
                 self.axisX.setTitleText("HWHM (\u212B\u207B\u00B9)")
+                self.axisY.setTitleText("Kperp (\u212B\u207B\u00B9)")
+            elif preset == "general":
+                title = kwargs['title']
+                x_label = kwargs['x_label']
+                x_unit = kwargs['x_unit']
+                y_label = kwargs['y_label']
+                y_unit = kwargs['y_unit']
+                self.profileChart.setTitle(title)
+                self.axisX.setTitleText(x_label+" ("+x_unit+")")
+                self.axisY.setTitleText(y_label+" ("+y_unit+")")
             self.profileChart.addAxis(self.axisX, QtCore.Qt.AlignBottom)
             self.profileChart.addAxis(self.axisY, QtCore.Qt.AlignLeft)
             series.attachAxis(self.axisX)
