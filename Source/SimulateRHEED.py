@@ -4,6 +4,7 @@ import itertools
 from Process import Convertor, DiffractionPattern
 import numpy as np
 import sys
+import re
 import matplotlib.pyplot as plt
 from pymatgen.io.cif import CifParser
 from pymatgen.core import structure as pgStructure
@@ -572,11 +573,11 @@ class Window(QtWidgets.QWidget):
             self.updateLog("CIF opened!")
             self.cifPath = path
             self.chooseCifLabel.setText("The path of the CIF file is:\n"+self.cifPath)
-            self.z_shift_history[self.structure_index] = [0]
             next_available_index = 0
             while (next_available_index in self.sample_index_set):
                 next_available_index+=1
             self.structure_index = next_available_index
+            self.z_shift_history[self.structure_index] = [0]
             self.addSampleStructure(self.structure_index)
             self.addSampleData(self.structure_index)
 
@@ -669,15 +670,15 @@ class Window(QtWidgets.QWidget):
         offset=np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],self.real_space_specification_dict[index]['z_shift']]))
         self.updateLog("Finished construction of sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
-        self.element_species[index] = set(site.specie for site in self.box[index].sites)
+        self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.box[index].sites)
         colorPalette = QtWidgets.QWidget()
         grid = QtWidgets.QVBoxLayout(colorPalette)
         self.colorSheet[index]={}
         for i,name in enumerate(self.element_species[index]):
-            colorPicker = IndexedColorPicker(str(name),self.colors[i],self.AR.loc[str(name)].at['Normalized Radius'],index)
+            colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
             colorPicker.colorChanged.connect(self.updateColors)
             colorPicker.sizeChanged.connect(self.updateSize)
-            self.colorSheet[index][str(name)] = self.colors[i]
+            self.colorSheet[index][name] = self.colors[i]
             grid.addWidget(colorPicker)
         self.colorTab.setVisible(True)
         self.colorTab.insertTab(index,colorPalette,"Atom Design "+str(index+1))
@@ -728,16 +729,17 @@ class Window(QtWidgets.QWidget):
             self.updateLog("Finished construction for sample " + str(index+1))
             QtCore.QCoreApplication.processEvents()
 
-            self.element_species[index] = set(site.specie for site in self.box[index].sites)
+            self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.box[index].sites)
             colorPalette = QtWidgets.QWidget()
             grid = QtWidgets.QVBoxLayout(colorPalette)
             self.colorSheet[index] = {}
             for i,name in enumerate(self.element_species[index]):
-                colorPicker = IndexedColorPicker(str(name),self.colors[i],self.AR.loc[str(name)].at['Normalized Radius'],index)
+                colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
                 colorPicker.colorChanged.connect(self.updateColors)
                 colorPicker.sizeChanged.connect(self.updateSize)
-                self.colorSheet[index][str(name)] = self.colors[i]
+                self.colorSheet[index][name] = self.colors[i]
                 grid.addWidget(colorPicker)
+            self.colorTab.widget(index).destroy()
             self.colorTab.removeTab(index)
             self.colorTab.insertTab(index,colorPalette,"Atom Design "+str(index+1))
             self.graph.addData(index,self.box[index].sites,\
@@ -784,16 +786,17 @@ class Window(QtWidgets.QWidget):
         self.updateLog("Finished construction for sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
 
-        self.element_species[index] = set(site.specie for site in self.box[index].sites)
+        self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.box[index].sites)
         colorPalette = QtWidgets.QWidget()
         grid = QtWidgets.QVBoxLayout(colorPalette)
         self.colorSheet[index] = {}
         for i,name in enumerate(self.element_species[index]):
-            colorPicker = IndexedColorPicker(str(name),self.colors[i],self.AR.loc[str(name)].at['Normalized Radius'],index)
+            colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
             colorPicker.colorChanged.connect(self.updateColors)
             colorPicker.sizeChanged.connect(self.updateSize)
-            self.colorSheet[index][str(name)] = self.colors[i]
+            self.colorSheet[index][name] = self.colors[i]
             grid.addWidget(colorPicker)
+        self.colorTab.widget(index).destroy()
         self.colorTab.removeTab(index)
         self.colorTab.insertTab(index,colorPalette,"Atom Design "+str(index+1))
         self.graph.addData(index,self.box[index].sites,\
@@ -909,15 +912,21 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         self.series_dict = {}
         self.atoms_dict = {}
         self.elements_dict = {}
+        self.ion_dict = {}
         self.colors_dict = {}
+        self.coordinateStatus = 2
+        self.setHorizontalAspectRatio(1)
 
     def addData(self,index,data,colorSheet,range,z_range,shape,offset,rotation,AR):
         self.colors_dict = colorSheet
-        element_species = list(str(site.specie) for site in data)
+        element_species = list(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in data)
         self.elements_dict[index] = element_species
         self.coords = (site.coords for site in data)
-        self.coordinateStatus = 2
         self.atoms_dict[index] = {}
+        self.z_max = -1000
+        self.z_min = 1000
+        self.x_max = -1000
+        self.x_min = 1000
         self.axisX().setTitle("X (\u212B)")
         self.axisY().setTitle("Z (\u212B)")
         self.axisZ().setTitle("Y (\u212B)")
@@ -957,6 +966,14 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
                 ScatterProxy = QtDataVisualization.QScatterDataProxy()
                 ScatterSeries = QtDataVisualization.QScatter3DSeries(ScatterProxy)
                 item = QtDataVisualization.QScatterDataItem()
+                if coord[2] > self.z_max:
+                    self.z_max = coord[2]
+                if coord[2] < self.z_min:
+                    self.z_min = coord[2]
+                if coord[0] > self.x_max:
+                    self.x_max = coord[0]
+                if coord[0] < self.x_min:
+                    self.x_min = coord[0]
                 vector = QtGui.QVector3D(coord[0],coord[2],coord[1])
                 item.setPosition(vector)
                 dataArray.append(item)
@@ -970,6 +987,7 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
                 atomSeries[i] = ScatterSeries
                 self.addSeries(ScatterSeries)
                 self.progressAdvance.emit(0,100,i/number_of_coords*100)
+        self.setAspectRatio((self.x_max-self.x_min)/(self.z_max-self.z_min))
         self.progressEnd.emit()
         self.series_dict[index] = atomSeries
 
@@ -1038,6 +1056,8 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
             self.activeTheme().setBackgroundEnabled(True)
             self.activeTheme().setGridEnabled(True)
             if self.activeTheme().backgroundColor() == QtGui.QColor("black"):
+                self.activeTheme().setLabelTextColor(QtGui.QColor("white"))
+            elif self.activeTheme().backgroundColor() == QtGui.QColor("gray"):
                 self.activeTheme().setLabelTextColor(QtGui.QColor("white"))
             else:
                 self.activeTheme().setLabelTextColor(QtGui.QColor("black"))
