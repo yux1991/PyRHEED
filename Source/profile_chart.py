@@ -1,13 +1,11 @@
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart, QtSvg
 import numpy as np
-from Process import Image
+from process import Image
 
 class ProfileChart(QtChart.QChartView):
 
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressEnd = QtCore.pyqtSignal()
-    chartMouseMovement = QtCore.pyqtSignal(QtCore.QPointF,str)
-    chartIsPresent = False
+    CHART_MOUSE_MOVEMENT = QtCore.pyqtSignal(QtCore.QPointF,str)
+    CHART_IS_PRESENT = False
 
     def __init__(self,config):
         super(ProfileChart,self).__init__()
@@ -58,10 +56,10 @@ class ProfileChart(QtChart.QChartView):
         elif int(chartDefault['theme']) == 7:
             self.theme = QtChart.QChart.ChartThemeQt
         else:
-            self.Raise_Error("Wrong theme")
+            self.raise_error("Wrong theme")
         self.profileChart.setTheme(self.theme)
 
-    def addChart(self,radius,profile,type="line"):
+    def add_chart(self,radius,profile,type="line"):
         #pen = QtGui.QPen(QtCore.Qt.SolidLine)
         #pen.setColor(QtGui.QColor(QtCore.Qt.blue))
         #pen.setWidth(3)
@@ -110,10 +108,10 @@ class ProfileChart(QtChart.QChartView):
         self.profileChart.legend().setVisible(False)
         self.setChart(self.profileChart)
         self.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
-        self.chartIsPresent = True
+        self.CHART_IS_PRESENT = True
 
-    def adjustFonts(self,fontname,fontsize):
-        self.setFonts(fontname,fontsize)
+    def adjust_fonts(self,fontname,fontsize):
+        self.set_fonts(fontname,fontsize)
         try:
             self.axisX.setLabelsFont(QtGui.QFont(fontname,fontsize,57))
             self.axisX.setTitleFont(QtGui.QFont(fontname,fontsize,57))
@@ -122,62 +120,64 @@ class ProfileChart(QtChart.QChartView):
         except:
             pass
 
-    def setFonts(self,fontname,fontsize):
+    def set_fonts(self,fontname,fontsize):
         self.fontname = fontname
         self.fontsize = fontsize
 
-    def setImg(self,img):
+    def set_img(self,img):
         self._img = img
 
-    def setScaleFactor(self,s):
+    def set_scale_factor(self,s):
         self._scaleFactor = s
 
-    def lineScan(self,start,end):
-        x,y = self.image_worker.getLineScan(start,end,self._img,self._scaleFactor)
-        self.addChart(x,y,"line")
+    def line_scan(self,start,end):
+        x,y = self.image_worker.get_line_scan(start,end,self._img,self._scaleFactor)
+        self.add_chart(x,y,"line")
 
     def integral(self,start,end,width):
-        x,y = self.image_worker.getIntegral(start,end,width,self._img,self._scaleFactor)
-        self.addChart(x,y,"rectangle")
+        x,y = self.image_worker.get_integral(start,end,width,self._img,self._scaleFactor)
+        self.add_chart(x,y,"rectangle")
 
-    def chiScan(self,center,radius,width,chiRange,tilt,chiStep=1):
-        x,y = self.image_worker.getChiScan(center,radius,width,chiRange,tilt,self._img,chiStep)
-        self.addChart(x,y,"arc")
+    def chi_scan(self,center,radius,width,chiRange,tilt,chiStep=1):
+        x,y = self.image_worker.get_chi_scan(center,radius,width,chiRange,tilt,self._img,chiStep)
+        self.add_chart(x,y,"arc")
 
     def mouseMoveEvent(self, event):
-        if self.chart().plotArea().contains(event.pos()) and self.chartIsPresent:
+        """This is an overload function"""
+        if self.chart().plotArea().contains(event.pos()) and self.CHART_IS_PRESENT:
             self.setCursor(QtCore.Qt.CrossCursor)
             position = self.chart().mapToValue(event.pos())
-            self.chartMouseMovement.emit(position,"chart")
+            self.CHART_MOUSE_MOVEMENT.emit(position,"chart")
         else:
             self.setCursor(QtCore.Qt.ArrowCursor)
         super(ProfileChart, self).mouseMoveEvent(event)
 
     def contextMenuEvent(self,event):
+        """This is an overload function"""
         self.menu = QtWidgets.QMenu()
         self.saveAsText = QtWidgets.QAction('Save as text...')
-        self.saveAsText.triggered.connect(self.saveProfileAsText)
+        self.saveAsText.triggered.connect(self.save_profile_as_text)
         self.saveAsImage = QtWidgets.QAction('Save as an image...')
-        self.saveAsImage.triggered.connect(self.saveProfileAsImage)
+        self.saveAsImage.triggered.connect(self.save_profile_as_image)
         self.saveAsSVG = QtWidgets.QAction('Export as SVG...')
-        self.saveAsSVG.triggered.connect(self.saveProfileAsSVG)
+        self.saveAsSVG.triggered.connect(self.save_profile_as_SVG)
         self.menu.addAction(self.saveAsText)
         self.menu.addAction(self.saveAsImage)
         self.menu.addAction(self.saveAsSVG)
         self.menu.popup(event.globalPos())
 
-    def saveProfileAsText(self):
-        if self.chartIsPresent:
+    def save_profile_as_text(self):
+        if self.CHART_IS_PRESENT:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./profile.txt","Text (*.txt)")
             if not self.filename[0] == "":
                 np.savetxt(self.filename[0],np.vstack((self.currentRadius,self.currentProfile)).transpose(),fmt='%5.3f')
             else:
                 return
         else:
-            self.Raise_Error("No line profile is available")
+            self.raise_error("No line profile is available")
 
-    def saveProfileAsImage(self):
-        if self.chartIsPresent:
+    def save_profile_as_image(self):
+        if self.CHART_IS_PRESENT:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./profile.png","PNG (*.png);;JPEG (*.jpeg);;GIF (*.gif);;BMP (*.bmp)")
             if not self.filename[0] == "":
                 output_size = QtCore.QSize(800,600)
@@ -196,10 +196,10 @@ class ProfileChart(QtChart.QChartView):
             else:
                 return
         else:
-            self.Raise_Error("No line profile is available")
+            self.raise_error("No line profile is available")
 
-    def saveProfileAsSVG(self):
-        if self.chartIsPresent:
+    def save_profile_as_SVG(self):
+        if self.CHART_IS_PRESENT:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./profile.svg","SVG (*.svg)")
             if not self.filename[0] == "":
                 output_size = QtCore.QSize(800,600)
@@ -221,9 +221,9 @@ class ProfileChart(QtChart.QChartView):
             else:
                 return
         else:
-            self.Raise_Error("No line profile is available")
+            self.raise_error("No line profile is available")
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -232,7 +232,7 @@ class ProfileChart(QtChart.QChartView):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)

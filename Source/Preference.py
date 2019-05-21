@@ -4,7 +4,7 @@ import configparser
 class Window(QtCore.QObject):
 
     #Public Signals
-    DefaultSettingsChanged = QtCore.pyqtSignal(configparser.ConfigParser)
+    DEFAULT_SETTINGS_CHANGED = QtCore.pyqtSignal(configparser.ConfigParser)
 
     def __init__(self):
         super(Window,self).__init__()
@@ -18,21 +18,21 @@ class Window(QtCore.QObject):
 
 #Preference_Default Settings
 
-    def Main(self):
+    def main(self):
         self.windowDefault = dict(self.config['windowDefault'].items())
         self.propertiesDefault = dict(self.config['propertiesDefault'].items())
         self.canvasDefault = dict(self.config['canvasDefault'].items())
         self.chartDefault = dict(self.config['chartDefault'].items())
         self.DefaultSettings_Dialog = QtWidgets.QDialog()
         self.DefaultSettings_DialogGrid = QtWidgets.QGridLayout(self.DefaultSettings_Dialog)
-        self.tab = self.RefreshTab(self.config)
+        self.tab = self.refresh_tab(self.config)
         buttonBox = QtWidgets.QDialogButtonBox()
         buttonBox.addButton("Accept",QtWidgets.QDialogButtonBox.AcceptRole)
         buttonBox.addButton("Reset",QtWidgets.QDialogButtonBox.ResetRole)
         buttonBox.addButton("Quit",QtWidgets.QDialogButtonBox.DestructiveRole)
         buttonBox.setCenterButtons(True)
-        buttonBox.findChildren(QtWidgets.QPushButton)[0].clicked.connect(self.Accept)
-        buttonBox.findChildren(QtWidgets.QPushButton)[1].clicked.connect(self.Reset)
+        buttonBox.findChildren(QtWidgets.QPushButton)[0].clicked.connect(self.accept)
+        buttonBox.findChildren(QtWidgets.QPushButton)[1].clicked.connect(self.reset)
         buttonBox.findChildren(QtWidgets.QPushButton)[2].clicked.connect(self.DefaultSettings_Dialog.reject)
         self.DefaultSettings_DialogGrid.addWidget(self.tab,0,0)
         self.DefaultSettings_DialogGrid.addWidget(buttonBox,1,0)
@@ -43,7 +43,7 @@ class Window(QtCore.QObject):
         self.DefaultSettings_Dialog.showNormal()
         self.DefaultSettings_Dialog.exec_()
 
-    def Save(self,lineValueList):
+    def save(self,lineValueList):
         windowKeys = ['HS','VS','energy','azimuth','scaleBarLength','chiRange','width','widthSliderScale','radius',\
                       'radiusMaximum','radiusSliderScale','tiltAngle','tiltAngleSliderScale']
         propertiesKeys = ['sensitivity','electronEnergy','azimuth','scaleBarLength','brightness','brightnessMinimum',\
@@ -63,7 +63,7 @@ class Window(QtCore.QObject):
             config.write(configfile)
         return Dic
 
-    def RefreshTab(self,config):
+    def refresh_tab(self,config):
         windowDefault = dict(config['windowDefault'].items())
         propertiesDefault = dict(config['propertiesDefault'].items())
         canvasDefault = dict(config['canvasDefault'].items())
@@ -145,22 +145,22 @@ class Window(QtCore.QObject):
         tab.addTab(self.chart,"Chart")
         return tab
 
-    def Accept(self):
+    def accept(self):
         windowValueList = [item.text() for item in self.window.findChildren(QtWidgets.QLineEdit)]
         propertiesValueList = [item.text() for item in self.properties.findChildren(QtWidgets.QLineEdit)]
         canvasValueList = [item.text() for item in self.canvas.findChildren(QtWidgets.QLineEdit)]
         chartValueList = [item.currentData() for item in self.chart.findChildren(QtWidgets.QComboBox)]
         lineValueList = [windowValueList, propertiesValueList,canvasValueList,chartValueList]
-        Dic = self.Save(lineValueList)
+        Dic = self.save(lineValueList)
         config = configparser.ConfigParser()
         config.read_dict(Dic)
-        self.DefaultSettingsChanged.emit(config)
+        self.DEFAULT_SETTINGS_CHANGED.emit(config)
 
-    def Reset(self):
-        Dic = self.Save(self.defaultLineValueList)
+    def reset(self):
+        Dic = self.save(self.defaultLineValueList)
         config = configparser.ConfigParser()
         config.read_dict(Dic)
-        self.DefaultSettingsChanged.emit(config)
-        tab_new = self.RefreshTab(config)
+        self.DEFAULT_SETTINGS_CHANGED.emit(config)
+        tab_new = self.refresh_tab(config)
         self.DefaultSettings_DialogGrid.replaceWidget(self.tab,tab_new)
         self.tab = tab_new

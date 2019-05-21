@@ -3,7 +3,7 @@ import numpy as np
 
 class PlotChart(QtWidgets.QWidget):
 
-    chartIsPresent = False
+    CHART_IS_PRESENT = False
 
     def __init__(self,theme,coord):
         super(PlotChart,self).__init__()
@@ -26,10 +26,10 @@ class PlotChart(QtWidgets.QWidget):
             self.theme = QtChart.QChart.ChartThemeQt
         self.chartView = PlotChartView()
 
-    def Main(self):
-        self.chartView.saveText.connect(self.savePolarAsText)
-        self.chartView.saveImage.connect(self.savePolarAsImage)
-        self.chartView.saveSVG.connect(self.savePolarAsSVG)
+    def main(self):
+        self.chartView.SAVE_TEXT.connect(self.save_polar_as_text)
+        self.chartView.SAVE_IMAGE.connect(self.save_polar_as_image)
+        self.chartView.SAVE_SVG.connect(self.save_polar_as_SVG)
         self.chartView.setRenderHint(QtGui.QPainter.Antialiasing)
         self.chartView.setContentsMargins(0,0,0,0)
         if self.type == 'Polar':
@@ -41,20 +41,20 @@ class PlotChart(QtWidgets.QWidget):
         self.profileChart.setTheme(self.theme)
         self.chartView.setChart(self.profileChart)
         self.coordinate = QtWidgets.QLabel("")
-        self.chartView.chartMouseMovement.connect(self.updateCoordinate)
-        self.chartView.chartMouseLeave.connect(self.clearCoordinate)
+        self.chartView.CHART_MOUSE_MOVEMENT.connect(self.update_coordinate)
+        self.chartView.CHART_MOUSE_LEAVE.connect(self.clear_coordinate)
         self.Grid = QtWidgets.QGridLayout()
         self.Grid.addWidget(self.chartView,0,0)
         self.Grid.addWidget(self.coordinate,1,0)
         self.setLayout(self.Grid)
 
-    def updateCoordinate(self,pos):
+    def update_coordinate(self,pos):
         if self.type == "Polar":
             self.coordinate.setText("(r={:5.2f}, \u03C6={:5.2f})".format(pos.y(),pos.x()))
         elif self.type == "Normal":
             self.coordinate.setText("(x={:5.2f}, y={:5.2f})".format(pos.x(),pos.y()))
 
-    def clearCoordinate(self):
+    def clear_coordinate(self):
         self.coordinate.setText("")
 
     def refresh(self,theme):
@@ -75,10 +75,10 @@ class PlotChart(QtWidgets.QWidget):
         elif theme == 7:
             self.theme = QtChart.QChart.ChartThemeQt
         else:
-            self.Raise_Error("Wrong theme")
+            self.raise_error("Wrong theme")
         self.profileChart.setTheme(self.theme)
 
-    def addChart(self,radius,profile,preset,fontname,fontsize,color,switchXY,kwargs):
+    def add_chart(self,radius,profile,preset,fontname,fontsize,color,switchXY,kwargs):
         if self.type == 'Polar':
             pen = QtGui.QPen(QtCore.Qt.SolidLine)
             pen.setWidth(3)
@@ -154,7 +154,7 @@ class PlotChart(QtWidgets.QWidget):
             series.attachAxis(self.axisP)
             self.chartView.setChart(self.profileChart)
             self.chartView.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
-            self.chartIsPresent = True
+            self.CHART_IS_PRESENT = True
         elif self.type == 'Normal':
             pen = QtGui.QPen(QtCore.Qt.SolidLine)
             pen.setWidth(3)
@@ -215,9 +215,9 @@ class PlotChart(QtWidgets.QWidget):
             self.profileChart.legend().setVisible(False)
             self.chartView.setChart(self.profileChart)
             self.chartView.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
-            self.chartIsPresent = True
+            self.CHART_IS_PRESENT = True
 
-    def adjustFonts(self,fontname,fontsize):
+    def adjust_fonts(self,fontname,fontsize):
         try:
             self.profileChart.setTitleFont(QtGui.QFont(fontname,fontsize,57))
             if self.type == 'Polar':
@@ -233,25 +233,25 @@ class PlotChart(QtWidgets.QWidget):
         except:
             pass
 
-    def adjustColor(self,name,color):
+    def adjust_color(self,name,color):
         pen = QtGui.QPen(QtCore.Qt.SolidLine)
         pen.setWidth(3)
         pen.setColor(QtGui.QColor(color))
         self.profileChart.series()[-1].setPen(pen)
 
 
-    def savePolarAsText(self):
-        if self.chartIsPresent:
+    def save_polar_as_text(self):
+        if self.CHART_IS_PRESENT:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./polar.txt","Text (*.txt)")
             if not self.filename[0] == "":
                 np.savetxt(self.filename[0],np.vstack((self.currentRadius,self.currentProfile)).transpose(),fmt='%5.3f')
             else:
                 return
         else:
-            self.Raise_Error("No plot is available")
+            self.raise_error("No plot is available")
 
-    def savePolarAsImage(self):
-        if self.chartIsPresent:
+    def save_polar_as_image(self):
+        if self.CHART_IS_PRESENT:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./plot.png","PNG (*.png);;JPEG (*.jpeg);;GIF (*.gif);;BMP (*.bmp)")
             if not self.filename[0] == "":
                 output_size = QtCore.QSize(800,600)
@@ -270,10 +270,10 @@ class PlotChart(QtWidgets.QWidget):
             else:
                 return
         else:
-            self.Raise_Error("No plot is available")
+            self.raise_error("No plot is available")
 
-    def savePolarAsSVG(self):
-        if self.chartIsPresent:
+    def save_polar_as_SVG(self):
+        if self.CHART_IS_PRESENT:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./plot.svg","SVG (*.svg)")
             if not self.filename[0] == "":
                 output_size = QtCore.QSize(800,600)
@@ -295,9 +295,9 @@ class PlotChart(QtWidgets.QWidget):
             else:
                 return
         else:
-            self.Raise_Error("No plot is available")
+            self.raise_error("No plot is available")
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -306,7 +306,7 @@ class PlotChart(QtWidgets.QWidget):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)
@@ -318,43 +318,45 @@ class PlotChart(QtWidgets.QWidget):
 
 class PlotChartView(QtChart.QChartView):
 
-    saveText = QtCore.pyqtSignal()
-    saveImage = QtCore.pyqtSignal()
-    saveSVG = QtCore.pyqtSignal()
-    chartMouseMovement = QtCore.pyqtSignal(QtCore.QPointF)
-    chartMouseLeave = QtCore.pyqtSignal()
+    SAVE_TEXT = QtCore.pyqtSignal()
+    SAVE_IMAGE = QtCore.pyqtSignal()
+    SAVE_SVG = QtCore.pyqtSignal()
+    CHART_MOUSE_MOVEMENT = QtCore.pyqtSignal(QtCore.QPointF)
+    CHART_MOUSE_LEAVE = QtCore.pyqtSignal()
 
     def __init__(self):
         super(PlotChartView,self).__init__()
 
     def contextMenuEvent(self,event):
+        """This is an overload function"""
         self.menu = QtWidgets.QMenu()
         self.saveAsText = QtWidgets.QAction('Save as text...')
-        self.saveAsText.triggered.connect(self.savePolarAsText)
+        self.saveAsText.triggered.connect(self.save_polar_as_text)
         self.saveAsImage = QtWidgets.QAction('Save as an image...')
-        self.saveAsImage.triggered.connect(self.savePolarAsImage)
+        self.saveAsImage.triggered.connect(self.save_polar_as_image)
         self.saveAsSVG = QtWidgets.QAction('Export as SVG...')
-        self.saveAsSVG.triggered.connect(self.savePolarAsSVG)
+        self.saveAsSVG.triggered.connect(self.save_polar_as_SVG)
         self.menu.addAction(self.saveAsText)
         self.menu.addAction(self.saveAsImage)
         self.menu.addAction(self.saveAsSVG)
         self.menu.popup(event.globalPos())
 
     def mouseMoveEvent(self, event):
+        """This is an overload function"""
         if self.chart().plotArea().contains(event.pos()):
             self.setCursor(QtCore.Qt.CrossCursor)
             position = self.chart().mapToValue(event.pos())
-            self.chartMouseMovement.emit(position)
+            self.CHART_MOUSE_MOVEMENT.emit(position)
         else:
             self.setCursor(QtCore.Qt.ArrowCursor)
-            self.chartMouseLeave.emit()
+            self.CHART_MOUSE_LEAVE.emit()
         super(PlotChartView, self).mouseMoveEvent(event)
 
-    def savePolarAsText(self):
-        self.saveText.emit()
+    def save_polar_as_text(self):
+        self.SAVE_TEXT.emit()
 
-    def savePolarAsImage(self):
-        self.saveImage.emit()
+    def save_polar_as_image(self):
+        self.SAVE_IMAGE.emit()
 
-    def savePolarAsSVG(self):
-        self.saveSVG.emit()
+    def save_polar_as_SVG(self):
+        self.SAVE_SVG.emit()

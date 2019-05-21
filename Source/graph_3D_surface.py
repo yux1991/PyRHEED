@@ -1,5 +1,4 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
-import Process
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -10,12 +9,12 @@ import math
 
 class Graph(QtWidgets.QWidget):
 
-    show2DContourSignal = QtCore.pyqtSignal(str,bool,float,float,float,float,int,str)
+    SHOW_2D_CONTOUR_SIGNAL = QtCore.pyqtSignal(str,bool,float,float,float,float,int,str)
 
     def __init__(self):
         super(Graph,self).__init__()
 
-    def run3DGraph(self,path):
+    def run_3D_graph(self,path):
         self.graphPath = path
         self.graph = SurfaceGraph()
         self.container = QtWidgets.QWidget.createWindowContainer(self.graph)
@@ -43,7 +42,7 @@ class Graph(QtWidgets.QWidget):
         self.chooseSourceLabel.setFixedHeight(75)
         self.chooseSourceLabel.setWordWrap(True)
         self.chooseSourceButton = QtWidgets.QPushButton("Browse")
-        self.chooseSourceButton.clicked.connect(self.Choose_Graph)
+        self.chooseSourceButton.clicked.connect(self.choose_graph)
         self.chooseGraphGrid.addWidget(self.chooseSourceLabel,0,0)
         self.chooseGraphGrid.addWidget(self.chooseSourceButton,1,0)
 
@@ -62,34 +61,34 @@ class Graph(QtWidgets.QWidget):
         self.levelMinSlider.setMinimum(0)
         self.levelMinSlider.setMaximum(100)
         self.levelMinSlider.setValue(0)
-        self.levelMinSlider.valueChanged.connect(self.Refresh_Level_Min)
+        self.levelMinSlider.valueChanged.connect(self.refresh_level_min)
         self.levelMaxLabel = QtWidgets.QLabel("Level Max ({})".format(1.0))
         self.levelMaxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.levelMaxSlider.setMinimum(0)
         self.levelMaxSlider.setMaximum(100)
         self.levelMaxSlider.setValue(100)
-        self.levelMaxSlider.valueChanged.connect(self.Refresh_Level_Max)
+        self.levelMaxSlider.valueChanged.connect(self.refresh_level_max)
         self.radiusMinLabel = QtWidgets.QLabel("Radius Min ({})".format(0.0))
         self.radiusMinSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.radiusMinSlider.setMinimum(0)
         self.radiusMinSlider.setMaximum(1000)
         self.radiusMinSlider.setValue(0)
-        self.radiusMinSlider.valueChanged.connect(self.Refresh_Radius_Min)
+        self.radiusMinSlider.valueChanged.connect(self.refresh_radius_min)
         self.radiusMaxLabel = QtWidgets.QLabel("Radius Max ({})".format(10.0))
         self.radiusMaxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.radiusMaxSlider.setMinimum(0)
         self.radiusMaxSlider.setMaximum(1000)
         self.radiusMaxSlider.setValue(1000)
-        self.radiusMaxSlider.valueChanged.connect(self.Refresh_Radius_Max)
+        self.radiusMaxSlider.valueChanged.connect(self.refresh_radius_max)
         self.numberOfContourLevelsLabel = QtWidgets.QLabel("Number of Contour Levels ({})".format(50))
         self.numberOfContourLevelsLabel.setFixedWidth(160)
         self.numberOfContourLevelsSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.numberOfContourLevelsSlider.setMinimum(5)
         self.numberOfContourLevelsSlider.setMaximum(100)
         self.numberOfContourLevelsSlider.setValue(50)
-        self.numberOfContourLevelsSlider.valueChanged.connect(self.Refresh_Number_Of_Contour_Levels)
+        self.numberOfContourLevelsSlider.valueChanged.connect(self.refresh_number_of_contour_levels)
         self.show2DContourButton = QtWidgets.QPushButton("Show 2D Contour")
-        self.show2DContourButton.clicked.connect(self.show2DContourButtonPressed)
+        self.show2DContourButton.clicked.connect(self.show_2D_contour_button_pressed)
         self.show2DContourButton.setEnabled(False)
         self.plotOptionsGrid.addWidget(self.colormapLabel,0,0)
         self.plotOptionsGrid.addWidget(self.colormap,0,1)
@@ -181,6 +180,9 @@ class Graph(QtWidgets.QWidget):
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
                                           "\u00A0\u00A0\u00A0\u00A0Initialized!")
+        self.logCursor = QtGui.QTextCursor(self.logBox.document())
+        self.logCursor.movePosition(QtGui.QTextCursor.End)
+        self.logBox.setTextCursor(self.logCursor)
         self.logBox.ensureCursorVisible()
         self.logBox.setAlignment(QtCore.Qt.AlignTop)
         self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -204,71 +206,71 @@ class Graph(QtWidgets.QWidget):
         center = desktopRect.center()
         self.move(center.x()-self.width()*0.5,center.y()-self.height()*0.5)
 
-        self.themeList.currentIndexChanged.connect(self.graph.changeTheme)
-        self.gradientBtoYPB.pressed.connect(self.graph.setBlackToYellowGradient)
-        self.gradientGtoRPB.pressed.connect(self.graph.setGreenToRedGradient)
-        self.gradientBtoRPB.pressed.connect(self.graph.setBlueToRedGradient)
-        self.show2DContourSignal.connect(self.Show_2D_Contour)
-        self.graph.logMessage.connect(self.updateLog)
+        self.themeList.currentIndexChanged.connect(self.graph.change_theme)
+        self.gradientBtoYPB.pressed.connect(self.graph.set_black_to_yellow_gradient)
+        self.gradientGtoRPB.pressed.connect(self.graph.set_green_to_red_gradient)
+        self.gradientBtoRPB.pressed.connect(self.graph.set_blue_to_red_gradient)
+        self.SHOW_2D_CONTOUR_SIGNAL.connect(self.show_2d_contour)
+        self.graph.LOG_MESSAGE.connect(self.update_log)
         self.themeList.setCurrentIndex(3)
 
         if not path=='':
-            self.graph.fillTwoDimensionalMappingProxy(path)
-            self.graph.enableTwoDimensionalMappingModel(True)
+            self.graph.fill_two_dimensional_mapping_proxy(path)
+            self.graph.enable_two_dimensional_mapping_model(True)
             self.show2DContourButton.setEnabled(True)
             self.gradientBtoYPB.setEnabled(True)
             self.gradientGtoRPB.setEnabled(True)
             self.gradientBtoRPB.setEnabled(True)
 
-    def Choose_Graph(self):
+    def choose_graph(self):
         path = QtWidgets.QFileDialog.getOpenFileName(None,"choose the graph",self.graphPath)
         self.graphPath = path[0]
         self.graphPathExtension = os.path.splitext(self.graphPath)[1]
         if not self.graphPathExtension == ".txt":
-            self.Raise_Error('[Error: wrong file type] Please choose a *.txt file')
-            self.updateLog('[Error: wrong file type] Please choose a *.txt file')
+            self.raise_error('[Error: wrong file type] Please choose a *.txt file')
+            self.update_log('[Error: wrong file type] Please choose a *.txt file')
         else:
             self.chooseSourceLabel.setText("The path of the graph is:\n"+self.graphPath)
-            self.updateLog("Loading DataArray...")
+            self.update_log("Loading DataArray...")
             QtCore.QCoreApplication.processEvents()
-            self.graph.fillTwoDimensionalMappingProxy(self.graphPath)
-            self.graph.enableTwoDimensionalMappingModel(True)
+            self.graph.fill_two_dimensional_mapping_proxy(self.graphPath)
+            self.graph.enable_two_dimensional_mapping_model(True)
             self.show2DContourButton.setEnabled(True)
             self.gradientBtoYPB.setEnabled(True)
             self.gradientGtoRPB.setEnabled(True)
             self.gradientBtoRPB.setEnabled(True)
 
-    def Refresh_Level_Min(self):
+    def refresh_level_min(self):
         self.levelMinLabel.setText("Level Min ({})".format(self.levelMinSlider.value()/100))
         if self.levelMinSlider.value() > self.levelMaxSlider.value():
             self.levelMaxSlider.setValue(self.levelMinSlider.value())
 
-    def Refresh_Level_Max(self):
+    def refresh_level_max(self):
         self.levelMaxLabel.setText("Level Max ({})".format(self.levelMaxSlider.value()/100))
         if self.levelMinSlider.value() > self.levelMaxSlider.value():
             self.levelMinSlider.setValue(self.levelMaxSlider.value())
 
-    def Refresh_Radius_Min(self):
+    def refresh_radius_min(self):
         self.radiusMinLabel.setText("Radius Min ({})".format(self.radiusMinSlider.value()/100))
         if self.radiusMinSlider.value() > self.radiusMaxSlider.value():
             self.radiusMaxSlider.setValue(self.radiusMinSlider.value())
 
-    def Refresh_Radius_Max(self):
+    def refresh_radius_max(self):
         self.radiusMaxLabel.setText("Radius Max ({})".format(self.radiusMaxSlider.value()/100))
         if self.radiusMinSlider.value() > self.radiusMaxSlider.value():
             self.radiusMinSlider.setValue(self.radiusMaxSlider.value())
 
-    def Refresh_Number_Of_Contour_Levels(self):
+    def refresh_number_of_contour_levels(self):
         self.numberOfContourLevelsLabel.setText("Number of Contour Levels ({})".format(self.numberOfContourLevelsSlider.value()))
 
-    def show2DContourButtonPressed(self):
-        self.updateLog("Showing contour plot...")
+    def show_2D_contour_button_pressed(self):
+        self.update_log("Showing contour plot...")
         QtCore.QCoreApplication.processEvents()
-        self.show2DContourSignal.emit(self.graphPath,True,self.levelMinSlider.value()/100,self.levelMaxSlider.value()/100,\
+        self.SHOW_2D_CONTOUR_SIGNAL.emit(self.graphPath,True,self.levelMinSlider.value()/100,self.levelMaxSlider.value()/100,\
                                       self.radiusMinSlider.value()/100,self.radiusMaxSlider.value()/100,\
                                       self.numberOfContourLevelsSlider.value(),self.colormap.currentText())
 
-    def Show_2D_Contour(self,path, insideGraph3D = False, min=0.0, max=1.0, radius_min=0, radius_max=10, number_of_levels=50, colormap='jet'):
+    def show_2d_contour(self,path, insideGraph3D = False, min=0.0, max=1.0, radius_min=0, radius_max=10, number_of_levels=50, colormap='jet'):
         window = QtWidgets.QDialog()
         layout = QtWidgets.QVBoxLayout(window)
         figure = plt.figure()
@@ -277,30 +279,30 @@ class Graph(QtWidgets.QWidget):
         figure.clear()
         if not path == None:
             if os.path.splitext(path)[1] == '.txt':
-                radius,theta,intensity = self.convertToRTI(path)
+                radius,theta,intensity = self.convert_to_RTI(path)
                 levels = np.linspace(min,max,number_of_levels)
                 ax = figure.add_subplot(111,polar = True)
                 ax.contourf(theta,radius,intensity,levels=levels,cmap=colormap)
                 ax.set_ylim(radius_min,radius_max)
                 canvas.draw()
             else:
-                self.Raise_Error('[Error: wrong file type] Please choose a *.txt file')
+                self.raise_error('[Error: wrong file type] Please choose a *.txt file')
         else:
-            self.Raise_Error('[Error: no file] Please choose a valid file first')
+            self.raise_error('[Error: no file] Please choose a valid file first')
         layout.addWidget(toolbar)
         layout.addWidget(canvas)
         window.setWindowTitle("2D Contour")
         window.show()
         if insideGraph3D:
-            window.finished.connect(self.contourPlotFinished)
+            window.finished.connect(self.contour_plot_finished)
 
-    def contourPlotFinished(self):
-        self.updateLog('Contour plot ended.')
+    def contour_plot_finished(self):
+        self.update_log('Contour plot ended.')
 
-    def updateLog(self,msg):
+    def update_log(self,msg):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
 
-    def convertToRTI(self,path):
+    def convert_to_RTI(self,path):
         raw_data =  np.loadtxt(path)
         if np.amin(raw_data[:,0])<0:
             data = np.empty(raw_data.shape)
@@ -313,7 +315,7 @@ class Graph(QtWidgets.QWidget):
         table = df.pivot_table(values = 'intensity',index='radius',columns='theta')
         return table.index.tolist(),[a/180*math.pi for a in table.columns.tolist()],table
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -322,7 +324,7 @@ class Graph(QtWidgets.QWidget):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)
@@ -332,16 +334,16 @@ class Graph(QtWidgets.QWidget):
         info.exec()
 
 
-class SurfaceGraph(QtDataVisualization.Q3DSurface,Process.Image):
+class SurfaceGraph(QtDataVisualization.Q3DSurface):
 
-    logMessage = QtCore.pyqtSignal(str)
+    LOG_MESSAGE = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super(SurfaceGraph,self).__init__()
         self.twoDimensionalMappingProxy = QtDataVisualization.QSurfaceDataProxy()
         self.twoDimensionalMappingSeries = QtDataVisualization.QSurface3DSeries(self.twoDimensionalMappingProxy)
 
-    def convertToDataArray(self,path):
+    def convert_to_data_array(self,path):
         data =  np.loadtxt(path)
         df = pd.DataFrame(data,columns = ['radius','theta','intensity'])
         table = df.pivot_table(values = 'intensity',index='radius',columns='theta')
@@ -361,12 +363,12 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface,Process.Image):
             dataArray.append(newRow)
         return dataArray
 
-    def fillTwoDimensionalMappingProxy(self,path):
-        dataArray = self.convertToDataArray(path)
+    def fill_two_dimensional_mapping_proxy(self,path):
+        dataArray = self.convert_to_data_array(path)
         self.twoDimensionalMappingProxy.resetArray(dataArray)
-        self.logMessage.emit("DataArray Loaded!")
+        self.LOG_MESSAGE.emit("DataArray Loaded!")
 
-    def enableTwoDimensionalMappingModel(self,enable):
+    def enable_two_dimensional_mapping_model(self,enable):
         if enable:
             for series in self.seriesList():
                 self.removeSeries(series)
@@ -388,10 +390,10 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface,Process.Image):
             self.axisZ().setLabelAutoRotation(30)
             self.addSeries(self.twoDimensionalMappingSeries)
 
-    def changeTheme(self, theme):
+    def change_theme(self, theme):
         self.activeTheme().setType(QtDataVisualization.Q3DTheme.Theme(theme))
 
-    def setBlackToYellowGradient(self):
+    def set_black_to_yellow_gradient(self):
         self.gr = QtGui.QLinearGradient()
         self.gr.setColorAt(0.0, QtCore.Qt.black)
         self.gr.setColorAt(0.33, QtCore.Qt.blue)
@@ -400,7 +402,7 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface,Process.Image):
         self.seriesList()[0].setBaseGradient(self.gr)
         self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyleRangeGradient)
 
-    def setGreenToRedGradient(self):
+    def set_green_to_red_gradient(self):
         self.gr = QtGui.QLinearGradient()
         self.gr.setColorAt(0.0, QtCore.Qt.darkGreen)
         self.gr.setColorAt(0.5, QtCore.Qt.yellow)
@@ -409,7 +411,7 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface,Process.Image):
         self.seriesList()[0].setBaseGradient(self.gr)
         self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyleRangeGradient)
 
-    def setBlueToRedGradient(self):
+    def set_blue_to_red_gradient(self):
         self.gr = QtGui.QLinearGradient()
         self.gr.setColorAt(0.0, QtCore.Qt.darkBlue)
         self.gr.setColorAt(0.05, QtCore.Qt.blue)
@@ -421,7 +423,7 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface,Process.Image):
         self.seriesList()[0].setBaseGradient(self.gr)
         self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyleRangeGradient)
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -430,7 +432,7 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface,Process.Image):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)

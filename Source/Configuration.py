@@ -46,7 +46,7 @@ class Configuration():
                                     'max_zoom_factor' : 21},\
             'chartDefault':{'theme':1}}
 
-    def saveDefaults(self,Dic = DefaultDic):
+    def save_defaults(self,Dic = DefaultDic):
         config = configparser.ConfigParser()
         config.read_dict(Dic)
         with open('./configuration.ini','w') as configfile:

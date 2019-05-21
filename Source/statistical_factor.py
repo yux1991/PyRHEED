@@ -1,17 +1,17 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
 import numpy as np
 import matplotlib.pyplot as plt
-from MyWidgets import LabelSlider
+from my_widgets import LabelSlider
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 class Window(QtWidgets.QWidget):
-    show2DContourSignal = QtCore.pyqtSignal(list,float,float,float,float,str,int,str)
-    fontsChanged = QtCore.pyqtSignal(str,int)
+    SHOW_2D_CONTOUR_SIGNAL = QtCore.pyqtSignal(list,float,float,float,float,str,int,str)
+    FONTS_CHANGED = QtCore.pyqtSignal(str,int)
     def __init__(self):
         super(Window, self).__init__()
 
-    def Main(self):
+    def main(self):
         self.mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.mainFrame = QtWidgets.QFrame()
         self.mainGrid = QtWidgets.QGridLayout(self.mainFrame)
@@ -34,10 +34,10 @@ class Window(QtWidgets.QWidget):
         self.chooseUnit = QtWidgets.QComboBox()
         self.chooseUnit.addItem("Brillouin Zone %")
         self.chooseUnit.addItem("\u212B\u207B\u00B9")
-        self.chooseUnit.currentTextChanged.connect(self.unitChanged)
+        self.chooseUnit.currentTextChanged.connect(self.unit_changed)
         self.graph = SurfaceGraph()
-        self.graph.logMessage.connect(self.updateLog)
-        self.fontsChanged.connect(self.graph.changeFonts)
+        self.graph.LOG_MESSAGE.connect(self.update_log)
+        self.FONTS_CHANGED.connect(self.graph.change_fonts)
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
@@ -70,17 +70,17 @@ class Window(QtWidgets.QWidget):
         self.fontListLabel = QtWidgets.QLabel("Change Font")
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
-        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(30))
         self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(30)
-        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.fontSizeSlider.valueChanged.connect(self.refresh_font_size)
         self.show2DContourButton = QtWidgets.QPushButton("Show 2D Contour")
-        self.show2DContourButton.clicked.connect(self.show2DContourButtonPressed)
-        self.show2DContourSignal.connect(self.Show_2D_Contour)
+        self.show2DContourButton.clicked.connect(self.show_2D_contour_button_pressed)
+        self.SHOW_2D_CONTOUR_SIGNAL.connect(self.show_2D_contour)
         self.show2DContourButton.setEnabled(False)
         self.appearanceGrid.addWidget(self.fontListLabel,0,0)
         self.appearanceGrid.addWidget(self.fontList,0,1)
@@ -101,7 +101,7 @@ class Window(QtWidgets.QWidget):
         self.themeList.addItem("Retro")
         self.themeList.addItem("Ebony")
         self.themeList.addItem("Isabelle")
-        self.themeList.currentIndexChanged.connect(self.graphChangeTheme)
+        self.themeList.currentIndexChanged.connect(self.graph_chagne_theme)
         self.themeList.setCurrentIndex(3)
 
         self.OptionsGrid.addWidget(self.Eta,0,0,1,2)
@@ -134,7 +134,7 @@ class Window(QtWidgets.QWidget):
         self.showMaximized()
         self.setWindowTitle("Statistical Factor Simulation")
 
-    def unitChanged(self,unit):
+    def unit_changed(self,unit):
         if unit == "Brillouin Zone %":
             self.x_range.set(0,400,10,10)
             self.x_step.set(10,400,0.1,2000)
@@ -146,36 +146,36 @@ class Window(QtWidgets.QWidget):
             self.z_range.set(0,400,0.1,1000)
             self.z_step.set(10,400,0.001,200000)
 
-    def graphChangeTheme(self,theme):
-        self.graph.changeTheme(theme)
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+    def graph_chagne_theme(self,theme):
+        self.graph.change_theme(theme)
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         try:
-            self.graph.setBlackToYellowGradient()
+            self.graph.set_black_to_yellow_gradient()
         except:
             pass
 
-    def RefreshFontSize(self):
+    def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
-    def RefreshFontName(self):
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+    def refresh_font_name(self):
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
-    def show2DContourButtonPressed(self):
-        self.updateLog("Generating contour plot...")
+    def show_2D_contour_button_pressed(self):
+        self.update_log("Generating contour plot...")
         QtCore.QCoreApplication.processEvents()
-        self.show2DContourSignal.emit(self.graph.getDataArray(),-self.x_range.getValue(),self.x_range.getValue(),\
-                                      -self.z_range.getValue(),self.z_range.getValue(),self.chooseUnit.currentText(),\
+        self.SHOW_2D_CONTOUR_SIGNAL.emit(self.graph.get_data_array(),-self.x_range.get_value(),self.x_range.get_value(),\
+                                      -self.z_range.get_value(),self.z_range.get_value(),self.chooseUnit.currentText(),\
                                       self.fontSizeSlider.value(),self.fontList.currentFont().family())
 
-    def Show_2D_Contour(self, data, x_min=-10, x_max=10, z_min=-10, z_max=10, unit = "Brillouin Zone %", fontsize = 30, fontname = "Arial", fontcolor='black'):
+    def show_2D_contour(self, data, x_min=-10, x_max=10, z_min=-10, z_max=10, unit = "Brillouin Zone %", fontsize = 30, fontname = "Arial", fontcolor='black'):
         window = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(window)
         figure = plt.figure()
         canvas = FigureCanvas(figure)
         toolbar = NavigationToolbar(canvas,window)
         figure.clear()
-        x,y,intensity = self.convertToRTI(data)
+        x,y,intensity = self.convert_to_RTI(data)
         intensity_min = np.amin(np.amin(intensity))
         intensity_max = np.amax(np.amax(intensity))
         levels_fixed = [intensity_min,intensity_min+0.0005*(intensity_max-intensity_min),intensity_min+\
@@ -202,15 +202,15 @@ class Window(QtWidgets.QWidget):
                 ratio = np.amax(w)/np.amin(w)
                 FWHM = np.amax(w)+np.amin(w)
         ax.set_title("Statistical Factor Contour Plot\n(R = {:7.5f}, \u03B7 = {:5.3f}\u03C0, \u03B5 = {:5.3f})".\
-                     format(self.R_value,self.Eta.getValue(),self.Epsilon.getValue()),fontdict=font,pad=10)
+                     format(self.R_value,self.Eta.get_value(),self.Epsilon.get_value()),fontdict=font,pad=10)
         if unit == "Brillouin Zone %":
             ax.text(z_min*0.96,x_max*0.7,"Average FWHM = {:5.4f} %BZ\nStep Atom Density Asymmetric Ratio = {:5.3f}\nFWHM Asymmetric Ratio = {:5.3f}". \
-                    format(FWHM,self.AsymmetricRatio.getValue(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+                    format(FWHM,self.AsymmetricRatio.get_value(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
             ax.set_ylabel(r"$BZ_{y}\ (\%)$",fontdict=font)
             ax.set_xlabel(r"$BZ_{x}\ (\%)$",fontdict=font)
         elif unit == "\u212B\u207B\u00B9":
             ax.text(z_min*0.96,x_max*0.7,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nStep Atom Density Asymmetric Ratio = {:5.3f}\nFWHM Asymmetric Ratio = {:5.3f}". \
-                    format(FWHM,self.AsymmetricRatio.getValue(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+                    format(FWHM,self.AsymmetricRatio.get_value(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
             ax.set_ylabel(r"$K_{y} (\AA^{-1})$",fontdict=font)
             ax.set_xlabel(r"$K_{x} (\AA^{-1})$",fontdict=font)
         ax.set_ylim(x_min,x_max)
@@ -225,32 +225,32 @@ class Window(QtWidgets.QWidget):
         layout.addWidget(canvas)
         window.setWindowTitle("2D Contour")
         window.show()
-        self.updateLog('Contour plot created!')
+        self.update_log('Contour plot created!')
 
-    def convertToRTI(self,data):
+    def convert_to_RTI(self,data):
         z = [i[0].x() for i in data]
         x = [data[0][j].z() for j in range(len(data[0]))]
         y = [[i[j].y() for j in range(len(data[0]))] for i in data]
         return x,z,y
 
     def apply(self):
-        self.updateLog("Loading data ......")
+        self.update_log("Loading data ......")
         QtCore.QCoreApplication.processEvents()
-        self.R_value = self.graph.refresh(self.Eta.getValue(),self.Epsilon.getValue(),self.AsymmetricRatio.getValue(),\
-                           float(self.latticeConstant.text()),self.x_range.getValue(),self.x_step.getValue(),\
-                            self.z_range.getValue(),self.z_step.getValue(),self.chooseUnit.currentText())
+        self.R_value = self.graph.refresh(self.Eta.get_value(),self.Epsilon.get_value(),self.AsymmetricRatio.get_value(),\
+                           float(self.latticeConstant.text()),self.x_range.get_value(),self.x_step.get_value(),\
+                            self.z_range.get_value(),self.z_step.get_value(),self.chooseUnit.currentText())
         self.R_label.setText("R = {:7.5f}".format(self.R_value))
-        self.graph.fillSurfaceProxy()
-        self.graph.enableSurfaceModel(True)
-        self.graph.setBlackToYellowGradient()
+        self.graph.fill_surface_proxy()
+        self.graph.enable_surface_model(True)
+        self.graph.set_black_to_yellow_gradient()
         self.show2DContourButton.setEnabled(True)
 
-    def updateLog(self,msg):
+    def update_log(self,msg):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
 
 class SurfaceGraph(QtDataVisualization.Q3DSurface):
 
-    logMessage = QtCore.pyqtSignal(str)
+    LOG_MESSAGE = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super(SurfaceGraph,self).__init__()
@@ -267,9 +267,9 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
         self.z_range = z_range
         self.z_step = z_step
         self.unit = unit
-        return self.R(self.epsilon,self.eta)
+        return self.r_function(self.epsilon,self.eta)
 
-    def convertToDataArray(self):
+    def convert_to_data_array(self):
         countX = int(self.x_range/self.x_step)
         countZ = int(self.z_range/self.z_step)
         self.dataArray = []
@@ -283,10 +283,10 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
                     u = x + z/np.sqrt(3)
                     v = z/np.sqrt(3)*2
                     if self.unit == "Brillouin Zone %":
-                        y = self.StatisticalFactorFunction(u/100*(2*np.pi/self.lc/(np.sqrt(3)/2)),\
+                        y = self.statistical_factor_function(u/100*(2*np.pi/self.lc/(np.sqrt(3)/2)),\
                                                     v/100*2*np.pi/self.lc/(np.sqrt(3)/2),self.epsilon,self.eta,self.ratio)
                     elif self.unit == "\u212B\u207B\u00B9":
-                        y = self.StatisticalFactorFunction(u,v,self.epsilon,self.eta,self.ratio)
+                        y = self.statistical_factor_function(u,v,self.epsilon,self.eta,self.ratio)
                 else:
                     x = 0
                     y = 1
@@ -297,20 +297,20 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
             self.dataArray.append(row)
         return self.dataArray
 
-    def getDataArray(self):
+    def get_data_array(self):
         return self.dataArray
 
-    def StatisticalFactorFunction(self,u,v,epsilon,eta,r):
-        asymmetric_epsilon, angle = self.AsymmetricEpsilon(u,v,epsilon,r)
-        R = self.R(asymmetric_epsilon,eta)
+    def statistical_factor_function(self,u,v,epsilon,eta,r):
+        asymmetric_epsilon, angle = self.asymetric_epsilon(u,v,epsilon,r)
+        R = self.r_function(asymmetric_epsilon,eta)
         result = ((1-R**3)**2-R**2*(1-R)**2*(3+2*(np.cos(u)+np.cos(v)+np.cos(u-v))))/((1-2*R*np.cos(u)+R**2)*(1-2*R*np.cos(v)+R**2)*(1-2*R*np.cos(u-v)+R**2))
         max = ((1-R**3)**2-R**2*(1-R)**2*(3+2*3))/((1-2*R+R**2)*(1-2*R+R**2)*(1-2*R+R**2))
         return result/max
 
-    def R(self,epsilon,eta):
+    def r_function(self,epsilon,eta):
         return 1-epsilon*(1-np.cos(eta))
 
-    def AsymmetricEpsilon(self,u,v,epsilon,r):
+    def asymetric_epsilon(self,u,v,epsilon,r):
         h = epsilon*(r-1)/(r+1)
         x = u-v/2
         y = np.sqrt(3)/2*v
@@ -337,11 +337,11 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
         return epsilon+h*np.cos(6*angle), angle
 
 
-    def fillSurfaceProxy(self):
-        dataArray = self.convertToDataArray()
+    def fill_surface_proxy(self):
+        dataArray = self.convert_to_data_array()
         self.SurfaceProxy.resetArray(dataArray)
 
-    def enableSurfaceModel(self,enable):
+    def enable_surface_model(self,enable):
         if enable:
             for series in self.seriesList():
                 self.removeSeries(series)
@@ -372,15 +372,15 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
             self.axisY().setLabelAutoRotation(90)
             self.axisZ().setLabelAutoRotation(30)
             self.addSeries(self.SurfaceSeries)
-            self.logMessage.emit("DataArray Loaded!")
+            self.LOG_MESSAGE.emit("DataArray Loaded!")
 
-    def changeFonts(self,fontname,fontsize):
+    def change_fonts(self,fontname,fontsize):
         self.activeTheme().setFont(QtGui.QFont(fontname,fontsize))
 
-    def changeTheme(self, theme):
+    def change_theme(self, theme):
         self.activeTheme().setType(QtDataVisualization.Q3DTheme.Theme(theme))
 
-    def setBlackToYellowGradient(self):
+    def set_black_to_yellow_gradient(self):
         self.gr = QtGui.QLinearGradient()
         self.gr.setColorAt(0.0, QtCore.Qt.darkBlue)
         self.gr.setColorAt(0.05, QtCore.Qt.blue)
@@ -392,7 +392,7 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
         self.seriesList()[0].setBaseGradient(self.gr)
         self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyleRangeGradient)
 
-    def setGreenToRedGradient(self):
+    def set_green_to_red_gradient(self):
         self.gr = QtGui.QLinearGradient()
         self.gr.setColorAt(0.0, QtCore.Qt.darkGreen)
         self.gr.setColorAt(0.5, QtCore.Qt.yellow)
@@ -401,7 +401,7 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
         self.seriesList()[0].setBaseGradient(self.gr)
         self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyleRangeGradient)
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -410,7 +410,7 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)

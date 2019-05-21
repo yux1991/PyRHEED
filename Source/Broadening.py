@@ -3,24 +3,24 @@ import numpy as np
 import os
 import glob
 import configparser
-from Process import Image, Fit, FitBroadening
-import ProfileChart
-import GenerateReport
-import ManualFit
-from MyWidgets import *
+from process import Image, Fit, FitBroadening
+import profile_chart
+import generate_report
+import manual_fit
+from my_widgets import *
 
 class Window(QtCore.QObject):
 
     #Public Signals
-    StatusRequested = QtCore.pyqtSignal()
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressEnd = QtCore.pyqtSignal()
-    connectToCanvas = QtCore.pyqtSignal()
-    drawLineRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
-    drawRectRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
-    color = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
-    fontsChanged = QtCore.pyqtSignal(str,int)
-    stopWorker = QtCore.pyqtSignal()
+    STATUS_REQUESTED = QtCore.pyqtSignal()
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_END = QtCore.pyqtSignal()
+    CONNECT_TO_CANVAS = QtCore.pyqtSignal()
+    DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
+    DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    COLOR = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
+    FONTS_CHANGED = QtCore.pyqtSignal(str,int)
+    STOP_WORKER = QtCore.pyqtSignal()
 
     def __init__(self):
         super(Window,self).__init__()
@@ -38,7 +38,7 @@ class Window(QtCore.QObject):
             except:
                 pass
 
-    def Main(self,path):
+    def main(self,path):
         self.startIndex = "0"
         self.endIndex = "3"
         self.range = "5"
@@ -63,7 +63,7 @@ class Window(QtCore.QObject):
         self.chooseSourceLabel = QtWidgets.QLabel("The source directory is:\n"+self.currentSource)
         self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
         self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        self.chooseSourceButton.clicked.connect(self.Choose_Source)
+        self.chooseSourceButton.clicked.connect(self.choose_source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
         self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
@@ -78,7 +78,7 @@ class Window(QtCore.QObject):
         self.fileType.addItem(".xlsx",".xlsx")
         self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
         self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        self.chooseDestinationButton.clicked.connect(self.Choose_Destination)
+        self.chooseDestinationButton.clicked.connect(self.choose_destination)
         self.saveResultLabel = QtWidgets.QLabel("Save Results?")
         self.saveResult = QtWidgets.QCheckBox()
         self.saveResult.setChecked(False)
@@ -114,14 +114,14 @@ class Window(QtCore.QObject):
         self.fontListLabel = QtWidgets.QLabel("Change Font")
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
-        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(12))
         self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(12)
-        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.fontSizeSlider.valueChanged.connect(self.refresh_font_size)
         self.appearanceGrid.addWidget(self.fontListLabel,0,0)
         self.appearanceGrid.addWidget(self.fontList,0,1)
         self.appearanceGrid.addWidget(self.fontSizeLabel,1,0)
@@ -138,11 +138,11 @@ class Window(QtCore.QObject):
         self.numberOfPeaksCombo.addItem('7','7')
         self.numberOfPeaksCombo.addItem('9','9')
         self.numberOfPeaksCombo.addItem('11','11')
-        self.numberOfPeaksCombo.currentIndexChanged.connect(self.numberOfPeaksChanged)
+        self.numberOfPeaksCombo.currentIndexChanged.connect(self.number_of_peaks_changed)
         self.includeBG = QtWidgets.QLabel("Include Gaussian Background?")
         self.BGCheck = QtWidgets.QCheckBox()
         self.BGCheck.setChecked(False)
-        self.BGCheck.stateChanged.connect(self.BGCheckChanged)
+        self.BGCheck.stateChanged.connect(self.background_check_changed)
         self.FTolLabel = QtWidgets.QLabel("Cost Function Tolerance")
         self.FTolEdit = QtWidgets.QLineEdit(self.FTol)
         self.XTolLabel = QtWidgets.QLabel("Variable Tolerance")
@@ -163,7 +163,7 @@ class Window(QtCore.QObject):
         self.loss.addItem('Cauchy','cauchy')
         self.loss.addItem('Arctan','arctan')
         self.ManualFitButton = QtWidgets.QPushButton("Manual Fit")
-        self.ManualFitButton.clicked.connect(self.ShowManualFit)
+        self.ManualFitButton.clicked.connect(self.show_manual_fit)
         self.offset = LabelSlider(0,100,0,100,'Offset')
         self.fitOptionsGrid.addWidget(self.numberOfPeaksLabel,0,0)
         self.fitOptionsGrid.addWidget(self.numberOfPeaksCombo,0,1)
@@ -194,8 +194,8 @@ class Window(QtCore.QObject):
         self.progressBarSizePolicy = self.progressBar.sizePolicy()
         self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
         self.progressBar.setSizePolicy(self.progressBarSizePolicy)
-        self.progressAdvance.connect(self.progress)
-        self.progressEnd.connect(self.progressReset)
+        self.PROGRESS_ADVANCE.connect(self.progress)
+        self.PROGRESS_END.connect(self.progress_reset)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
                                     "\u00A0\u00A0\u00A0\u00A0Initialized!")
         self.logBox.ensureCursorVisible()
@@ -214,28 +214,28 @@ class Window(QtCore.QObject):
         self.ButtonBox.addButton("Quit",QtWidgets.QDialogButtonBox.DestructiveRole)
         self.ButtonBox.setCenterButtons(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked.\
-            connect(self.Start)
+            connect(self.start)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked. \
-            connect(self.Stop)
+            connect(self.stop)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.\
-            connect(self.Reset)
+            connect(self.reset)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].clicked.\
-            connect(self.Reject)
+            connect(self.reject)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         self.GenerateReportButton = QtWidgets.QPushButton("Generate Report")
         self.GenerateReportButton.setEnabled(False)
-        self.GenerateReportButton.clicked.connect(self.GenerateBroadeningReport)
+        self.GenerateReportButton.clicked.connect(self.generate_broadening_report)
         self.chartTitle = QtWidgets.QLabel('Profile')
-        self.chart = ProfileChart.ProfileChart(self.config)
-        self.chart.setFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
-        self.fontsChanged.connect(self.chart.adjustFonts)
+        self.chart = profile_chart.ProfileChart(self.config)
+        self.chart.set_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.FONTS_CHANGED.connect(self.chart.adjust_fonts)
         self.costChartTitle = QtWidgets.QLabel('Cost Function')
-        self.costChart = ProfileChart.ProfileChart(self.config)
-        self.costChart.setFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
-        self.fontsChanged.connect(self.costChart.adjustFonts)
+        self.costChart = profile_chart.ProfileChart(self.config)
+        self.costChart.set_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.FONTS_CHANGED.connect(self.costChart.adjust_fonts)
         self.table = QtWidgets.QTableWidget()
         self.table.setColumnCount(9)
         self.table.setHorizontalHeaderItem(0,QtWidgets.QTableWidgetItem('C'))
@@ -251,10 +251,10 @@ class Window(QtCore.QObject):
         self.table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
         self.table.setMinimumHeight(200)
         self.table.setRowCount(int(self.numberOfPeaksCombo.currentData()))
-        self.Table_Auto_Initilize()
+        self.table_auto_initialize()
         for i in range(1,int(self.numberOfPeaksCombo.currentData())+1):
             item = QtWidgets.QTableWidgetItem('Peak {}'.format(i))
-            item.setForeground(QtGui.QColor(self.color[i-1]))
+            item.setForeground(QtGui.QColor(self.COLOR[i-1]))
             self.table.setVerticalHeaderItem(i-1,item)
         self.LeftGrid.addWidget(self.chooseSource,0,0)
         self.LeftGrid.addWidget(self.chooseDestination,1,0)
@@ -280,26 +280,26 @@ class Window(QtCore.QObject):
         center = desktopRect.center()
         self.Dialog.move(center.x()-self.Dialog.width()*0.5,center.y()-self.Dialog.height()*0.5)
 
-    def Choose_Source(self):
+    def choose_source(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose source directory",self.currentSource,QtWidgets.QFileDialog.ShowDirsOnly)
         self.currentSource = path
         self.chooseSourceLabel.setText("The source directory is:\n"+self.currentSource)
 
-    def Choose_Destination(self):
+    def choose_destination(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",self.currentDestination,QtWidgets.QFileDialog.ShowDirsOnly)
         self.currentDestination = path
         self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
 
-    def RefreshFontSize(self):
+    def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
-    def RefreshFontName(self):
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+    def refresh_font_name(self):
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
     def prepare(self):
-        if self.TableIsReady():
-            self.StatusRequested.emit()
+        if self.table_is_ready():
+            self.STATUS_REQUESTED.emit()
             self.windowDefault = dict(self.config['windowDefault'].items())
             self.logBox.clear()
             if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
@@ -320,7 +320,7 @@ class Window(QtCore.QObject):
             saveFileName = self.destinationNameEdit.text()
             fileType = self.fileType.currentData()
             analysisRange = float(self.rangeEdit.text())
-            self.initialparameters = self.initialParameters()
+            self.initialparameters = self.initial_parameters()
             self.reportPath = self.currentDestination+"/"+saveFileName+fileType
             if self.saveResult.checkState() == 2:
                 self.output = open(self.reportPath,mode='w')
@@ -349,14 +349,14 @@ class Window(QtCore.QObject):
                     self.status["endY"] == ""\
                 or self.status["width"] =="":
                 self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0ERROR: Please choose the region!")
-                self.Raise_Error("Please choose the region!")
+                self.raise_error("Please choose the region!")
                 return False
             elif self.status["choosedX"] == "" or self.status["choosedY"] == "":
                 self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0ERROR: Please choose the origin!")
-                self.Raise_Error("Please choose the origin!")
+                self.raise_error("Please choose the origin!")
                 return False
             else:
-                self.connectToCanvas.emit()
+                self.CONNECT_TO_CANVAS.emit()
                 start = QtCore.QPointF()
                 end = QtCore.QPointF()
                 origin = QtCore.QPointF()
@@ -370,29 +370,29 @@ class Window(QtCore.QObject):
                 self.broadening_worker = FitBroadening(path,self.initialparameters,startIndex,endIndex,origin,start,end,width,analysisRange,scale_factor,autoWB,brightness,blackLevel,image_crop,\
                                                        int(self.numberOfPeaksCombo.currentData()),self.BGCheck.checkState(),self.saveResult.checkState(),self.guess,(self.bound_low,self.bound_high),float(self.FTolEdit.text()),\
                                                         float(self.XTolEdit.text()),float(self.GTolEdit.text()),self.method.currentData(),self.loss.currentData())
-                self.broadening_worker.updateResults.connect(self.updateResults)
-                self.broadening_worker.updateLog.connect(self.updateLog)
-                self.broadening_worker.writeOutput.connect(self.writeResults)
-                self.broadening_worker.closeOutput.connect(self.closeResults)
-                self.broadening_worker.attention.connect(self.Raise_Attention)
-                self.broadening_worker.progressAdvance.connect(self.progress)
-                self.broadening_worker.progressEnd.connect(self.progressReset)
-                self.broadening_worker.finished.connect(self.ProcessFinished)
-                self.broadening_worker.drawLineRequested.connect(self.drawLineRequested)
-                self.broadening_worker.drawRectRequested.connect(self.drawRectRequested)
-                self.broadening_worker.addCostFunction.connect(self.plotCostFunction)
-                self.broadening_worker.addPlot.connect(self.plotResults)
+                self.broadening_worker.UPDATE_RESULTS.connect(self.update_results)
+                self.broadening_worker.UPDATE_LOG.connect(self.update_log)
+                self.broadening_worker.WRITE_OUTPUT.connect(self.write_results)
+                self.broadening_worker.CLOSE_OUTPUT.connect(self.close_results)
+                self.broadening_worker.ATTENTION.COnnect(self.raise_attention)
+                self.broadening_worker.PROGRESS_ADVANCE.connect(self.progress)
+                self.broadening_worker.PROGRESS_END.connect(self.progress_reset)
+                self.broadening_worker.FINISHED.CONnect(self.process_finished)
+                self.broadening_worker.DRAW_LINE_REQUESTED.connect(self.DRAW_LINE_REQUESTED)
+                self.broadening_worker.DRAW_RECT_REQUESTED.connect(self.DRAW_RECT_REQUESTED)
+                self.broadening_worker.ADD_COSTFUNCTION.connect(self.plot_cost_function)
+                self.broadening_worker.ADD_PLOT.connect(self.plot_results)
 
                 self.thread = QtCore.QThread()
                 self.broadening_worker.moveToThread(self.thread)
-                self.broadening_worker.finished.connect(self.thread.quit)
+                self.broadening_worker.FINISHED.connect(self.thread.quit)
                 self.thread.started.connect(self.broadening_worker.run)
-                self.stopWorker.connect(self.broadening_worker.stop)
+                self.STOP_WORKER.connect(self.broadening_worker.stop)
                 return True
         else:
             return False
 
-    def Start(self):
+    def start(self):
         self.worker_is_ready = self.prepare()
         if self.worker_is_ready:
             self.thread.start()
@@ -403,8 +403,8 @@ class Window(QtCore.QObject):
             self.GenerateReportButton.setEnabled(False)
             self.fitOptions.setEnabled(False)
 
-    def Stop(self):
-        self.stopWorker.emit()
+    def stop(self):
+        self.STOP_WORKER.emit()
         if self.thread.isRunning():
             self.thread.terminate()
             self.thread.wait()
@@ -414,36 +414,36 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         self.fitOptions.setEnabled(True)
 
-    def writeResults(self,results):
+    def write_results(self,results):
         self.output.write(results)
 
-    def closeResults(self):
+    def close_results(self):
         self.output.close()
         self.GenerateReportButton.setEnabled(True)
 
-    def ProcessFinished(self):
-        self.progressReset()
+    def process_finished(self):
+        self.progress_reset()
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         self.fitOptions.setEnabled(True)
 
-    def updateLog(self,message):
+    def update_log(self,message):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0" + message)
 
-    def Reject(self):
+    def reject(self):
         self.Dialog.close()
 
-    def initialParameters(self):
+    def initial_parameters(self):
         para = []
         for j in [3,0,6]:
             for i in range(self.table.rowCount()):
                 para.append(float(self.table.item(i,j).text()))
-        para.append(float(self.offset.getValue()))
+        para.append(float(self.offset.get_value()))
         return para
 
-    def updateResults(self,results):
+    def update_results(self,results):
         index=0
         for j in [3,0,6]:
             for i in range(self.table.rowCount()):
@@ -472,18 +472,18 @@ class Window(QtCore.QObject):
                 index+=1
         self.offset.setValue(results[-1])
 
-    def plotCostFunction(self,iteration,cost,text):
-        self.costChart.addChart(iteration,cost,text)
+    def plot_cost_function(self,iteration,cost,text):
+        self.costChart.add_chart(iteration,cost,text)
 
-    def plotResults(self,x0,y0):
-        self.chart.addChart(x0,y0)
-        total = np.full(len(x0),float(self.offset.getValue()))
+    def plot_results(self,x0,y0):
+        self.chart.add_chart(x0,y0)
+        total = np.full(len(x0),float(self.offset.get_value()))
         total_min = 100
         for i in range(self.table.rowCount()):
             center = float(self.table.item(i,0).text())
             height = float(self.table.item(i,3).text())
             width = float(self.table.item(i,6).text())
-            offset = float(self.offset.getValue())
+            offset = float(self.offset.get_value())
             fit = self.fit_worker.gaussian(x0,height,center,width,offset)
             fit0 = self.fit_worker.gaussian(x0,height,center,width,0)
             total = np.add(total,fit0)
@@ -493,7 +493,7 @@ class Window(QtCore.QObject):
             if min(minH1,minH2) < total_min:
                 total_min = min(minH1,minH2)
             pen = QtGui.QPen(QtCore.Qt.DotLine)
-            pen.setColor(QtGui.QColor(self.color[i]))
+            pen.setColor(QtGui.QColor(self.COLOR[i]))
             pen.setWidth(2)
             series_fit = QtChart.QLineSeries()
             series_fit.setPen(pen)
@@ -516,7 +516,7 @@ class Window(QtCore.QObject):
         self.chart.profileChart.axisY().setRange(min(total[0],total[-1],np.amin(y0),total_min),max(np.amax(total),np.amax(y0)))
         QtCore.QCoreApplication.processEvents()
 
-    def Reset(self):
+    def reset(self):
         self.currentSource = self.path
         self.currentDestination = self.currentSource
         self.numberOfPeaksCombo.setCurrentText('1')
@@ -530,7 +530,7 @@ class Window(QtCore.QObject):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Reset Successful!")
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Ready to Start!")
 
-    def Table_Auto_Initilize(self):
+    def table_auto_initialize(self):
         self.table.disconnect()
         for r in range(0,self.table.rowCount()):
             valueList = ['1','0','5','1','0','5','1','0','5']
@@ -540,20 +540,20 @@ class Window(QtCore.QObject):
                 if c == 0 or c == 3 or c == 6:
                     item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
                 self.table.setItem(r,c,item)
-        self.SaveTableContents()
-        self.table.cellChanged.connect(self.SaveTableContents)
+        self.save_table_contents()
+        self.table.cellChanged.connect(self.save_table_contents)
 
-    def TableIsReady(self):
+    def table_is_ready(self):
         B = True
         for j in [3,0,6]:
             for i in range(self.table.rowCount()):
                 if not (float(self.table.item(i,j).text()) >= float(self.table.item(i,j+1).text()) \
                         and float(self.table.item(i,j).text()) <= float(self.table.item(i,j+2).text())):
-                    self.Raise_Error('Wrong table entry at cell ({},{})'.format(i,j))
+                    self.raise_error('Wrong table entry at cell ({},{})'.format(i,j))
                     B = False
         return B
 
-    def SaveTableContents(self,row=0,column=0):
+    def save_table_contents(self,row=0,column=0):
         self.guess = []
         self.bound_low = []
         self.bound_high = []
@@ -566,57 +566,57 @@ class Window(QtCore.QObject):
         for j in [5,2,8]:
             for i in range(self.table.rowCount()):
                 self.bound_high.append(float(self.table.item(i,j).text()))
-        self.guess.append(float(self.offset.getValue()))
+        self.guess.append(float(self.offset.get_value()))
         self.bound_low.append(0)
         self.bound_high.append(1)
 
-    def numberOfPeaksChanged(self):
+    def number_of_peaks_changed(self):
         self.table.setRowCount(int(self.numberOfPeaksCombo.currentData()))
         for i in range(1,int(self.numberOfPeaksCombo.currentData())+1):
             item = QtWidgets.QTableWidgetItem('Peak {}'.format(i))
-            item.setForeground(QtGui.QColor(self.color[i-1]))
+            item.setForeground(QtGui.QColor(self.COLOR[i-1]))
             self.table.setVerticalHeaderItem(i-1,item)
         if self.BGCheck.checkState() == 2:
             self.table.setRowCount(self.table.rowCount()+1)
             item = QtWidgets.QTableWidgetItem('BG')
-            item.setForeground(QtGui.QColor(self.color[self.table.rowCount()-1]))
+            item.setForeground(QtGui.QColor(self.COLOR[self.table.rowCount()-1]))
             self.table.setVerticalHeaderItem(self.table.rowCount()-1,item)
-        self.Table_Auto_Initilize()
+        self.table_auto_initialize()
 
-    def BGCheckChanged(self,state):
+    def background_check_changed(self,state):
         if state == 2:
             self.table.setRowCount(self.table.rowCount()+1)
             item = QtWidgets.QTableWidgetItem('BG')
-            item.setForeground(QtGui.QColor(self.color[self.table.rowCount()-1]))
+            item.setForeground(QtGui.QColor(self.COLOR[self.table.rowCount()-1]))
             self.table.setVerticalHeaderItem(self.table.rowCount()-1,item)
         elif state == 0:
             self.table.removeRow(self.table.rowCount()-1)
-        self.Table_Auto_Initilize()
+        self.table_auto_initialize()
 
 
-    def GenerateBroadeningReport(self):
-        self.broadeningReport = GenerateReport.Window()
-        self.broadeningReport.Main(self.reportPath,True)
+    def generate_broadening_report(self):
+        self.broadeningReport = generate_report.Window()
+        self.broadeningReport.main(self.reportPath,True)
 
-    def ShowManualFit(self):
-        self.StatusRequested.emit()
-        self.ManualFitWindow = ManualFit.Window(self.fontList.currentFont().family(),self.fontSizeSlider.value())
-        self.ManualFitWindow.FitSatisfied.connect(self.updateResults)
-        self.ManualFitWindow.Set_Status(self.status)
+    def show_manual_fit(self):
+        self.STATUS_REQUESTED.emit()
+        self.ManualFitWindow = manual_fit.Window(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.ManualFitWindow.FIT_SATISFIED.connect(self.update_results)
+        self.ManualFitWindow.set_status(self.status)
         path = os.path.join(self.currentSource,'*.nef')
         startIndex = int(self.startImageIndexEdit.text())
         image_list = []
         for filename in glob.glob(path):
             image_list.append(filename)
         if not image_list == []:
-            self.ManualFitWindow.Main(image_list[startIndex],self.table.rowCount(),self.BGCheck.checkState())
+            self.ManualFitWindow.main(image_list[startIndex],self.table.rowCount(),self.BGCheck.checkState())
         else:
-            self.Raise_Error("Please open an image first")
+            self.raise_error("Please open an image first")
 
-    def Set_Status(self,status):
+    def set_status(self,status):
         self.status = status
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -625,7 +625,7 @@ class Window(QtCore.QObject):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)
@@ -640,6 +640,6 @@ class Window(QtCore.QObject):
         self.progressBar.setMaximum(max)
         self.progressBar.setValue(val)
 
-    def progressReset(self):
+    def progress_reset(self):
         self.progressBar.reset()
         self.progressBar.setVisible(False)

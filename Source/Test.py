@@ -1,10 +1,10 @@
 import unittest
-import SimulateRHEED
+import simulate_RHEED
 
 class Test(unittest.TestCase):
 
     def setUp(self):
-        self.simuRHEED = SimulateRHEED.SimulateRHEEDPattern.Main()
+        self.simuRHEED = simulate_RHEED.Window.main()
 
 if __name__ == '__main__':
     unittest.main()

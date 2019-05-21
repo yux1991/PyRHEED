@@ -1,21 +1,21 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 import os
 import configparser
-from Process import Image, Convertor, ReciprocalSpaceMap
-import ProfileChart
+from process import Image, Convertor, ReciprocalSpaceMap
+import profile_chart
 
 class Window(QtCore.QObject):
     #Public Signals
-    StatusRequested = QtCore.pyqtSignal()
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressEnd = QtCore.pyqtSignal()
-    Show3DGraph = QtCore.pyqtSignal(str)
-    Show2DContour = QtCore.pyqtSignal(str,bool,float,float,float,float,int,str)
-    fontsChanged = QtCore.pyqtSignal(str,int)
-    drawLineRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
-    drawRectRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
-    connectToCanvas = QtCore.pyqtSignal()
-    stopWorker = QtCore.pyqtSignal()
+    STATUS_REQUESTED = QtCore.pyqtSignal()
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_END = QtCore.pyqtSignal()
+    SHOW_3D_GRAPH = QtCore.pyqtSignal(str)
+    SHOW_2D_CONTOUR = QtCore.pyqtSignal(str,bool,float,float,float,float,int,str)
+    FONTS_CHANGED = QtCore.pyqtSignal(str,int)
+    DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
+    DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    CONNECT_TO_CANVAS = QtCore.pyqtSignal()
+    STOP_WORKER = QtCore.pyqtSignal()
 
     def __init__(self):
         super(Window,self).__init__()
@@ -32,7 +32,7 @@ class Window(QtCore.QObject):
         except:
             pass
 
-    def Main(self,path):
+    def main(self,path):
         self.levelMin = 0
         self.levelMax = 100
         self.numberOfContourLevels = 5
@@ -56,7 +56,7 @@ class Window(QtCore.QObject):
         self.chooseSourceLabel = QtWidgets.QLabel("The source directory is:\n"+self.currentSource)
         self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
         self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        self.chooseSourceButton.clicked.connect(self.Choose_Source)
+        self.chooseSourceButton.clicked.connect(self.choose_source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
         self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
@@ -89,7 +89,7 @@ class Window(QtCore.QObject):
         self.coordinate.addButton(self.cartesian)
         self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
         self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        self.chooseDestinationButton.clicked.connect(self.Choose_Destination)
+        self.chooseDestinationButton.clicked.connect(self.choose_destination)
         self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0)
         self.destinationGrid.addWidget(self.chooseDestinationButton,0,1)
         self.destinationGrid.addWidget(self.destinationNameLabel,1,0)
@@ -120,8 +120,8 @@ class Window(QtCore.QObject):
         self.threeD = QtWidgets.QCheckBox("3D")
         self.poleFigure = QtWidgets.QCheckBox("Pole Figure")
         self.twoD.setChecked(True)
-        self.threeD.stateChanged.connect(self.dimensionChanged)
-        self.poleFigure.stateChanged.connect(self.poleFigureCheckChanged)
+        self.threeD.stateChanged.connect(self.dimension_changed)
+        self.poleFigure.stateChanged.connect(self.pole_figure_check_changed)
         self.coordnateGrid.addWidget(self.twoD,0,0)
         self.coordnateGrid.addWidget(self.threeD,0,1)
         self.coordnateGrid.addWidget(self.poleFigure,0,2)
@@ -156,14 +156,14 @@ class Window(QtCore.QObject):
         self.fontListLabel = QtWidgets.QLabel("Change Font")
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
-        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(12))
         self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(12)
-        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.fontSizeSlider.valueChanged.connect(self.refresh_font_size)
         self.appearanceGrid.addWidget(self.fontListLabel,0,0)
         self.appearanceGrid.addWidget(self.fontList,0,1)
         self.appearanceGrid.addWidget(self.fontSizeLabel,1,0)
@@ -183,38 +183,38 @@ class Window(QtCore.QObject):
         self.levelMinSlider.setMinimum(0)
         self.levelMinSlider.setMaximum(100)
         self.levelMinSlider.setValue(self.levelMin)
-        self.levelMinSlider.valueChanged.connect(self.Refresh_Level_Min)
+        self.levelMinSlider.valueChanged.connect(self.refresh_level_min)
         self.levelMaxLabel = QtWidgets.QLabel("Level Max ({})".format(self.levelMax/100))
         self.levelMaxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.levelMaxSlider.setMinimum(0)
         self.levelMaxSlider.setMaximum(100)
         self.levelMaxSlider.setValue(self.levelMax)
-        self.levelMaxSlider.valueChanged.connect(self.Refresh_Level_Max)
+        self.levelMaxSlider.valueChanged.connect(self.refresh_level_max)
         self.radiusMinLabel = QtWidgets.QLabel("Radius Min ({})".format(0.0))
         self.radiusMinSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.radiusMinSlider.setMinimum(0)
         self.radiusMinSlider.setMaximum(1000)
         self.radiusMinSlider.setValue(0)
-        self.radiusMinSlider.valueChanged.connect(self.Refresh_Radius_Min)
+        self.radiusMinSlider.valueChanged.connect(self.refresh_radius_min)
         self.radiusMaxLabel = QtWidgets.QLabel("Radius Max ({})".format(10.0))
         self.radiusMaxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.radiusMaxSlider.setMinimum(0)
         self.radiusMaxSlider.setMaximum(1000)
         self.radiusMaxSlider.setValue(1000)
-        self.radiusMaxSlider.valueChanged.connect(self.Refresh_Radius_Max)
+        self.radiusMaxSlider.valueChanged.connect(self.refresh_radius_max)
         self.numberOfContourLevelsLabel = QtWidgets.QLabel("Number of Contour Levels ({})".format(self.numberOfContourLevels))
         self.numberOfContourLevelsLabel.setFixedWidth(160)
         self.numberOfContourLevelsSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.numberOfContourLevelsSlider.setMinimum(5)
         self.numberOfContourLevelsSlider.setMaximum(100)
         self.numberOfContourLevelsSlider.setValue(self.numberOfContourLevels)
-        self.numberOfContourLevelsSlider.valueChanged.connect(self.Refresh_Number_Of_Contour_Levels)
+        self.numberOfContourLevelsSlider.valueChanged.connect(self.refresh_number_of_contour_levels)
         self.Show3DGraphButton = QtWidgets.QPushButton("Show 3D Surface")
         self.Show3DGraphButton.setEnabled(False)
-        self.Show3DGraphButton.clicked.connect(self.Show3DGraphButtonClicked)
+        self.Show3DGraphButton.clicked.connect(self.show_3D_graph_button_clicked)
         self.Show2DContourButton = QtWidgets.QPushButton("Show 2D Contour")
         self.Show2DContourButton.setEnabled(False)
-        self.Show2DContourButton.clicked.connect(self.Show2DContourButtonClicked)
+        self.Show2DContourButton.clicked.connect(self.show_2D_contour_button_clicked)
         self.plotOptionsGrid.addWidget(self.colormapLabel,0,0)
         self.plotOptionsGrid.addWidget(self.colormap,0,1)
         self.plotOptionsGrid.addWidget(self.levelMinLabel,1,0)
@@ -235,17 +235,19 @@ class Window(QtCore.QObject):
         self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.progressBar = QtWidgets.QProgressBar()
-        self.progressBar.setFixedHeight(12)
-        self.progressBar.setFixedWidth(500)
         self.progressBar.setVisible(False)
         self.progressBar.setOrientation(QtCore.Qt.Horizontal)
         self.progressBarSizePolicy = self.progressBar.sizePolicy()
         self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
+        self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Expanding)
         self.progressBar.setSizePolicy(self.progressBarSizePolicy)
-        self.progressAdvance.connect(self.progress)
-        self.progressEnd.connect(self.progressReset)
+        self.PROGRESS_ADVANCE.connect(self.progress)
+        self.PROGRESS_END.connect(self.progress_reset)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
                                     "\u00A0\u00A0\u00A0\u00A0Initialized!")
+        self.logCursor = QtGui.QTextCursor(self.logBox.document())
+        self.logCursor.movePosition(QtGui.QTextCursor.End)
+        self.logBox.setTextCursor(self.logCursor)
         self.logBox.ensureCursorVisible()
         self.logBox.setAlignment(QtCore.Qt.AlignTop)
         self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -262,17 +264,17 @@ class Window(QtCore.QObject):
         self.ButtonBox.addButton("Quit",QtWidgets.QDialogButtonBox.DestructiveRole)
         self.ButtonBox.setCenterButtons(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked.\
-            connect(self.Start)
+            connect(self.start)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked. \
-            connect(self.Stop)
+            connect(self.stop)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.\
-            connect(self.Reset)
+            connect(self.reset)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].clicked.\
-            connect(self.Reject)
-        self.chart = ProfileChart.ProfileChart(self.config)
-        self.fontsChanged.connect(self.chart.adjustFonts)
-        self.chart.setFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+            connect(self.reject)
+        self.chart = profile_chart.ProfileChart(self.config)
+        self.FONTS_CHANGED.connect(self.chart.adjust_fonts)
+        self.chart.set_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.kperpLabel = QtWidgets.QLabel("")
         self.LeftGrid.addWidget(self.chooseSource,0,0)
         self.LeftGrid.addWidget(self.chooseDestination,1,0)
@@ -293,15 +295,15 @@ class Window(QtCore.QObject):
         center = desktopRect.center()
         self.Dialog.move(center.x()-self.Dialog.width()*0.5,center.y()-self.Dialog.height()*0.5)
 
-    def Show3DGraphButtonClicked(self):
-        self.Show3DGraph.emit(self.graphTextPath)
+    def show_3D_graph_button_clicked(self):
+        self.SHOW_3D_GRAPH.emit(self.graphTextPath)
 
-    def Show2DContourButtonClicked(self):
-        self.Show2DContour.emit(self.graphTextPath, False, self.levelMinSlider.value()/100,self.levelMaxSlider.value()/100,\
+    def show_2D_contour_button_clicked(self):
+        self.SHOW_2D_CONTOUR.emit(self.graphTextPath, False, self.levelMinSlider.value()/100,self.levelMaxSlider.value()/100,\
                                 self.radiusMinSlider.value()/100,self.radiusMaxSlider.value()/100,self.numberOfContourLevelsSlider.value(),\
                                 self.colormap.currentText())
 
-    def dimensionChanged(self,state):
+    def dimension_changed(self,state):
         if state == 0:
             self.rangeEdit.setEnabled(False)
             self.grouping.setEnabled(False)
@@ -311,19 +313,19 @@ class Window(QtCore.QObject):
             self.grouping.setEnabled(True)
             self.plotOptions.setEnabled(False)
 
-    def poleFigureCheckChanged(self,state):
+    def pole_figure_check_changed(self,state):
         if state == 0:
             self.coordinateFrame.setEnabled(True)
         elif state == 2:
             self.coordinateFrame.setEnabled(False)
 
-    def updateLog(self,message):
+    def update_log(self,message):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+message)
 
-    def updateChart(self,RC,I,type="arc"):
-        self.chart.addChart(RC,I,type=type)
+    def update_chart(self,RC,I,type="arc"):
+        self.chart.add_chart(RC,I,type=type)
 
-    def FileSaved(self,path):
+    def file_saved(self,path):
         self.Show3DGraphButton.setEnabled(True)
         self.Show2DContourButton.setEnabled(True)
         self.graphTextPath = path
@@ -332,7 +334,7 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
 
-    def ProcessFinished(self):
+    def process_finished(self):
         self.Show3DGraphButton.setEnabled(True)
         self.Show2DContourButton.setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
@@ -340,11 +342,11 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
 
-    def setChartTitle(self,text):
+    def set_chart_title(self,text):
         self.kperpLabel.setText(text)
 
     def prepare(self):
-        self.StatusRequested.emit()
+        self.STATUS_REQUESTED.emit()
         self.windowDefault = dict(self.config['windowDefault'].items())
         self.logBox.clear()
         self.Show3DGraphButton.setEnabled(False)
@@ -363,28 +365,28 @@ class Window(QtCore.QObject):
         self.reciprocal_space_worker = ReciprocalSpaceMap(self.status,path,self.windowDefault,self.poleFigure.isChecked(),self.centeredCheck.isChecked(),\
                                                           self.saveResults.isChecked(),self.twoD.isChecked(),self.cartesian.isChecked(),\
                                                           startIndex,endIndex,analysisRange,self.currentDestination,saveFileName,fileType,self.grouping.value())
-        self.reciprocal_space_worker.progressAdvance.connect(self.progress)
-        self.reciprocal_space_worker.progressEnd.connect(self.progressReset)
-        self.reciprocal_space_worker.connectToCanvas.connect(self.connectToCanvas)
-        self.reciprocal_space_worker.updateLog.connect(self.updateLog)
-        self.reciprocal_space_worker.updateChart.connect(self.updateChart)
-        self.reciprocal_space_worker.fileSaved.connect(self.FileSaved)
-        self.reciprocal_space_worker.setTitle.connect(self.setChartTitle)
-        self.reciprocal_space_worker.drawLineRequested.connect(self.drawLineRequested)
-        self.reciprocal_space_worker.drawRectRequested.connect(self.drawRectRequested)
-        self.reciprocal_space_worker.error.connect(self.Raise_Error)
-        self.reciprocal_space_worker.attention.connect(self.Raise_Attention)
-        self.reciprocal_space_worker.aborted.connect(self.workerAborted)
-        self.reciprocal_space_worker.finished.connect(self.ProcessFinished)
+        self.reciprocal_space_worker.PROGRESS_ADVANCE.connect(self.progress)
+        self.reciprocal_space_worker.PROGRESS_END.connect(self.progress_reset)
+        self.reciprocal_space_worker.CONNECT_TO_CANVAS.connect(self.CONNECT_TO_CANVAS)
+        self.reciprocal_space_worker.UPDATE_LOG.connect(self.update_log)
+        self.reciprocal_space_worker.UPDATE_CHART.connect(self.update_chart)
+        self.reciprocal_space_worker.FILE_SAVED.connect(self.file_saved)
+        self.reciprocal_space_worker.SET_TITLE.connect(self.set_chart_title)
+        self.reciprocal_space_worker.DRAW_LINE_REQUESTED.connect(self.DRAW_LINE_REQUESTED)
+        self.reciprocal_space_worker.DRAW_RECT_REQUESTED.connect(self.DRAW_RECT_REQUESTED)
+        self.reciprocal_space_worker.ERROR.connect(self.raise_error)
+        self.reciprocal_space_worker.ATTENTION.connect(self.raise_attention)
+        self.reciprocal_space_worker.ABORTED.connect(self.worker_aborted)
+        self.reciprocal_space_worker.FINISHED.connect(self.process_finished)
 
         self.thread = QtCore.QThread()
         self.reciprocal_space_worker.moveToThread(self.thread)
-        self.reciprocal_space_worker.finished.connect(self.thread.quit)
+        self.reciprocal_space_worker.FINISHED.connect(self.thread.quit)
         self.thread.started.connect(self.reciprocal_space_worker.run)
-        self.stopWorker.connect(self.reciprocal_space_worker.stop)
+        self.STOP_WORKER.connect(self.reciprocal_space_worker.stop)
 
 
-    def Start(self):
+    def start(self):
         self.prepare()
         self.thread.start()
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(False)
@@ -392,21 +394,21 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(False)
 
-    def Stop(self):
-        self.stopWorker.emit()
+    def stop(self):
+        self.STOP_WORKER.emit()
         if self.thread.isRunning():
             self.thread.terminate()
             self.thread.wait()
 
-    def workerAborted(self):
-        self.updateLog("Process aborted!")
+    def worker_aborted(self):
+        self.update_log("Process aborted!")
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
-        self.progressReset()
+        self.progress_reset()
 
-    def Reset(self):
+    def reset(self):
         self.levelMin = 0
         self.levelMax = 100
         self.numberOfContourLevels = 5
@@ -428,49 +430,49 @@ class Window(QtCore.QObject):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Reset Successful!")
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Ready to Start!")
 
-    def Reject(self):
+    def reject(self):
         self.Dialog.close()
 
-    def Choose_Source(self):
+    def choose_source(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose source directory",self.currentSource,QtWidgets.QFileDialog.ShowDirsOnly)
         self.currentSource = path
         self.chooseSourceLabel.setText("The source directory is:\n"+self.currentSource)
 
-    def Choose_Destination(self):
+    def choose_destination(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",self.currentDestination,QtWidgets.QFileDialog.ShowDirsOnly)
         self.currentDestination = path
         self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
 
-    def Refresh_Level_Min(self):
+    def refresh_level_min(self):
         self.levelMin = self.levelMinSlider.value()
         self.levelMinLabel.setText("Level Min ({})".format(self.levelMin/100))
         if self.levelMinSlider.value() > self.levelMaxSlider.value():
             self.levelMaxSlider.setValue(self.levelMinSlider.value())
 
-    def Refresh_Level_Max(self):
+    def refresh_level_max(self):
         self.levelMax = self.levelMaxSlider.value()
         self.levelMaxLabel.setText("Level Max ({})".format(self.levelMax/100))
         if self.levelMinSlider.value() > self.levelMaxSlider.value():
             self.levelMinSlider.setValue(self.levelMaxSlider.value())
 
-    def Refresh_Radius_Min(self):
+    def refresh_radius_min(self):
         self.radiusMinLabel.setText("Radius Min ({})".format(self.radiusMinSlider.value()/100))
         if self.radiusMinSlider.value() > self.radiusMaxSlider.value():
             self.radiusMaxSlider.setValue(self.radiusMinSlider.value())
 
-    def Refresh_Radius_Max(self):
+    def refresh_radius_max(self):
         self.radiusMaxLabel.setText("Radius Max ({})".format(self.radiusMaxSlider.value()/100))
         if self.radiusMinSlider.value() > self.radiusMaxSlider.value():
             self.radiusMinSlider.setValue(self.radiusMaxSlider.value())
 
-    def Refresh_Number_Of_Contour_Levels(self):
+    def refresh_number_of_contour_levels(self):
         self.numberOfContourLevels = self.numberOfContourLevelsSlider.value()
         self.numberOfContourLevelsLabel.setText("Number of Contour Levels ({})".format(self.numberOfContourLevels))
 
-    def Set_Status(self,status):
+    def set_status(self,status):
         self.status = status
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -479,7 +481,7 @@ class Window(QtCore.QObject):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)
@@ -494,14 +496,14 @@ class Window(QtCore.QObject):
         self.progressBar.setMaximum(max)
         self.progressBar.setValue(val)
 
-    def progressReset(self):
+    def progress_reset(self):
         self.progressBar.reset()
         self.progressBar.setVisible(False)
 
-    def RefreshFontSize(self):
+    def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
-    def RefreshFontName(self):
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+    def refresh_font_name(self):
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 

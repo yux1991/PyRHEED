@@ -3,15 +3,14 @@ import os
 
 class Browser(QtWidgets.QWidget):
 
+    #Public Signals
+    FILE_DOUBLE_CLICKED = QtCore.pyqtSignal(str)
+
     def __init__(self,parent):
         super(Browser,self).__init__(parent)
-        self.initUI()
+        self.init_UI()
 
-    #Public Signals
-    fileDoubleClicked = QtCore.pyqtSignal(str)
-
-
-    def initUI(self,path=QtCore.QDir.currentPath()):
+    def init_UI(self,path=QtCore.QDir.currentPath()):
         self.model = QtWidgets.QFileSystemModel()
         self.model.setRootPath(path)
         self.model.setNameFilters({"*.nef","*.NEF","*.arw","*.ARW"})
@@ -37,9 +36,9 @@ class Browser(QtWidgets.QWidget):
         item = self.tree.selectedIndexes()[0]
         path = item.model().filePath(index)
         if os.path.isfile(path):
-            self.fileDoubleClicked.emit(path)
+            self.FILE_DOUBLE_CLICKED.emit(path)
 
-    def treeUpdate(self,path):
+    def tree_update(self,path):
         dir = os.path.dirname(path)
         self.model.setRootPath(dir)
         self.tree.setRootIndex(self.model.index(dir))

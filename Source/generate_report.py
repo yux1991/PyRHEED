@@ -3,32 +3,32 @@ import numpy as np
 import os
 import configparser
 import matplotlib.pyplot as plt
-import PlotChart
-from MyWidgets import *
+import plot_chart
+from my_widgets import ColorPicker, DoubleSlider
 
 class Window(QtCore.QObject):
 
-    StatusRequested = QtCore.pyqtSignal()
-    PolarIRequested = QtCore.pyqtSignal()
-    PolarFRequested = QtCore.pyqtSignal()
-    RefreshPolarI = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
-    RefreshPolarF = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
-    NormalIRequested = QtCore.pyqtSignal()
-    NormalFRequested = QtCore.pyqtSignal()
-    RefreshNormalI = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
-    RefreshNormalF = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
-    fontsChanged = QtCore.pyqtSignal(str,int)
+    STATUS_REQUESTED = QtCore.pyqtSignal()
+    POLAR_I_REQUESTED = QtCore.pyqtSignal()
+    POLAR_F_REQUESTED = QtCore.pyqtSignal()
+    REFRESH_POLAR_I = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
+    REFRESH_POLAR_F = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
+    NORMAL_I_REQUESTED = QtCore.pyqtSignal()
+    NORMAL_F_REQUESTED = QtCore.pyqtSignal()
+    REFRESH_NORMAL_I = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
+    REFRESH_NORMAL_F = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
+    FONTS_CHANGED = QtCore.pyqtSignal(str,int)
 
     def __init__(self):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
         self.config.read('./configuration.ini')
 
-    def Set_Status(self,status):
+    def set_status(self,status):
         self.status = status
 
-    def Main(self,path,preload=False):
-        self.StatusRequested.emit()
+    def main(self,path,preload=False):
+        self.STATUS_REQUESTED.emit()
         self.path = path
         self.KPmin = 0
         self.KPmax = 100
@@ -65,7 +65,7 @@ class Window(QtCore.QObject):
         self.chooseSourceLabel.setWordWrap(True)
         self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
         self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        self.chooseSourceButton.clicked.connect(self.Choose_Source)
+        self.chooseSourceButton.clicked.connect(self.choose_source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
 
@@ -117,28 +117,28 @@ class Window(QtCore.QObject):
         self.figureGenerator = QtWidgets.QComboBox()
         self.figureGenerator.addItem('Qt','Qt')
         self.figureGenerator.addItem('Matplotlib','Matplotlib')
-        self.figureGenerator.currentTextChanged.connect(self.connectOKButton)
+        self.figureGenerator.currentTextChanged.connect(self.connect_OK_button)
         self.KperpLabel = QtWidgets.QLabel("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
         self.KperpSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.KperpSlider.setMinimum(self.KPmin)
         self.KperpSlider.setMaximum(self.KPmax)
         self.KperpSlider.setValue(self.currentKP)
-        self.KperpSlider.valueChanged.connect(self.KPChanged)
+        self.KperpSlider.valueChanged.connect(self.kp_changed)
         self.KperpSlider.setEnabled(False)
         self.AzimuthLabel = QtWidgets.QLabel("Azimuth Angle = {:5.1f} (\u00B0)".format(self.currentAzimuth))
         self.AzimuthSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.AzimuthSlider.setMinimum(self.AZmin)
         self.AzimuthSlider.setMaximum(self.AZmax)
         self.AzimuthSlider.setValue(0)
-        self.AzimuthSlider.valueChanged.connect(self.AzimuthChanged)
+        self.AzimuthSlider.valueChanged.connect(self.azimuth_changed)
         self.AzimuthSlider.setEnabled(False)
 
         self.intensityRangeSlider = DoubleSlider(minimum=0,maximum=200,scale=0.01,head=0,tail=1,text="Intensity",unit='arb. units')
         self.intensityRangeSlider.setEnabled(False)
-        self.intensityRangeSlider.valueChanged.connect(self.RefreshPlots)
+        self.intensityRangeSlider.VALUE_CHANGED.connect(self.refresh_plots)
         self.HWHMRangeSlider = DoubleSlider(minimum=0,maximum=200,scale=0.01,head=0,tail=1,text="HWHM",unit='\u212B\u207B\u00B9')
         self.HWHMRangeSlider.setEnabled(False)
-        self.HWHMRangeSlider.valueChanged.connect(self.RefreshPlots)
+        self.HWHMRangeSlider.VALUE_CHANGED.connect(self.refresh_plots)
 
         self.optionGrid.addWidget(self.peakLabel,0,0)
         self.optionGrid.addWidget(self.peak,0,1)
@@ -159,14 +159,14 @@ class Window(QtCore.QObject):
         self.fontListLabel = QtWidgets.QLabel("Change Font")
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
-        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(15))
         self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(15)
-        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
+        self.fontSizeSlider.valueChanged.connect(self.refresh_font_size)
         self.appearanceGrid.addWidget(self.fontListLabel,0,0)
         self.appearanceGrid.addWidget(self.fontList,0,1)
         self.appearanceGrid.addWidget(self.fontSizeLabel,1,0)
@@ -179,6 +179,9 @@ class Window(QtCore.QObject):
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
                                     "\u00A0\u00A0\u00A0\u00A0Initialized!")
+        self.logCursor = QtGui.QTextCursor(self.logBox.document())
+        self.logCursor.movePosition(QtGui.QTextCursor.End)
+        self.logBox.setTextCursor(self.logCursor)
         self.logBox.ensureCursorVisible()
         self.logBox.setAlignment(QtCore.Qt.AlignTop)
         self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -193,7 +196,7 @@ class Window(QtCore.QObject):
         self.ButtonBox.addButton("Cancel",QtWidgets.QDialogButtonBox.DestructiveRole)
         self.ButtonBox.setCenterButtons(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
-            connect(self.Reject)
+            connect(self.reject)
 
         self.LeftGrid.addWidget(self.chooseSource,0,0,1,2)
         self.LeftGrid.addWidget(self.ReportInformationBox,1,0)
@@ -204,15 +207,15 @@ class Window(QtCore.QObject):
         self.LeftGrid.addWidget(self.ButtonBox,6,0,1,2)
         self.Grid.addWidget(self.LeftFrame,0,0)
 
-        self.IA.stateChanged.connect(self.IACheckChanged)
-        self.FA.stateChanged.connect(self.FACheckChanged)
-        self.IK.stateChanged.connect(self.IKCheckChanged)
-        self.FK.stateChanged.connect(self.FKCheckChanged)
+        self.IA.stateChanged.connect(self.IA_check_changed)
+        self.FA.stateChanged.connect(self.FA_check_changed)
+        self.IK.stateChanged.connect(self.IK_check_changed)
+        self.FK.stateChanged.connect(self.FK_check_changed)
         self.IA.setChecked(True)
 
-        self.connectOKButton(self.figureGenerator.currentText())
+        self.connect_OK_button(self.figureGenerator.currentText())
         if preload:
-            self.loadReport(self.path)
+            self.load_report(self.path)
 
         self.Dialog.setWindowTitle("Generate Report")
         self.Dialog.show()
@@ -220,89 +223,89 @@ class Window(QtCore.QObject):
         center = desktopRect.center()
         self.Dialog.move(center.x()-self.Dialog.width()*0.5,center.y()-self.Dialog.height()*0.5)
 
-    def RefreshFontSize(self):
+    def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
-    def RefreshFontName(self):
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+    def refresh_font_name(self):
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
-    def connectOKButton(self,text):
+    def connect_OK_button(self,text):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].disconnect()
         if text == 'Qt':
             self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked. \
-                connect(self.PolarStart)
+                connect(self.polar_start)
         elif text == 'Matplotlib':
             self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked. \
-                connect(self.Start)
+                connect(self.start)
 
-    def updateLog(self,msg):
+    def update_log(self,msg):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
 
-    def Reject(self):
+    def reject(self):
         self.Dialog.close()
 
-    def Choose_Source(self):
+    def choose_source(self):
         path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The Report File",self.path)
         self.path = path[0]
         self.pathExtension = os.path.splitext(self.path)[1]
         if not self.path=="":
             if not self.pathExtension == ".txt":
-                self.Raise_Error('[Error: wrong file type] Please choose a *.txt file')
-                self.updateLog('[Error: wrong file type] Please choose a *.txt file')
+                self.raise_error('[Error: wrong file type] Please choose a *.txt file')
+                self.update_log('[Error: wrong file type] Please choose a *.txt file')
             else:
                 self.chooseSourceLabel.setText("The path of the report is:\n"+self.path)
-                self.loadReport(self.path)
+                self.load_report(self.path)
         else:
-            self.Raise_Error('[Error: No file] Please choose a *.txt file')
-            self.updateLog('[Error: No file] Please choose a *.txt file')
+            self.raise_error('[Error: No file] Please choose a *.txt file')
+            self.update_log('[Error: No file] Please choose a *.txt file')
 
 
-    def Start(self):
+    def start(self):
         Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
         Az = self.currentAzimuth*1.8+self.AzimuthStart
         if self.IK.checkState() == 2 and self.FK.checkState() == 2:
-            I, K1, Ierror = self.getIK()
-            F, K2, Ferror = self.getFK()
-            self.PlotIFK(I,F,K1,Az)
+            I, K1, Ierror = self.get_IK()
+            F, K2, Ferror = self.get_FK()
+            self.plot_IFK(I,F,K1,Az)
         elif self.IK.checkState() == 2:
-            I, K, Ierror = self.getIK()
-            self.PlotIK(I,K,Az)
+            I, K, Ierror = self.get_IK()
+            self.plot_IK(I,K,Az)
         elif self.FK.checkState() == 2:
-            F, K, Ferror = self.getFK()
-            self.PlotFK(F,K,Az)
+            F, K, Ferror = self.get_FK()
+            self.plot_FK(F,K,Az)
         if self.IA.checkState() == 2:
-            I, A, Ierror = self.getIA()
-            self.PlotIA(I,A,Kp,self.intensityRangeSlider.values()[0],self.intensityRangeSlider.values()[1])
+            I, A, Ierror = self.get_IA()
+            self.plot_IA(I,A,Kp,self.intensityRangeSlider.values()[0],self.intensityRangeSlider.values()[1])
         if self.FA.checkState() == 2:
-            F, A, Ferror = self.getFA()
-            self.PlotFA(F,A,Kp,self.HWHMRangeSlider.values()[0],self.HWHMRangeSlider.values()[1])
+            F, A, Ferror = self.get_FA()
+            self.plot_FA(F,A,Kp,self.HWHMRangeSlider.values()[0],self.HWHMRangeSlider.values()[1])
         plt.show()
 
-    def PolarStart(self):
+    def polar_start(self):
         Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
         Az = self.currentAzimuth*1.8+self.AzimuthStart
         theme = int(dict(self.config['chartDefault'].items())['theme'])
-        self.IAPlot = PlotChart.PlotChart(theme,'Polar')
-        self.FAPlot = PlotChart.PlotChart(theme,'Polar')
-        self.IKPlot = PlotChart.PlotChart(theme,'Normal')
-        self.FKPlot = PlotChart.PlotChart(theme,'Normal')
-        self.PolarIRequested.connect(self.IAPlot.Main)
-        self.PolarFRequested.connect(self.FAPlot.Main)
-        self.NormalIRequested.connect(self.IKPlot.Main)
-        self.NormalFRequested.connect(self.FKPlot.Main)
-        self.RefreshPolarI.connect(self.IAPlot.addChart)
-        self.RefreshPolarF.connect(self.FAPlot.addChart)
-        self.RefreshNormalI.connect(self.IKPlot.addChart)
-        self.RefreshNormalF.connect(self.FKPlot.addChart)
-        self.fontsChanged.connect(self.IAPlot.adjustFonts)
-        self.fontsChanged.connect(self.FAPlot.adjustFonts)
-        self.fontsChanged.connect(self.FKPlot.adjustFonts)
-        self.fontsChanged.connect(self.IKPlot.adjustFonts)
-        self.IAColor.colorChanged.connect(self.IAPlot.adjustColor)
-        self.FAColor.colorChanged.connect(self.FAPlot.adjustColor)
-        self.IKColor.colorChanged.connect(self.IKPlot.adjustColor)
-        self.FKColor.colorChanged.connect(self.FKPlot.adjustColor)
+        self.IAPlot = plot_chart.PlotChart(theme,'Polar')
+        self.FAPlot = plot_chart.PlotChart(theme,'Polar')
+        self.IKPlot = plot_chart.PlotChart(theme,'Normal')
+        self.FKPlot = plot_chart.PlotChart(theme,'Normal')
+        self.POLAR_I_REQUESTED.connect(self.IAPlot.main)
+        self.POLAR_F_REQUESTED.connect(self.FAPlot.main)
+        self.NORMAL_I_REQUESTED.connect(self.IKPlot.main)
+        self.NORMAL_F_REQUESTED.connect(self.FKPlot.main)
+        self.REFRESH_POLAR_I.connect(self.IAPlot.add_chart)
+        self.REFRESH_POLAR_F.connect(self.FAPlot.add_chart)
+        self.REFRESH_NORMAL_I.connect(self.IKPlot.add_chart)
+        self.REFRESH_NORMAL_F.connect(self.FKPlot.add_chart)
+        self.FONTS_CHANGED.connect(self.IAPlot.adjust_fonts)
+        self.FONTS_CHANGED.connect(self.FAPlot.adjust_fonts)
+        self.FONTS_CHANGED.connect(self.FKPlot.adjust_fonts)
+        self.FONTS_CHANGED.connect(self.IKPlot.adjust_fonts)
+        self.IAColor.COLOR_CHANGED.connect(self.IAPlot.adjust_color)
+        self.FAColor.COLOR_CHANGED.connect(self.FAPlot.adjust_color)
+        self.IKColor.COLOR_CHANGED.connect(self.IKPlot.adjust_color)
+        self.FKColor.COLOR_CHANGED.connect(self.FKPlot.adjust_color)
         self.Window = QtWidgets.QWidget()
         self.Window.setWindowTitle('Summary of Broadening Analysis')
         self.WindowLayout = QtWidgets.QGridLayout(self.Window)
@@ -314,44 +317,44 @@ class Window(QtCore.QObject):
         self.Window.setMinimumSize(1000,800)
         self.Window.show()
         if self.IA.checkState() == 2:
-            I, A, Ierror = self.getIA()
-            self.PolarIRequested.emit()
+            I, A, Ierror = self.get_IA()
+            self.POLAR_I_REQUESTED.emit()
             self.IAIsPresent = True
-            self.RefreshPolarI.emit(I,A,'IA',self.fontList.currentFont().family(),self.fontSizeSlider.value(),\
-                                    self.IAColor.getColor(),False,\
+            self.REFRESH_POLAR_I.emit(I,A,'IA',self.fontList.currentFont().family(),self.fontSizeSlider.value(),\
+                                    self.IAColor.get_color(),False,\
                                     {'Kp':Kp,'low':self.intensityRangeSlider.values()[0],\
                                      'high':self.intensityRangeSlider.values()[1]})
         if self.IK.checkState() == 2:
-            I,K,Ierror = self.getIK()
-            self.NormalIRequested.emit()
+            I,K,Ierror = self.get_IK()
+            self.NORMAL_I_REQUESTED.emit()
             self.IKIsPresent = True
-            self.RefreshNormalI.emit(K,I,'IK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                     self.IKColor.getColor(),True,\
+            self.REFRESH_NORMAL_I.emit(K,I,'IK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
+                                     self.IKColor.get_color(),True,\
                                      {'Az':Az})
         if self.FA.checkState() == 2:
-            F, A, Ferror = self.getFA()
-            self.PolarFRequested.emit()
+            F, A, Ferror = self.get_FA()
+            self.POLAR_F_REQUESTED.emit()
             self.FAIsPresent = True
-            self.RefreshPolarF.emit(F,A,'FA',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                    self.FAColor.getColor(),False,\
+            self.REFRESH_POLAR_F.emit(F,A,'FA',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
+                                    self.FAColor.get_color(),False,\
                                     {'Kp':Kp,'low':self.HWHMRangeSlider.values()[0],\
                                                 'high':self.HWHMRangeSlider.values()[1]})
         if self.FK.checkState() == 2:
-            F,K,Ferror = self.getFK()
-            self.NormalFRequested.emit()
+            F,K,Ferror = self.get_FK()
+            self.NORMAL_F_REQUESTED.emit()
             self.FKIsPresent = True
-            self.RefreshNormalF.emit(K,F,'FK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                     self.FKColor.getColor(),True,\
+            self.REFRESH_NORMAL_F.emit(K,F,'FK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
+                                     self.FKColor.get_color(),True,\
                                      {'Az':Az})
 
-    def PlotIA(self,I,A,Kp,imin,imax):
+    def plot_IA(self,I,A,Kp,imin,imax):
         A2 = A + np.full(len(A),180)
         Phi = np.append(A,A2)
         Heights = np.append(I,I)/np.amax(I)
         fig = plt.figure()
         ax = plt.subplot(projection='polar')
         ax.set_title('Intensity vs Azimuth at Kperp = {:5.2f} (\u212B\u207B\u00B9)'.format(Kp),fontsize=self.fontSizeSlider.value())
-        ax.plot(Phi*np.pi/180,Heights,color=self.IAColor.getColor())
+        ax.plot(Phi*np.pi/180,Heights,color=self.IAColor.get_color())
         ax.set_rmin(imin)
         ax.set_rmax(imax)
         ax.set_rlabel_position(0)
@@ -361,23 +364,23 @@ class Window(QtCore.QObject):
         ax.set_rticks(np.around(np.linspace(imin,imax,5),1))
         ax.tick_params(which='both', labelsize=self.fontSizeSlider.value())
 
-    def PlotIK(self,I,K,Az):
+    def plot_IK(self,I,K,Az):
         fig = plt.figure()
         ax = plt.subplot()
         ax.set_title('Intensity vs Kperp at Phi = {:5.2f}\u00B0'.format(Az),fontsize=self.fontSizeSlider.value())
-        ax.plot(I,K,c=self.IKColor.getColor())
+        ax.plot(I,K,c=self.IKColor.get_color())
         ax.set_xlabel('Intensity (arb. units)',fontsize = self.fontSizeSlider.value())
         ax.set_ylabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = self.fontSizeSlider.value())
         ax.tick_params(which='both', labelsize=self.fontSizeSlider.value())
 
-    def PlotFA(self,F,A,Kp,fmin,fmax):
+    def plot_FA(self,F,A,Kp,fmin,fmax):
         A2 = A + np.full(len(A),180)
         Phi = np.append(A,A2)
         HWHMs = np.append(F,F)
         fig = plt.figure()
         ax = plt.subplot(projection='polar')
         ax.set_title('HWHM vs Azimuth at Kperp = {:5.2f} (\u212B\u207B\u00B9)'.format(Kp),fontsize=self.fontSizeSlider.value())
-        ax.plot(Phi*np.pi/180,HWHMs,color=self.FAColor.getColor())
+        ax.plot(Phi*np.pi/180,HWHMs,color=self.FAColor.get_color())
         ax.set_rmin(fmin)
         ax.set_rmax(fmax)
         ax.set_rlabel_position(0)
@@ -387,57 +390,57 @@ class Window(QtCore.QObject):
         ax.set_rticks(np.around(np.linspace(fmin,fmax,5),1))
         ax.tick_params(which='both', labelsize=self.fontSizeSlider.value())
 
-    def PlotFK(self,F,K,Az):
+    def plot_FK(self,F,K,Az):
         fig = plt.figure()
         ax = plt.subplot()
         ax.set_title('HWHM vs Kperp at Phi = {:5.2f}\u00B0'.format(Az),fontsize=self.fontSizeSlider.value())
-        ax.plot(F,K,c=self.FKColor.getColor())
+        ax.plot(F,K,c=self.FKColor.get_color())
         ax.set_xlabel(r'HWHM $(\AA^{-1})$',fontsize = self.fontSizeSlider.value())
         ax.set_ylabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = self.fontSizeSlider.value())
         ax.tick_params(which='both', labelsize=self.fontSizeSlider.value())
 
-    def PlotIFK(self,I,F,K,Az):
+    def plot_IFK(self,I,F,K,Az):
         fig, ax1 = plt.subplots()
         fig.suptitle('Intensity and HWHM vs Kperp at Phi = {:5.2f}\u00B0'.format(Az),fontsize=self.fontSizeSlider.value())
-        ax1.set_xlabel('Intensity (arb. units)',fontsize = self.fontSizeSlider.value(),color=self.IKColor.getColor())
+        ax1.set_xlabel('Intensity (arb. units)',fontsize = self.fontSizeSlider.value(),color=self.IKColor.get_color())
         ax1.set_ylabel(r'$K_{perp}$ $(\AA^{-1})$',fontsize = self.fontSizeSlider.value())
-        ax1.plot(I,K,c=self.IKColor.getColor())
+        ax1.plot(I,K,c=self.IKColor.get_color())
         ax1.tick_params(axis='x',labelcolor='b')
         ax1.tick_params(axis='both',labelsize=self.fontSizeSlider.value())
         ax2 = ax1.twiny()
-        ax2.set_xlabel(r'HWHM $(\AA^{-1})$',fontsize = self.fontSizeSlider.value(),color=self.FKColor.getColor())
-        ax2.plot(F,K,c=self.FKColor.getColor())
+        ax2.set_xlabel(r'HWHM $(\AA^{-1})$',fontsize = self.fontSizeSlider.value(),color=self.FKColor.get_color())
+        ax2.plot(F,K,c=self.FKColor.get_color())
         ax2.tick_params(axis='x',labelcolor='r')
         ax2.tick_params(axis='both',labelsize=self.fontSizeSlider.value())
         fig.tight_layout()
 
-    def RefreshPlots(self):
+    def refresh_plots(self):
         Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
         Az = self.currentAzimuth*1.8+self.AzimuthStart
         if self.IAIsPresent:
-            I, A, Ierror = self.getIA()
-            self.RefreshPolarI.emit(I,A,'IA',self.fontList.currentFont().family(),self.fontSizeSlider.value(),\
-                                    self.IAColor.getColor(),False,\
+            I, A, Ierror = self.get_IA()
+            self.REFRESH_POLAR_I.emit(I,A,'IA',self.fontList.currentFont().family(),self.fontSizeSlider.value(),\
+                                    self.IAColor.get_color(),False,\
                                     {'Kp':Kp,'low':self.intensityRangeSlider.values()[0], \
                                                      'high':self.intensityRangeSlider.values()[1]})
         if self.FAIsPresent:
-            F, A, Ferror = self.getFA()
-            self.RefreshPolarF.emit(F,A,'FA',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                    self.FAColor.getColor(),False,\
+            F, A, Ferror = self.get_FA()
+            self.REFRESH_POLAR_F.emit(F,A,'FA',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
+                                    self.FAColor.get_color(),False,\
                                     {'Kp':Kp,'low':self.HWHMRangeSlider.values()[0], \
                                                 'high':self.HWHMRangeSlider.values()[1]})
         if self.IKIsPresent:
-            I,K,Ierror = self.getIK()
-            self.RefreshNormalI.emit(K,I,'IK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                     self.IKColor.getColor(),True,\
+            I,K,Ierror = self.get_IK()
+            self.REFRESH_NORMAL_I.emit(K,I,'IK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
+                                     self.IKColor.get_color(),True,\
                                      {'Az':Az})
         if self.FKIsPresent:
-            F,K,Ferror = self.getFK()
-            self.RefreshNormalF.emit(K,F,'FK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
-                                     self.FKColor.getColor(),True,\
+            F,K,Ferror = self.get_FK()
+            self.REFRESH_NORMAL_F.emit(K,F,'FK',self.fontList.currentFont().family(),self.fontSizeSlider.value(), \
+                                     self.FKColor.get_color(),True,\
                                      {'Az':Az})
 
-    def getIA(self):
+    def get_IA(self):
         peakIndex = np.round(float(self.peak.currentData()),0)
         columnI = int(1+peakIndex*2+1)
         columnIerror = int(1+peakIndex*2+2)
@@ -447,7 +450,7 @@ class Window(QtCore.QObject):
         Ierror = np.fromiter((self.report[i,columnIerror] for i in rows.tolist()),float)
         return I,A,Ierror
 
-    def getFA(self):
+    def get_FA(self):
         if self.BGCheck:
             nop = self.NumberOfPeaks+1
         else:
@@ -461,7 +464,7 @@ class Window(QtCore.QObject):
         Ferror = np.fromiter((self.report[i,columnFerror]/2 for i in rows.tolist()),float)
         return F,A,Ferror
 
-    def getIK(self):
+    def get_IK(self):
         if self.BGCheck:
             nop = self.NumberOfPeaks+1
         else:
@@ -475,7 +478,7 @@ class Window(QtCore.QObject):
         Ierror = np.fromiter((self.report[i,columnIerror] for i in rows.tolist()),float)
         return I,K,Ierror
 
-    def getFK(self):
+    def get_FK(self):
         if self.BGCheck:
             nop = self.NumberOfPeaks+1
         else:
@@ -489,7 +492,7 @@ class Window(QtCore.QObject):
         Ferror = np.fromiter((self.report[i,columnFerror]/2 for i in rows.tolist()),float)
         return F,K,Ferror
 
-    def loadReport(self,path):
+    def load_report(self,path):
         with open(path,'r') as file:
             for i, line in enumerate(file):
                 if i == 0:
@@ -533,21 +536,21 @@ class Window(QtCore.QObject):
             for i in range(5-int((self.NumberOfPeaks-1)/2),5+int((self.NumberOfPeaks-1)/2)):
                 self.peak.addItem(peaks[i],str(i-int((5-(self.NumberOfPeaks-1)/2))))
         self.peak.setCurrentText('Center')
-        self.updateLog("The report file is loaded")
+        self.update_log("The report file is loaded")
 
 
 
-    def AzimuthChanged(self):
+    def azimuth_changed(self):
         self.currentAzimuth = self.AzimuthSlider.value()
         self.AzimuthLabel.setText("Azimuth Angle = {:5.1f} (\u00B0)".format(self.currentAzimuth*1.8+self.AzimuthStart))
-        self.RefreshPlots()
+        self.refresh_plots()
 
-    def KPChanged(self):
+    def kp_changed(self):
         self.currentKP = self.KperpSlider.value()
         self.KperpLabel.setText("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
-        self.RefreshPlots()
+        self.refresh_plots()
 
-    def IACheckChanged(self,status):
+    def IA_check_changed(self,status):
         if status == 0:
             self.intensityRangeSlider.setEnabled(False)
             if self.FA.checkState() == 0:
@@ -555,9 +558,9 @@ class Window(QtCore.QObject):
         else:
             self.KperpSlider.setEnabled(True)
             self.intensityRangeSlider.setEnabled(True)
-        self.checkStartOK()
+        self.check_start_OK()
 
-    def FACheckChanged(self,status):
+    def FA_check_changed(self,status):
         if status == 0:
             self.HWHMRangeSlider.setEnabled(False)
             if self.IA.checkState() == 0:
@@ -565,29 +568,29 @@ class Window(QtCore.QObject):
         else:
             self.KperpSlider.setEnabled(True)
             self.HWHMRangeSlider.setEnabled(True)
-        self.checkStartOK()
+        self.check_start_OK()
 
-    def IKCheckChanged(self,status):
+    def IK_check_changed(self,status):
         if status == 0 and self.FK.checkState() == 0:
             self.AzimuthSlider.setEnabled(False)
         else:
             self.AzimuthSlider.setEnabled(True)
-        self.checkStartOK()
+        self.check_start_OK()
 
-    def FKCheckChanged(self,status):
+    def FK_check_changed(self,status):
         if status == 0 and self.IK.checkState() == 0:
             self.AzimuthSlider.setEnabled(False)
         else:
             self.AzimuthSlider.setEnabled(True)
-        self.checkStartOK()
+        self.check_start_OK()
 
-    def checkStartOK(self):
+    def check_start_OK(self):
         if self.IA.checkState() == 0 and self.IK.checkState() == 0 and self.FA.checkState() == 0 and self.FK.checkState() == 0:
             self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(False)
         else:
             self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -596,7 +599,7 @@ class Window(QtCore.QObject):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)

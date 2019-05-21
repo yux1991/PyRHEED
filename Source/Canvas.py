@@ -4,15 +4,15 @@ import numpy as np
 class Canvas(QtWidgets.QGraphicsView):
 
     #public signals
-    photoMouseMovement = QtCore.pyqtSignal(QtCore.QPointF)
-    photoMousePress = QtCore.pyqtSignal(QtCore.QPointF)
-    photoMouseRelease = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
-    photoMouseDoubleClick = QtCore.pyqtSignal(QtCore.QPoint)
-    plotLineScan = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
-    plotIntegral = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float)
-    plotChiScan = QtCore.pyqtSignal(QtCore.QPointF,float,float,float,float)
-    KeyPress = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
-    KeyPressWhileArc = QtCore.pyqtSignal(QtCore.QPointF,float)
+    PHOTO_MOUSE_MOVEMENT = QtCore.pyqtSignal(QtCore.QPointF)
+    PHOTO_MOUSE_PRESS = QtCore.pyqtSignal(QtCore.QPointF)
+    PHOTO_MOUSE_RELEASE = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
+    PHOTO_MOUSE_DOUBLE_CLICK = QtCore.pyqtSignal(QtCore.QPoint)
+    PLOT_LINE_SCAN = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
+    PLOT_INTEGRAL = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float)
+    PLOT_CHI_SCAN = QtCore.pyqtSignal(QtCore.QPointF,float,float,float,float)
+    KEY_PRESS = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
+    KEY_PRESS_WHILE_ARC = QtCore.pyqtSignal(QtCore.QPointF,float)
 
     def __init__(self, parent,config):
         super(Canvas, self).__init__(parent)
@@ -63,22 +63,23 @@ class Canvas(QtWidgets.QGraphicsView):
         self.span = int(canvasDefault['span'])
         self.tilt = int(canvasDefault['tilt'])
         self.max_zoom_factor = int(canvasDefault['max_zoom_factor'])
-        self.clearAnnotations()
-        self.clearCanvas()
-        self.fitCanvas()
+        self.clear_annotations()
+        self.clear_canvas()
+        self.fit_canvas()
 
-    def setScaleFactor(self,s):
+    def set_scale_factor(self,s):
         self._scaleFactor = s
         self.width = self.widthInAngstrom*self._scaleFactor
 
-    def hasPhoto(self):
+    def has_photo(self):
         return not self._empty
 
     def fitInView(self, scale=True):
+        """This is an overload function"""
         rect = QtCore.QRectF(self._photo.pixmap().rect())
         if not rect.isNull():
             self.setSceneRect(rect)
-            if self.hasPhoto():
+            if self.has_photo():
                 unity = self.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
                 self.scale(1 / unity.width(), 1 / unity.height())
                 viewrect = self.viewport().rect()
@@ -88,7 +89,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.scale(factor, factor)
 
     def label(self,energy,azimuth,fontname,fontsize):
-        if self.hasPhoto():
+        if self.has_photo():
             self._labelText.setPlainText("Energy = {} keV\n\u03C6 = {}\u00B0".format(energy,azimuth))
             self._labelText.setFont(QtGui.QFont(fontname,fontsize))
             self._labelText.setPos(40,40)
@@ -96,7 +97,7 @@ class Canvas(QtWidgets.QGraphicsView):
             self._labelIsPresent = True
 
     def calibrate(self,scaleFactor,scaleBarLength,fontname,fontsize):
-        if self.hasPhoto():
+        if self.has_photo():
             self.photorect = self._photo.boundingRect()
             self._scaleBarText.setPlainText("{} \u212B\u207B\u00B9".format(scaleBarLength))
             self._scaleBarText.setFont(QtGui.QFont(fontname,fontsize))
@@ -115,8 +116,8 @@ class Canvas(QtWidgets.QGraphicsView):
             self._scaleBarLine.show()
             self._scaleBarIsPresent = True
 
-    def adjustFonts(self,fontname,fontsize):
-        if self.hasPhoto():
+    def adjust_fonts(self,fontname,fontsize):
+        if self.has_photo():
             if self._labelIsPresent:
                 self._labelText.setFont(QtGui.QFont(fontname,fontsize))
             if self._scaleBarIsPresent:
@@ -131,15 +132,15 @@ class Canvas(QtWidgets.QGraphicsView):
                 self._scaleBarText.setFont(QtGui.QFont(fontname,fontsize))
                 self._scaleBarLine.setLine(QtCore.QLineF(x1,y1,x2,y2))
 
-    def clearAnnotations(self):
+    def clear_annotations(self):
         self._labelText.hide()
         self._scaleBarText.hide()
         self._scaleBarLine.hide()
         self._scaleBarIsPresent = False
         self._labelIsPresent = False
 
-    def fitCanvas(self):
-        if self.hasPhoto():
+    def fit_canvas(self):
+        if self.has_photo():
             self.setUpdatesEnabled(False)
             self.fitInView()
             QtCore.QCoreApplication.processEvents()
@@ -147,7 +148,7 @@ class Canvas(QtWidgets.QGraphicsView):
             self.setUpdatesEnabled(True)
             self._zoom = 0
 
-    def setPhoto(self, pixmap=None):
+    def set_photo(self, pixmap=None):
         self._zoom = 0
         if pixmap and not pixmap.isNull():
             self._empty = False
@@ -159,7 +160,8 @@ class Canvas(QtWidgets.QGraphicsView):
             self._photo.setPixmap(QtGui.QPixmap())
 
     def wheelEvent(self, event):
-        if self.hasPhoto():
+        """This is an overload function"""
+        if self.has_photo():
             self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
             if event.angleDelta().y() > 0:
                 factor = 1.25
@@ -172,19 +174,19 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.end = QtCore.QPointF(self.mapToScene(event.pos()))
                 if self._photo.isUnderMouse():
                     if self._drawingLine:
-                        self.drawLine(self.start,self.end)
+                        self.draw_line(self.start,self.end)
                     elif self._drawingRect:
-                        self.drawRect(self.start,self.end,self.width)
+                        self.draw_rect(self.start,self.end,self.width)
                     elif self._drawingArc:
                         self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
-                        self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
+                        self.draw_arc(self.start,self.PFRadius,self.width,self.span,self.tilt)
             elif self._zoom <=-self.max_zoom_factor:
                 self._zoom = -self.max_zoom_factor
             else:
                 self._zoom = self.max_zoom_factor
 
-    def zoomIn(self):
-        if self.hasPhoto():
+    def zoom_in(self):
+        if self.has_photo():
             self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
             factor = 1.25
             self._zoom += 1
@@ -195,8 +197,8 @@ class Canvas(QtWidgets.QGraphicsView):
             else:
                 self._zoom = self.max_zoom_factor
 
-    def zoomOut(self):
-        if self.hasPhoto():
+    def zoom_out(self):
+        if self.has_photo():
             self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
             factor = 0.8
             self._zoom -= 1
@@ -207,7 +209,7 @@ class Canvas(QtWidgets.QGraphicsView):
             else:
                 self._zoom = self.max_zoom_factor
 
-    def toggleMode(self,cursormode):
+    def toggle_mode(self,cursormode):
         if not self._photo.pixmap().isNull():
             if cursormode == "line":
                 self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
@@ -226,15 +228,17 @@ class Canvas(QtWidgets.QGraphicsView):
                 self._mode = "pan"
 
     def mouseDoubleClickEvent(self, event):
+        """This is an overload function"""
         if self._photo.isUnderMouse():
             if event.button() == QtCore.Qt.LeftButton:
                 if not self._mode == "pan":
                     position = self.mapToScene(event.pos())
-                    self.photoMouseDoubleClick.emit(position.toPoint())
+                    self.PHOTO_MOUSE_DOUBLE_CLICK.emit(position.toPoint())
         super(Canvas, self).mouseDoubleClickEvent(event)
 
 
     def mousePressEvent(self, event):
+        """This is an overload function"""
         if self._photo.isUnderMouse():
             if event.button() == QtCore.Qt.LeftButton:
                 if not self._mode == "pan":
@@ -250,28 +254,30 @@ class Canvas(QtWidgets.QGraphicsView):
         super(Canvas, self).mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        """This is an overload function"""
         if self._photo.isUnderMouse():
             if self._drawingLine or self._drawingArc or self._drawingRect:
                 self.end = QtCore.QPointF(self.mapToScene(event.pos()))
             if self._drawingLine:
-                self.drawLine(self.start,self.end)
+                self.draw_line(self.start,self.end)
             elif self._drawingRect:
-                self.drawRect(self.start,self.end,self.width)
+                self.draw_rect(self.start,self.end,self.width)
             elif self._drawingArc:
                 self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
                 if not self.PFRadius > self.radiusMaximum*self._scaleFactor:
-                    self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
+                    self.draw_arc(self.start,self.PFRadius,self.width,self.span,self.tilt)
             if not self._mode == "pan":
                 if self._mouseIsPressed:
                     if self._numberOfMoves == 0:
-                        self.photoMousePress.emit(self.start)
+                        self.PHOTO_MOUSE_PRESS.emit(self.start)
                     self._mouseIsMoved = True
                     self._numberOfMoves+=1
             position = QtCore.QPointF(self.mapToScene(event.pos()))
-            self.photoMouseMovement.emit(position.toPoint())
+            self.PHOTO_MOUSE_MOVEMENT.emit(position.toPoint())
         super(Canvas, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """This is an overload function"""
         ShiftModified = False
         if self._photo.isUnderMouse():
             if event.button() == QtCore.Qt.LeftButton:
@@ -280,15 +286,15 @@ class Canvas(QtWidgets.QGraphicsView):
                         ShiftModified = True
                     self.end = QtCore.QPointF(self.mapToScene(event.pos()))
                     if self._drawingLine:
-                        self.drawLine(self.start,self.end)
+                        self.draw_line(self.start,self.end)
                     elif self._drawingRect:
-                        self.drawRect(self.start,self.end,self.width)
+                        self.draw_rect(self.start,self.end,self.width)
                     elif self._drawingArc:
                         if not self.PFRadius > self.radiusMaximum*self._scaleFactor:
                             self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
-                            self.drawArc(self.start,self.PFRadius,self.width,self.span,self.tilt)
+                            self.draw_arc(self.start,self.PFRadius,self.width,self.span,self.tilt)
                     position = self.mapToScene(event.pos())
-                    self.photoMouseRelease.emit(self.end,self.start,ShiftModified)
+                    self.PHOTO_MOUSE_RELEASE.emit(self.end,self.start,ShiftModified)
         self._drawingLine = False
         self._drawingRect = False
         self._drawingArc = False
@@ -298,6 +304,7 @@ class Canvas(QtWidgets.QGraphicsView):
         super(Canvas, self).mouseReleaseEvent(event)
 
     def keyPressEvent(self,event):
+        """This is an overload function"""
         XStep = QtCore.QPointF(10.0,0.0)
         YStep = QtCore.QPointF(0.0,10.0)
         XFineStep = QtCore.QPointF(1.0,0.0)
@@ -312,17 +319,17 @@ class Canvas(QtWidgets.QGraphicsView):
                 if not self.canvasObject == "arc":
                     self.saveEnd-=YStep
             if self.canvasObject == "line":
-                self.plotLineScan.emit(self.saveStart,self.saveEnd)
-                self.drawLine(self.saveStart,self.saveEnd)
-                self.KeyPress.emit(self.saveStart,self.saveEnd)
+                self.PLOT_LINE_SCAN.emit(self.saveStart,self.saveEnd)
+                self.draw_line(self.saveStart,self.saveEnd)
+                self.KEY_PRESS.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
-                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
-                self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
-                self.KeyPress.emit(self.saveStart,self.saveEnd)
+                self.PLOT_INTEGRAL.emit(self.saveStart,self.saveEnd,self.saveWidth)
+                self.draw_rect(self.saveStart,self.saveEnd,self.saveWidth)
+                self.KEY_PRESS.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "arc":
-                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
-                self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
-                self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
+                self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.draw_arc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.KEY_PRESS_WHILE_ARC.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Down:
             if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
                 self.saveStart+=YFineStep
@@ -333,17 +340,17 @@ class Canvas(QtWidgets.QGraphicsView):
                 if not self.canvasObject == "arc":
                     self.saveEnd+=YStep
             if self.canvasObject == "line":
-                self.plotLineScan.emit(self.saveStart,self.saveEnd)
-                self.drawLine(self.saveStart,self.saveEnd)
-                self.KeyPress.emit(self.saveStart,self.saveEnd)
+                self.PLOT_LINE_SCAN.emit(self.saveStart,self.saveEnd)
+                self.draw_line(self.saveStart,self.saveEnd)
+                self.KEY_PRESS.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
-                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
-                self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
-                self.KeyPress.emit(self.saveStart,self.saveEnd)
+                self.PLOT_INTEGRAL.emit(self.saveStart,self.saveEnd,self.saveWidth)
+                self.draw_rect(self.saveStart,self.saveEnd,self.saveWidth)
+                self.KEY_PRESS.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "arc":
-                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
-                self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
-                self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
+                self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.draw_arc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.KEY_PRESS_WHILE_ARC.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Left:
             if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
                 self.saveStart-=XFineStep
@@ -354,17 +361,17 @@ class Canvas(QtWidgets.QGraphicsView):
                 if not self.canvasObject == "arc":
                     self.saveEnd-=XStep
             if self.canvasObject == "line":
-                self.plotLineScan.emit(self.saveStart,self.saveEnd)
-                self.drawLine(self.saveStart,self.saveEnd)
-                self.KeyPress.emit(self.saveStart,self.saveEnd)
+                self.PLOT_LINE_SCAN.emit(self.saveStart,self.saveEnd)
+                self.draw_line(self.saveStart,self.saveEnd)
+                self.KEY_PRESS.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
-                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
-                self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
-                self.KeyPress.emit(self.saveStart,self.saveEnd)
+                self.PLOT_INTEGRAL.emit(self.saveStart,self.saveEnd,self.saveWidth)
+                self.draw_rect(self.saveStart,self.saveEnd,self.saveWidth)
+                self.KEY_PRESS.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "arc":
-                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
-                self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
-                self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
+                self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.draw_arc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.KEY_PRESS_WHILE_ARC.emit(self.saveStart,self.saveRadius)
         elif event.key() == QtCore.Qt.Key_Right:
             if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
                 self.saveStart+=XFineStep
@@ -375,19 +382,19 @@ class Canvas(QtWidgets.QGraphicsView):
                 if not self.canvasObject == "arc":
                     self.saveEnd+=XStep
             if self.canvasObject == "line":
-                self.plotLineScan.emit(self.saveStart,self.saveEnd)
-                self.drawLine(self.saveStart,self.saveEnd)
-                self.KeyPress.emit(self.saveStart,self.saveEnd)
+                self.PLOT_LINE_SCAN.emit(self.saveStart,self.saveEnd)
+                self.draw_line(self.saveStart,self.saveEnd)
+                self.KEY_PRESS.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "rectangle":
-                self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
-                self.drawRect(self.saveStart,self.saveEnd,self.saveWidth)
-                self.KeyPress.emit(self.saveStart,self.saveEnd)
+                self.PLOT_INTEGRAL.emit(self.saveStart,self.saveEnd,self.saveWidth)
+                self.draw_rect(self.saveStart,self.saveEnd,self.saveWidth)
+                self.KEY_PRESS.emit(self.saveStart,self.saveEnd)
             elif self.canvasObject == "arc":
-                self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
-                self.drawArc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
-                self.KeyPressWhileArc.emit(self.saveStart,self.saveRadius)
+                self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.draw_arc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+                self.KEY_PRESS_WHILE_ARC.emit(self.saveStart,self.saveRadius)
 
-    def clearCanvas(self):
+    def clear_canvas(self):
         try:
             self._lineItem.hide()
         except:
@@ -404,8 +411,8 @@ class Canvas(QtWidgets.QGraphicsView):
             pass
         self.canvasObject = "none"
 
-    def drawLine(self,start,end,EnablePlot = True):
-        self.clearCanvas()
+    def draw_line(self,start,end,EnablePlot = True):
+        self.clear_canvas()
         if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
             if end.x() == start.x():
                 slope = 10
@@ -422,10 +429,10 @@ class Canvas(QtWidgets.QGraphicsView):
         self.canvasObject = "line"
         self.saveStart,self.saveEnd = start,end
         if EnablePlot:
-            self.plotLineScan.emit(start,end)
+            self.PLOT_LINE_SCAN.emit(start,end)
 
-    def drawRect(self,start,end,width,EnablePlot = True):
-        self.clearCanvas()
+    def draw_rect(self,start,end,width,EnablePlot = True):
+        self.clear_canvas()
         rect = QtGui.QPolygonF()
         if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
             if end.x() == start.x():
@@ -438,7 +445,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 end.setY(start.y())
             else:
                 end.setY(end.x()-start.x()+start.y())
-        p1,p2,p3,p4 = self.getRectanglePosition(start,end,width)
+        p1,p2,p3,p4 = self.get_rectangle_position(start,end,width)
         rect.append(p1)
         rect.append(p2)
         rect.append(p3)
@@ -448,10 +455,10 @@ class Canvas(QtWidgets.QGraphicsView):
         self.canvasObject = "rectangle"
         self.saveStart,self.saveEnd,self.saveWidth = start,end,width
         if EnablePlot:
-            self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
+            self.PLOT_INTEGRAL.emit(self.saveStart,self.saveEnd,self.saveWidth)
 
-    def drawArc(self,start,radius,width,span,tilt):
-        self.clearCanvas()
+    def draw_arc(self,start,radius,width,span,tilt):
+        self.clear_canvas()
         arc1x0,arc1y0,arc1x1,arc1y1 = start.x()-(radius+width),start.y()-(radius+width),\
                                       start.x()+(radius+width),start.y()+(radius+width)
         arc2x0,arc2y0,arc2x1,arc2y1 = start.x()-(radius-width),start.y()-(radius-width),\
@@ -475,18 +482,18 @@ class Canvas(QtWidgets.QGraphicsView):
         self._arcItem2.show()
         self.canvasObject = "arc"
         self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt = start,radius,width,span,tilt
-        self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+        self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
 
-    def lineScanSignalEmit(self):
-        self.plotLineScan.emit(self.saveStart,self.saveEnd)
+    def line_scan_signal_emit(self):
+        self.PLOT_LINE_SCAN.emit(self.saveStart,self.saveEnd)
 
-    def integralSignalEmit(self):
-        self.plotIntegral.emit(self.saveStart,self.saveEnd,self.saveWidth)
+    def integral_signal_emit(self):
+        self.PLOT_INTEGRAL.emit(self.saveStart,self.saveEnd,self.saveWidth)
 
-    def chiScanSignalEmit(self):
-        self.plotChiScan.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
+    def chi_scan_signal_emit(self):
+        self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
 
-    def getRectanglePosition(self,start,end,width):
+    def get_rectangle_position(self,start,end,width):
         if end.y() == start.y():
             x0 = start.x()
             y0 = start.y()-width
@@ -528,16 +535,17 @@ class Canvas(QtWidgets.QGraphicsView):
         return QtCore.QPointF(x0,y0),QtCore.QPointF(x1,y1),QtCore.QPointF(x2,y2),QtCore.QPointF(x3,y3)
 
     def contextMenuEvent(self,event):
+        """This is an overload function"""
         self.menu = QtWidgets.QMenu()
         self.clear = QtWidgets.QAction('Clear')
-        self.clear.triggered.connect(self.clearCanvas)
+        self.clear.triggered.connect(self.clear_canvas)
         self.save = QtWidgets.QAction('Save as...')
-        self.save.triggered.connect(self.saveScene)
+        self.save.triggered.connect(self.save_scene)
         self.menu.addAction(self.clear)
         self.menu.addAction(self.save)
         self.menu.popup(event.globalPos())
 
-    def saveScene(self):
+    def save_scene(self):
         imageFileName = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./pattern.jpeg",\
                                                                    "Image (*.jpeg)")
         rect = self._scene.sceneRect()

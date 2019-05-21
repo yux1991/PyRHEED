@@ -1,17 +1,17 @@
 #This sets up the entire application, which reads the default configuration and initialize the UI
 #Last updated on 04/15/2019 by Y. Xiang
 #This code is written in Python 3.6.3
-from Window import *
+import broadening
+from configuration import *
+import graph_3D_surface
+import generate_report
+import manual_fit
+import preference
+import reciprocal_space_mapping
+import simulate_RHEED
+import statistical_factor
 import sys
-from Configuration import *
-import Graph3DSurface
-import StatisticalFactor
-import SimulateRHEED
-import ReciprocalSpaceMapping
-import GenerateReport
-import ManualFit
-import Broadening
-import Preference
+from window import *
 
 class Main():
     """The main class"""
@@ -25,71 +25,71 @@ class Main():
         self.window.showMaximized()
         self.window.show()
         #Connect the signals emitted by the window object
-        self.window.DefaultPropertiesRestRequested.connect(self.runPreference)
-        self.window.ReciprocalSpaceMappingRequested.connect(self.runReciprocalSpaceMapping)
-        self.window.BroadeningRequested.connect(self.runBroadening)
-        self.window.ManualFitRequested.connect(self.runManualFit)
-        self.window.GenerateReportRequested.connect(self.runGenerateReport)
-        self.window.StatisticalFactorRequested.connect(self.runStatisticalFactor)
-        self.window.DiffractionPatternRequested.connect(self.runSimulateRHEED)
-        self.window.ThreeDimensionalGraphRequested.connect(self.run3DGraph)
-        self.Preference = Preference.Window()
-        self.Preference.DefaultSettingsChanged.connect(self.window.refresh)
+        self.window.DEFAULT_PROPERTIES_REQUESTED.connect(self.run_preference)
+        self.window.RECIPROCAL_SPACE_MAPPING_REQUESTED.connect(self.run_reciprocal_space_mapping)
+        self.window.BROADENING_REQUESTED.connect(self.run_broadening)
+        self.window.MANUAL_FIT_REQUESTED.connect(self.run_manual_fit)
+        self.window.GENERATE_REPORT_REQUESTED.connect(self.run_generate_report)
+        self.window.STATISTICAL_FACTOR_REQUESTED.connect(self.run_simulate_RHEED)
+        self.window.DIFFRACTION_PATTERN_REQUESTED.connect(self.run_simulate_RHEED)
+        self.window.THREE_DIMENSIONAL_GRAPH_REQUESTED.connect(self.run_3D_graph)
+        self.preference = preference.Window()
+        self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.window.refresh)
         sys.exit(app.exec_())
 
-    def runPreference(self):
-        self.Preference.Main()
+    def run_preference(self):
+        self.preference.main()
 
-    def runReciprocalSpaceMapping(self,path):
-        self.ReciprocalSpaceMapping = ReciprocalSpaceMapping.Window()
-        self.ReciprocalSpaceMapping.Main(path)
-        self.ReciprocalSpaceMapping.StatusRequested.connect(self.window.status)
-        self.ReciprocalSpaceMapping.Show3DGraph.connect(self.run3DGraph)
-        self.ReciprocalSpaceMapping.Show2DContour.connect(self.run2DContour)
-        self.ReciprocalSpaceMapping.connectToCanvas.connect(self.connect_mapping_to_canvas)
-        self.window.returnStatus.connect(self.ReciprocalSpaceMapping.Set_Status)
-        self.Preference.DefaultSettingsChanged.connect(self.ReciprocalSpaceMapping.refresh)
+    def run_reciprocal_space_mapping(self,path):
+        self.reciprocal_space_mapping = reciprocal_space_mapping.Window()
+        self.reciprocal_space_mapping.STATUS_REQUESTED.connect(self.window.status)
+        self.reciprocal_space_mapping.SHOW_3D_GRAPH.connect(self.run_3D_graph)
+        self.reciprocal_space_mapping.SHOW_2D_CONTOUR.connect(self.run_2D_contour)
+        self.reciprocal_space_mapping.CONNECT_TO_CANVAS.connect(self.connect_mapping_to_canvas)
+        self.window.RETURN_STATUS.connect(self.reciprocal_space_mapping.set_status)
+        self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.reciprocal_space_mapping.refresh)
+        self.reciprocal_space_mapping.main(path)
 
-    def runGenerateReport(self,path):
-        self.GenerateReport = GenerateReport.Window()
-        self.GenerateReport.Main(path)
-        self.GenerateReport.StatusRequested.connect(self.window.status)
-        self.window.returnStatus.connect(self.GenerateReport.Set_Status)
+    def run_generate_report(self,path):
+        self.generate_report = generate_report.Window()
+        self.generate_report.STATUS_REQUESTED.connect(self.window.status)
+        self.window.RETURN_STATUS.connect(self.generate_report.set_status)
+        self.generate_report.main(path)
 
-    def runManualFit(self,path,nop):
-        self.ManualFit = ManualFit.Window()
-        self.ManualFit.Main(path,nop)
-        self.ManualFit.StatusRequested.connect(self.window.status)
-        self.window.returnStatus.connect(self.ManualFit.Set_Status)
-        self.Preference.DefaultSettingsChanged.connect(self.ManualFit.refresh)
+    def run_manual_fit(self,path,nop):
+        self.manual_fit = manual_fit.Window()
+        self.manual_fit.STATUS_REQUESTED.connect(self.window.status)
+        self.window.RETURN_STATUS.connect(self.manual_fit.set_status)
+        self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.manual_fit.refresh)
+        self.manual_fit.main(path,nop)
 
-    def runBroadening(self,path):
-        self.Broadening = Broadening.Window()
-        self.Broadening.Main(path)
-        self.Broadening.StatusRequested.connect(self.window.status)
-        self.Broadening.connectToCanvas.connect(self.connect_broadening_to_canvas)
-        self.window.returnStatus.connect(self.Broadening.Set_Status)
-        self.Preference.DefaultSettingsChanged.connect(self.Broadening.refresh)
+    def run_broadening(self,path):
+        self.broadening = broadening.Window()
+        self.broadening.STATUS_REQUESTED.connect(self.window.status)
+        self.broadening.CONNECT_TO_CANVAS.connect(self.connect_broadening_to_canvas)
+        self.window.RETURN_STATUS.connect(self.broadening.set_status)
+        self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.broadening.refresh)
+        self.broadening.main(path)
 
-    def runStatisticalFactor(self):
-        self.StatisticalFactor = StatisticalFactor.Window()
-        self.StatisticalFactor.Main()
+    def run_statistical_factor(self):
+        self.statistical_factor = statistical_factor.Window()
+        self.statistical_factor.main()
 
-    def runSimulateRHEED(self):
-        self.simulation = SimulateRHEED.Window()
-        self.simulation.Main()
+    def run_simulate_RHEED(self):
+        self.simulation = simulate_RHEED.Window()
+        self.simulation.main()
 
-    def run3DGraph(self,path=''):
+    def run_3D_graph(self,path=''):
         """The window to show a 3D surface
 
         Args:
             path: str, optional
                 The path of the text file that contains the 2D reciprocal space mapping data. Default is ''.
         """
-        self.graph = Graph3DSurface.Graph()
-        self.graph.run3DGraph(path)
+        self.graph = graph_3D_surface.Graph()
+        self.graph.run_3D_graph(path)
 
-    def run2DContour(self, path=None, insideGraph3D = False, min=0.0, max=1.0, radius_min=0, radius_max=10, number_of_levels=50, colormap='jet'):
+    def run_2D_contour(self, path=None, insideGraph3D = False, min=0.0, max=1.0, radius_min=0, radius_max=10, number_of_levels=50, colormap='jet'):
         """The window to show a 2D Contour
 
         Args:
@@ -111,19 +111,19 @@ class Main():
                 The name of the colormap. Default is 'jet'.
 
         """
-        self.graph = Graph3DSurface.Graph()
-        self.graph.Show_2D_Contour(path,insideGraph3D = insideGraph3D, min=min, max=max, radius_min=radius_min, radius_max=radius_max,\
+        self.graph = graph_3D_surface.Graph()
+        self.graph.show_2d_contour(path,insideGraph3D = insideGraph3D, min=min, max=max, radius_min=radius_min, radius_max=radius_max,\
                                    number_of_levels=number_of_levels, colormap=colormap)
 
     def connect_broadening_to_canvas(self):
         """Signal Connection"""
-        self.Broadening.drawLineRequested.connect(self.window.mainTab.currentWidget().drawLine)
-        self.Broadening.drawRectRequested.connect(self.window.mainTab.currentWidget().drawRect)
+        self.broadening.DRAW_LINE_REQUESTED.connect(self.window.mainTab.currentWidget().draw_line)
+        self.broadening.DRAW_RECT_REQUESTED.connect(self.window.mainTab.currentWidget().draw_rect)
 
     def connect_mapping_to_canvas(self):
         """Signal Connection"""
-        self.ReciprocalSpaceMapping.drawLineRequested.connect(self.window.mainTab.currentWidget().drawLine)
-        self.ReciprocalSpaceMapping.drawRectRequested.connect(self.window.mainTab.currentWidget().drawRect)
+        self.reciprocal_space_mapping.DRAW_LINE_REQUESTED.connect(self.window.mainTab.currentWidget().draw_line)
+        self.reciprocal_space_mapping.DRAW_RECT_REQUESTED.connect(self.window.mainTab.currentWidget().draw_rect)
 
 if __name__ == '__main__':
     Main()

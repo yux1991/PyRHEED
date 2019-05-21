@@ -24,7 +24,7 @@ class Image(object):
                                       '.png','.ppm','.sgi','.tiff','.tif','.xbm','.BMP','.EPS','.GIF','.ICNS','.ICO','.IM','.JPG','.JPEG','.JPEG2000','.MSP','.PCX',\
                                       '.PNG','.PPM','.SGI','.TIFF','.TIF','.XBM'}
 
-    def getImage(self,bit_depth,img_path,EnableAutoWB, Brightness, UserBlack, image_crop):
+    def get_image(self,bit_depth,img_path,EnableAutoWB, Brightness, UserBlack, image_crop):
         pathExtension = os.path.splitext(img_path)[1]
         if pathExtension in self.supportedRawFormats:
             img_raw = rawpy.imread(img_path)
@@ -46,7 +46,7 @@ class Image(object):
             qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
             return qImg, img_array
 
-    def getLineScan(self,start,end,img,scale_factor):
+    def get_line_scan(self,start,end,img,scale_factor):
         x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
         K_length = max(int(abs(x1-x0)+1),int(abs(y1-y0)+1))
         Kx = np.linspace(x0,x1,K_length)
@@ -57,7 +57,7 @@ class Image(object):
         LineScanRadius = np.linspace(0,math.sqrt((x1-x0)**2+(y1-y0)**2),len(Kx))
         return LineScanRadius/scale_factor,LineScanIntensities/np.amax(np.amax(img))
 
-    def getIntegral(self,start,end,width,img,scale_factor):
+    def get_integral(self,start,end,width,img,scale_factor):
         x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
         K_length = max(int(abs(x1-x0)+1),int(abs(y1-y0)+1))
         int_width = int(width)
@@ -82,10 +82,10 @@ class Image(object):
             try:
                 LineScanIntensities = np.sum([img[index[i,0,:],index[i,1,:]] for i in range(len(Kx))],axis=1)
             except:
-                self.Raise_Error("index out of bounds")
+                self.raise_error("index out of bounds")
         return LineScanRadius/scale_factor,LineScanIntensities/2/width/np.amax(np.amax(img))
 
-    def getChiScan(self,center,radius,width,chiRange,tilt,img,chiStep=1):
+    def get_chi_scan(self,center,radius,width,chiRange,tilt,img,chiStep=1):
         x0,y0 = center.x(),center.y()
         if int(chiRange/chiStep)>2:
             ChiTotalSteps = int(chiRange/chiStep)
@@ -121,7 +121,7 @@ class Image(object):
         ChiProfile = np.sum([img[ImageIndices[i,1,:]+int(y0),ImageIndices[i,0,:]+int(x0)] for i in range(ChiTotalSteps+1)], axis=1)/cit
         return np.flip(ChiAngle2,axis=0),ChiProfile/np.amax(np.amax(img))
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -130,7 +130,7 @@ class Image(object):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)
@@ -261,7 +261,7 @@ class Fit(object):
         self.cost_values.append(sum(map(lambda x:np.abs(x),cost)))
         return cost
 
-    def getGaussianFit(self,x,y,numberOfPeaks,includeBackground,guess,bounds,FTol,XTol,GTol,method,loss):
+    def get_gaussian_fit(self,x,y,numberOfPeaks,includeBackground,guess,bounds,FTol,XTol,GTol,method,loss):
         if includeBackground == 0:
             if numberOfPeaks == 1:
                 self.fitFunction = self.gaussian
@@ -437,19 +437,19 @@ class Convertor(object):
 
 class ReciprocalSpaceMap(QtCore.QObject):
 
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressEnd = QtCore.pyqtSignal()
-    connectToCanvas = QtCore.pyqtSignal()
-    updateLog = QtCore.pyqtSignal(str)
-    updateChart = QtCore.pyqtSignal(np.ndarray,np.ndarray,str)
-    fileSaved = QtCore.pyqtSignal(str)
-    finished = QtCore.pyqtSignal()
-    setTitle = QtCore.pyqtSignal(str)
-    drawLineRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
-    drawRectRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
-    error = QtCore.pyqtSignal(str)
-    attention = QtCore.pyqtSignal(str)
-    aborted = QtCore.pyqtSignal()
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_END = QtCore.pyqtSignal()
+    CONNECT_TO_CANVAS = QtCore.pyqtSignal()
+    UPDATE_LOG = QtCore.pyqtSignal(str)
+    UPDATE_CHART = QtCore.pyqtSignal(np.ndarray,np.ndarray,str)
+    FILE_SAVED = QtCore.pyqtSignal(str)
+    FINISHED = QtCore.pyqtSignal()
+    SET_TITLE = QtCore.pyqtSignal(str)
+    DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
+    DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    ERROR = QtCore.pyqtSignal(str)
+    ATTENTION = QtCore.pyqtSignal(str)
+    ABORTED = QtCore.pyqtSignal()
 
     def __init__(self,status,path,default,IsPoleFigure,IsCentered,IsSaveResult,Is2D,IsCartesian,startIndex,endIndex,analysisRange,destination,saveFileName,fileType,group):
         super(ReciprocalSpaceMap,self).__init__()
@@ -484,11 +484,11 @@ class ReciprocalSpaceMap(QtCore.QObject):
         scale_factor = self.status["sensitivity"]/np.sqrt(self.status["energy"])
         if (mode == "arc" and self.IsPoleFigure):
             if self.status["startX"] == "" or self.status["startY"] == "" or self.status["width"] =="":
-                self.updateLog.emit("ERROR: Please choose the region!")
-                self.error.emit("Please choose the region!")
+                self.UPDATE_LOG.emit("ERROR: Please choose the region!")
+                self.ERROR.emit("Please choose the region!")
                 QtCore.QCoreApplication.processEvents()
             else:
-                self.connectToCanvas.emit()
+                self.CONNECT_TO_CANVAS.emit()
                 start = QtCore.QPointF()
                 start.setX(self.status["startX"])
                 start.setY(self.status["startY"])
@@ -501,11 +501,11 @@ class ReciprocalSpaceMap(QtCore.QObject):
                     image_list.append(filename)
                 map_2D1=np.array([0,0,0])
                 map_2D2=np.array([0,0,0])
-                self.setTitle.emit("Chi Scan at R = {:3.2f} \u212B\u207B\u00B9".format(radius))
+                self.SET_TITLE.emit("Chi Scan at R = {:3.2f} \u212B\u207B\u00B9".format(radius))
                 QtCore.QCoreApplication.processEvents()
                 for nimg in range(self.startIndex,self.endIndex+1):
-                    qImg, img = self.image_worker.getImage(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
-                    RC,I = self.image_worker.getChiScan(start,radius*scale_factor,width,chiRange,tiltAngle,img,chiStep)
+                    qImg, img = self.image_worker.get_image(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
+                    RC,I = self.image_worker.get_chi_scan(start,radius*scale_factor,width,chiRange,tiltAngle,img,chiStep)
                     Phi1 = np.full(len(RC),nimg*1.8)
                     Phi2 = np.full(len(RC),nimg*1.8)
                     for iphi in range(0,int(len(RC)/2)):
@@ -513,11 +513,11 @@ class ReciprocalSpaceMap(QtCore.QObject):
                     map_2D1 = np.vstack((map_2D1,np.vstack((abs(RC),Phi1,I)).T))
                     map_2D2 = np.vstack((map_2D2,np.vstack((RC,Phi2,I)).T))
                     if self.IsCentered:
-                        self.updateChart.emit(RC,I,"arc")
+                        self.UPDATE_CHART.emit(RC,I,"arc")
                     else:
-                        self.updateChart.emit(abs(RC),I,"arc")
-                    self.progressAdvance.emit(0,100,(nimg+1-self.startIndex)*100/(self.endIndex-self.startIndex+1))
-                    self.updateLog.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
+                        self.UPDATE_CHART.emit(abs(RC),I,"arc")
+                    self.PROGRESS_ADVANCE.emit(0,100,(nimg+1-self.startIndex)*100/(self.endIndex-self.startIndex+1))
+                    self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                     QtCore.QCoreApplication.processEvents()
                     if self._abort:
                         break
@@ -529,31 +529,31 @@ class ReciprocalSpaceMap(QtCore.QObject):
                     self.graphTextPath = self.currentDestination+"/"+self.saveFileName+self.fileType
                     if self.IsSaveResult:
                         np.savetxt(self.graphTextPath,pole_figure,fmt='%4.3f')
-                    self.progressEnd.emit()
-                    self.updateLog.emit("Completed!")
-                    self.attention.emit("Pole Figure Completed!")
+                    self.PROGRESS_END.emit()
+                    self.UPDATE_LOG.emit("Completed!")
+                    self.ATTENTION.emit("Pole Figure Completed!")
                     if self.IsSaveResult:
-                        self.fileSaved.emit(self.graphTextPath)
+                        self.FILE_SAVED.emit(self.graphTextPath)
                     QtCore.QCoreApplication.processEvents()
         elif mode == "arc":
-            self.error.emit("The type of mapping is not consistent with the chosen region!")
+            self.ERROR.emit("The type of mapping is not consistent with the chosen region!")
             QtCore.QCoreApplication.processEvents()
         elif self.IsPoleFigure:
-            self.error.emit("The type of mapping is not consistent with the chosen region!")
+            self.ERROR.emit("The type of mapping is not consistent with the chosen region!")
             QtCore.QCoreApplication.processEvents()
         else:
             if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
                     self.status["endY"] == ""\
                 or self.status["width"] =="":
-                self.updateLog.emit("ERROR: Please choose the region!")
-                self.error.emit("Please choose the region!")
+                self.UPDATE_LOG.emit("ERROR: Please choose the region!")
+                self.ERROR.emit("Please choose the region!")
                 QtCore.QCoreApplication.processEvents()
             elif self.status["choosedX"] == "" or self.status["choosedY"] == "":
-                self.updateLog.emit("ERROR: Please choose the origin!")
-                self.error.emit("Please choose the origin!")
+                self.UPDATE_LOG.emit("ERROR: Please choose the origin!")
+                self.ERROR.emit("Please choose the origin!")
                 QtCore.QCoreApplication.processEvents()
             else:
-                self.connectToCanvas.emit()
+                self.CONNECT_TO_CANVAS.emit()
                 QtCore.QCoreApplication.processEvents()
                 start = QtCore.QPointF()
                 end = QtCore.QPointF()
@@ -572,12 +572,12 @@ class ReciprocalSpaceMap(QtCore.QObject):
                              np.sqrt((end.y()-start.y())**2+(end.x()-start.x())**2))/scale_factor
                     map_2D1=np.array([0,0,0])
                     map_2D2=np.array([0,0,0])
-                    self.setTitle.emit("Line Profile at Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
+                    self.SET_TITLE.emit("Line Profile at Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
                     QtCore.QCoreApplication.processEvents()
                     for nimg in range(self.startIndex,self.endIndex+1):
-                        qImg, img = self.image_worker.getImage(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
+                        qImg, img = self.image_worker.get_image(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                         if width==0.0:
-                            RC,I = self.image_worker.getLineScan(start,end,img,scale_factor)
+                            RC,I = self.image_worker.get_line_scan(start,end,img,scale_factor)
                             Phi1 = np.full(len(RC),nimg*1.8)
                             Phi2 = np.full(len(RC),nimg*1.8)
                             maxPos = np.argmax(I)
@@ -594,7 +594,7 @@ class ReciprocalSpaceMap(QtCore.QObject):
                                 x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
                                 map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
                         else:
-                            RC,I = self.image_worker.getIntegral(start,end,width,img,scale_factor)
+                            RC,I = self.image_worker.get_integral(start,end,width,img,scale_factor)
                             Phi1 = np.full(len(RC),nimg*1.8)
                             Phi2 = np.full(len(RC),nimg*1.8)
                             maxPos = np.argmax(I)
@@ -611,11 +611,11 @@ class ReciprocalSpaceMap(QtCore.QObject):
                                 x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
                                 map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
                         if self.IsCentered:
-                            self.updateChart.emit(x2,y2,"line")
+                            self.UPDATE_CHART.emit(x2,y2,"line")
                         else:
-                            self.updateChart.emit(x1,y1,"line")
-                        self.progressAdvance.emit(0,100,(nimg+1-self.startIndex)*100/(self.endIndex-self.startIndex+1))
-                        self.updateLog.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
+                            self.UPDATE_CHART.emit(x1,y1,"line")
+                        self.PROGRESS_ADVANCE.emit(0,100,(nimg+1-self.startIndex)*100/(self.endIndex-self.startIndex+1))
+                        self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                         QtCore.QCoreApplication.processEvents()
                         if self._abort:
                             break
@@ -634,17 +634,17 @@ class ReciprocalSpaceMap(QtCore.QObject):
                                 np.savetxt(self.graphTextPath,map_2D_cart,fmt='%4.3f')
                             else:
                                 np.savetxt(self.graphTextPath,map_2D_polar,fmt='%4.3f')
-                        self.progressEnd.emit()
-                        self.updateLog.emit("Completed!")
-                        self.attention.emit("2D Mapping Completed!")
+                        self.PROGRESS_END.emit()
+                        self.UPDATE_LOG.emit("Completed!")
+                        self.ATTENTION.emit("2D Mapping Completed!")
                         if self.IsSaveResult:
-                            self.fileSaved.emit(self.graphTextPath)
+                            self.FILE_SAVED.emit(self.graphTextPath)
                         QtCore.QCoreApplication.processEvents()
                 else:
                     map_3D1=np.array([0,0,0,0])
                     map_3D2=np.array([0,0,0,0])
                     for nimg in range(self.startIndex,self.endIndex+1):
-                        qImg, img = self.image_worker.getImage(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
+                        qImg, img = self.image_worker.get_image(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                         x0,y0,xn,yn = start.x(),start.y(),end.x(),end.y()
                         newStart = QtCore.QPointF()
                         newEnd = QtCore.QPointF()
@@ -668,16 +668,16 @@ class ReciprocalSpaceMap(QtCore.QObject):
                                 newEnd.setY(int(yn+i*step*np.cos(angle)))
                             Kperp = (np.abs((newEnd.y()-newStart.y())*origin.x()-(newEnd.x()-newStart.x())*origin.y()+newEnd.x()*newStart.y()-newEnd.y()*newStart.x())/ \
                                      np.sqrt((newEnd.y()-newStart.y())**2+(newEnd.x()-newStart.x())**2))/scale_factor
-                            self.setTitle.emit("Line Profile at Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
+                            self.SET_TITLE.emit("Line Profile at Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
                             QtCore.QCoreApplication.processEvents()
                             if width==0.0:
-                                RC,I = self.image_worker.getLineScan(newStart,newEnd,img,scale_factor)
+                                RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,scale_factor)
                                 rem = np.remainder(len(RC),self.group)
                                 if not rem == 0:
                                     RC = np.pad(RC,(0,self.group-rem),'edge')
                                     I = np.pad(I,(0,self.group-rem),'edge')
                                 RC,I = RC.reshape(-1,self.group).mean(axis=1), I.reshape(-1,self.group).mean(axis=1)
-                                self.drawLineRequested.emit(newStart,newEnd,False)
+                                self.DRAW_LINE_REQUESTED.emit(newStart,newEnd,False)
                                 QtCore.QCoreApplication.processEvents()
                                 Phi1 = np.full(len(RC),nimg*1.8)
                                 Phi2 = np.full(len(RC),nimg*1.8)
@@ -697,13 +697,13 @@ class ReciprocalSpaceMap(QtCore.QObject):
                                     x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
                                     map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],K,y2)).T))
                             else:
-                                RC,I = self.image_worker.getIntegral(newStart,newEnd,width,img,scale_factor)
+                                RC,I = self.image_worker.get_integral(newStart,newEnd,width,img,scale_factor)
                                 rem = np.remainder(len(RC),self.group)
                                 if not rem == 0:
                                     RC = np.pad(RC,(0,self.group-rem),'edge')
                                     I = np.pad(I,(0,self.group-rem),'edge')
                                 RC,I = RC.reshape(-1,self.group).mean(axis=1), I.reshape(-1,self.group).mean(axis=1)
-                                self.drawRectRequested.emit(newStart,newEnd,width,False)
+                                self.DRAW_RECT_REQUESTED.emit(newStart,newEnd,width,False)
                                 QtCore.QCoreApplication.processEvents()
                                 Phi1 = np.full(len(RC),nimg*1.8)
                                 Phi2 = np.full(len(RC),nimg*1.8)
@@ -723,11 +723,11 @@ class ReciprocalSpaceMap(QtCore.QObject):
                                     x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
                                     map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],K,y2)).T))
                             if self.IsCentered:
-                                self.updateChart.emit(x2,y2,"line")
+                                self.UPDATE_CHART.emit(x2,y2,"line")
                             else:
-                                self.updateChart.emit(x1,y1,"line")
-                            self.progressAdvance.emit(0,100,(i+nos*(nimg-self.startIndex))*100/((self.endIndex-self.startIndex+1)*nos))
-                            self.updateLog.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
+                                self.UPDATE_CHART.emit(x1,y1,"line")
+                            self.PROGRESS_ADVANCE.emit(0,100,(i+nos*(nimg-self.startIndex))*100/((self.endIndex-self.startIndex+1)*nos))
+                            self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                             QtCore.QCoreApplication.processEvents()
                         if self._abort:
                             break
@@ -750,14 +750,14 @@ class ReciprocalSpaceMap(QtCore.QObject):
                             else:
                                 np.savetxt(self.graphTextPath,map_3D_polar,fmt='%4.3f')
                                 self.convertor_worker.txt2vtp(self.graphTextPath,"Polar")
-                        self.progressEnd.emit()
-                        self.updateLog.emit("Completed!")
-                        self.attention.emit("3D Mapping Completed!")
+                        self.PROGRESS_END.emit()
+                        self.UPDATE_LOG.emit("Completed!")
+                        self.ATTENTION.emit("3D Mapping Completed!")
                         QtCore.QCoreApplication.processEvents()
         if not self._abort:
-            self.finished.emit()
+            self.FINISHED.emit()
         else:
-            self.aborted.emit()
+            self.ABORTED.emit()
             self._abort = False
 
     def stop(self):
@@ -765,12 +765,12 @@ class ReciprocalSpaceMap(QtCore.QObject):
 
 
 class DiffractionPattern(QtCore.QObject):
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressEnd = QtCore.pyqtSignal()
-    error = QtCore.pyqtSignal(str)
-    accomplished = QtCore.pyqtSignal(np.ndarray)
-    aborted = QtCore.pyqtSignal()
-    finished = QtCore.pyqtSignal()
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_END = QtCore.pyqtSignal()
+    ERROR = QtCore.pyqtSignal(str)
+    ACCOMPLISHED = QtCore.pyqtSignal(np.ndarray)
+    ABORTED = QtCore.pyqtSignal()
+    FINISHED = QtCore.pyqtSignal()
 
     def __init__(self,Kx,Ky,Kz,AFF,atoms):
         super(DiffractionPattern,self).__init__()
@@ -807,7 +807,7 @@ class DiffractionPattern(QtCore.QObject):
             elif specie+'4-' in self.species_dict:
                 af_row = self.AFF.loc[specie+'4-']
             else:
-                self.error.emit("No scattering coefficient for %s"%specie)
+                self.ERROR.emit("No scattering coefficient for %s"%specie)
                 break
             QtCore.QCoreApplication.processEvents()
             if self._abort:
@@ -819,14 +819,14 @@ class DiffractionPattern(QtCore.QObject):
                                    +af_row.at['a4']*np.exp(-af_row.at['b4']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)
                 self.Psi += np.multiply(af,np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2])))
                 itr+=1
-                self.progressAdvance.emit(0,100,itr/number_of_atoms*100)
+                self.PROGRESS_ADVANCE.emit(0,100,itr/number_of_atoms*100)
                 QtCore.QCoreApplication.processEvents()
         if not self._abort:
             self.intensity = np.multiply(self.Psi.astype('complex64'),np.conj(self.Psi.astype('complex64')))
-            self.progressEnd.emit()
-            self.accomplished.emit(self.intensity)
+            self.PROGRESS_END.emit()
+            self.ACCOMPLISHED.emit(self.intensity)
         else:
-            self.aborted.emit()
+            self.ABORTED.emit()
             self._abort = False
 
     def stop(self):
@@ -834,18 +834,18 @@ class DiffractionPattern(QtCore.QObject):
 
 class FitBroadening(QtCore.QObject):
 
-    drawLineRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
-    drawRectRequested = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressEnd = QtCore.pyqtSignal()
-    updateResults = QtCore.pyqtSignal(list)
-    updateLog = QtCore.pyqtSignal(str)
-    writeOutput = QtCore.pyqtSignal(str)
-    closeOutput = QtCore.pyqtSignal()
-    attention = QtCore.pyqtSignal(str)
-    finished = QtCore.pyqtSignal()
-    addCostFunction = QtCore.pyqtSignal(np.ndarray,list,str)
-    addPlot = QtCore.pyqtSignal(np.ndarray,np.ndarray)
+    DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
+    DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_END = QtCore.pyqtSignal()
+    UPDATE_RESULTS = QtCore.pyqtSignal(list)
+    UPDATE_LOG = QtCore.pyqtSignal(str)
+    WRITE_OUTPUT = QtCore.pyqtSignal(str)
+    CLOSE_OUTPUT = QtCore.pyqtSignal()
+    ATTENTION = QtCore.pyqtSignal(str)
+    FINISHED = QtCore.pyqtSignal()
+    ADD_COST_FUNCTION = QtCore.pyqtSignal(np.ndarray,list,str)
+    ADD_PLOT = QtCore.pyqtSignal(np.ndarray,np.ndarray)
 
     def __init__(self,path,initialparameters,startIndex,endIndex,origin,start,end,width,analysisRange,scale_factor,autoWB,brightness,blackLevel,image_crop,\
                  numberOfPeaks,BGCheck,saveResult,guess,bounds,ftol,xtol,gtol,method,loss):
@@ -883,9 +883,9 @@ class FitBroadening(QtCore.QObject):
         for filename in glob.glob(self.path):
             self.image_list.append(filename)
         for nimg in range(self.startIndex,self.endIndex+1):
-            self.updateResults.emit(self.initialparameters)
-            self.updateLog.emit("The file being processed right now is: "+self.image_list[nimg])
-            qImg, img = self.image_worker.getImage(16,self.image_list[nimg],self.autoWB,self.brightness,self.blackLevel,self.image_crop)
+            self.UPDATE_RESULTS.emit(self.initialparameters)
+            self.UPDATE_LOG.emit("The file being processed right now is: "+self.image_list[nimg])
+            qImg, img = self.image_worker.get_image(16,self.image_list[nimg],self.autoWB,self.brightness,self.blackLevel,self.image_crop)
             x0,y0,x1,y1 = self.start.x(),self.start.y(),self.end.x(),self.end.y()
             newStart = QtCore.QPointF()
             newEnd = QtCore.QPointF()
@@ -908,12 +908,12 @@ class FitBroadening(QtCore.QObject):
                     newEnd.setX(int(x1+i*step*np.sin(angle)))
                     newEnd.setY(int(y1+i*step*np.cos(angle)))
                 if self.width == 0.0:
-                    self.drawLineRequested.emit(newStart,newEnd,False)
-                    RC,I = self.image_worker.getLineScan(newStart,newEnd,img,self.scale_factor)
+                    self.DRAW_LINE_REQUESTED.emit(newStart,newEnd,False)
+                    RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,self.scale_factor)
                 else:
-                    self.drawRectRequested.emit(newStart,newEnd,self.width,False)
-                    RC,I = self.image_worker.getIntegral(newStart,newEnd,self.width,img,self.scale_factor)
-                results, cost = self.fit_worker.getGaussianFit(RC,I,self.numberOfPeaks,self.BGCheck,self.guess,(self.bound_low,self.bound_high),self.ftol,\
+                    self.DRAW_RECT_REQUESTED.emit(newStart,newEnd,self.width,False)
+                    RC,I = self.image_worker.get_integral(newStart,newEnd,self.width,img,self.scale_factor)
+                results, cost = self.fit_worker.get_gaussian_fit(RC,I,self.numberOfPeaks,self.BGCheck,self.guess,(self.bound_low,self.bound_high),self.ftol,\
                                                                 self.xtol,self.gtol,self.method,self.loss)
                 Kperp = (np.abs((newEnd.y()-newStart.y())*self.origin.x()-(newEnd.x()-newStart.x())*self.origin.y()+newEnd.x()*newStart.y()-newEnd.y()*newStart.x())/\
                         np.sqrt((newEnd.y()-newStart.y())**2+(newEnd.x()-newStart.x())**2))/self.scale_factor
@@ -923,32 +923,32 @@ class FitBroadening(QtCore.QObject):
                 residual_variance = np.sum(results.fun**2)/(len(I)-len(self.guess))
                 var = np.sqrt(np.diagonal(cov*residual_variance))
                 value_variance = np.reshape(np.concatenate((np.array(results.x),np.array(var)),axis=0),(2,len(var)))
-                self.addCostFunction.emit(iteration,cost,'cost_function')
-                self.updateResults.emit(list(results.x))
+                self.ADD_COST_FUNCTION.emit(iteration,cost,'cost_function')
+                self.UPDATE_RESULTS.emit(list(results.x))
                 if i == 1:
                     self.initialparameters = list(results.x)
                 fitresults =str(nimg*1.8).ljust(12)+'\t'+str(np.round(Kperp,3)).ljust(12)+'\t'+'\t'.join(str(np.round(e[0],3)).ljust(12)+'\t'+str(np.round(e[1],3)).ljust(12) for e in value_variance.T)+'\n'
                 if self.saveResult == 2:
-                    self.writeOutput.emit(fitresults)
-                self.updateLog.emit("MESSAGE:"+results.message)
-                self.addPlot.emit(RC,I)
-                self.progressAdvance.emit(0,100,((nimg-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
+                    self.WRITE_OUTPUT.emit(fitresults)
+                self.UPDATE_LOG.emit("MESSAGE:"+results.message)
+                self.ADD_PLOT.emit(RC,I)
+                self.PROGRESS_ADVANCE.emit(0,100,((nimg-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
                 QtCore.QCoreApplication.processEvents()
                 if self._abort:
                     break
             if self._abort:
                 break
         if self.saveResult == 2:
-            self.closeOutput.emit()
+            self.CLOSE_OUTPUT.emit()
         if not self._abort:
-            self.progressEnd.emit()
-            self.updateLog.emit("Completed!")
-            self.attention.emit("Broadening Analysis Completed!")
+            self.PROGRESS_END.emit()
+            self.UPDATE_LOG.emit("Completed!")
+            self.ATTENTION.emit("Broadening Analysis Completed!")
         else:
-            self.updateLog.emit("Aborted!")
-            self.attention.emit("Broadening Analysis Aborted!")
+            self.UPDATE_LOG.emit("Aborted!")
+            self.ATTENTION.emit("Broadening Analysis Aborted!")
             self._abort = False
-        self.finished.emit()
+        self.FINISHED.emit()
 
     def stop(self):
         self._abort = True

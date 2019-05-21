@@ -1,8 +1,8 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 class Properties(QtWidgets.QWidget):
-    chartFontsChanged = QtCore.pyqtSignal(str,int)
-    canvasFontsChanged = QtCore.pyqtSignal(str,int)
+    CHART_FONTS_CHANGED = QtCore.pyqtSignal(str,int)
+    CANVAS_FONTS_CHANGED = QtCore.pyqtSignal(str,int)
 
     def __init__(self,parent,config):
         super(Properties,self).__init__(parent)
@@ -35,7 +35,7 @@ class Properties(QtWidgets.QWidget):
         self.tiltAngleMaximum = int(propertiesDefault['tiltanglemaximum'])
         self.tiltAngleSliderScale = int(propertiesDefault['tiltanglesliderscale'])
 
-        self.initUI()
+        self.init_UI()
 
     def refresh(self,config):
         propertiesDefault = dict(config['propertiesDefault'].items())
@@ -93,7 +93,7 @@ class Properties(QtWidgets.QWidget):
         self.tiltAngleSlider.setMaximum(self.tiltAngleMaximum*self.tiltAngleSliderScale)
         self.tiltAngleSlider.setValue(self.tiltAngle*self.tiltAngleSliderScale)
 
-    def initUI(self):
+    def init_UI(self):
         self.tab = QtWidgets.QTabWidget()
         #Parameters page
         self.parametersPage = QtWidgets.QWidget()
@@ -211,21 +211,21 @@ class Properties(QtWidgets.QWidget):
         self.fontListLabel = QtWidgets.QLabel("Choose Font Family")
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
-        self.fontList.currentFontChanged.connect(self.RefreshFontName)
+        self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.chartFontSizeLabel = QtWidgets.QLabel("Adjust Chart Font Size ({})".format(12))
         self.chartFontSizeLabel.setFixedWidth(160)
         self.chartFontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.chartFontSizeSlider.setMinimum(1)
         self.chartFontSizeSlider.setMaximum(100)
         self.chartFontSizeSlider.setValue(12)
-        self.chartFontSizeSlider.valueChanged.connect(self.RefreshChartFontSize)
+        self.chartFontSizeSlider.valueChanged.connect(self.refresh_chart_font_size)
         self.canvasFontSizeLabel = QtWidgets.QLabel("Adjust Canvas Font Size ({})".format(50))
         self.canvasFontSizeLabel.setFixedWidth(160)
         self.canvasFontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.canvasFontSizeSlider.setMinimum(1)
         self.canvasFontSizeSlider.setMaximum(100)
         self.canvasFontSizeSlider.setValue(50)
-        self.canvasFontSizeSlider.valueChanged.connect(self.RefreshCanvasFontSize)
+        self.canvasFontSizeSlider.valueChanged.connect(self.refresh_canvas_font_size)
         self.appearanceGrid.addWidget(self.fontListLabel,0,0)
         self.appearanceGrid.addWidget(self.fontList,0,1)
         self.appearanceGrid.addWidget(self.chartFontSizeLabel,1,0)
@@ -241,14 +241,14 @@ class Properties(QtWidgets.QWidget):
         self.setLayout(self.UIgrid)
         self.show()
 
-    def RefreshChartFontSize(self):
+    def refresh_chart_font_size(self):
         self.chartFontSizeLabel.setText("Adjust Chart Font Size ({})".format(self.chartFontSizeSlider.value()))
-        self.chartFontsChanged.emit(self.fontList.currentFont().family(),self.chartFontSizeSlider.value())
+        self.CHART_FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.chartFontSizeSlider.value())
 
-    def RefreshCanvasFontSize(self):
+    def refresh_canvas_font_size(self):
         self.canvasFontSizeLabel.setText("Adjust Canvas Font Size ({})".format(self.canvasFontSizeSlider.value()))
-        self.canvasFontsChanged.emit(self.fontList.currentFont().family(),self.canvasFontSizeSlider.value())
+        self.CANVAS_FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.canvasFontSizeSlider.value())
 
-    def RefreshFontName(self):
-        self.chartFontsChanged.emit(self.fontList.currentFont().family(),self.chartFontSizeSlider.value())
-        self.canvasFontsChanged.emit(self.fontList.currentFont().family(),self.canvasFontSizeSlider.value())
+    def refresh_font_name(self):
+        self.CHART_FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.chartFontSizeSlider.value())
+        self.CANVAS_FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.canvasFontSizeSlider.value())

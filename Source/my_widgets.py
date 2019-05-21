@@ -6,7 +6,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 class DoubleSlider(QtWidgets.QWidget):
-    valueChanged = QtCore.pyqtSignal()
+    VALUE_CHANGED = QtCore.pyqtSignal()
 
     def __init__(self,minimum,maximum,scale,head,tail,text,unit,direction='horizontal'):
         super(DoubleSlider,self).__init__()
@@ -21,7 +21,7 @@ class DoubleSlider(QtWidgets.QWidget):
         self.minSlider.setMinimum(minimum)
         self.minSlider.setMaximum(maximum)
         self.minSlider.setValue(self.currentMin)
-        self.minSlider.valueChanged.connect(self.minChanged)
+        self.minSlider.valueChanged.connect(self.min_changed)
 
         self.maxLabel = QtWidgets.QLabel(self.text+"_max = {:5.2f} ".format(self.currentMax*self.scale)+"("+unit+")")
         self.maxLabel.setFixedWidth(180)
@@ -30,7 +30,7 @@ class DoubleSlider(QtWidgets.QWidget):
         self.maxSlider.setMinimum(minimum)
         self.maxSlider.setMaximum(maximum)
         self.maxSlider.setValue(self.currentMax)
-        self.maxSlider.valueChanged.connect(self.maxChanged)
+        self.maxSlider.valueChanged.connect(self.max_changed)
 
         self.UIgrid = QtWidgets.QGridLayout()
         self.UIgrid.addWidget(self.minLabel,0,0)
@@ -40,35 +40,35 @@ class DoubleSlider(QtWidgets.QWidget):
         self.UIgrid.setContentsMargins(0,0,0,0)
         self.setLayout(self.UIgrid)
 
-    def setHead(self,value):
+    def set_head(self,value):
         self.minSlider.setValue(int(value/self.scale))
 
-    def setTail(self,value):
+    def set_tail(self,value):
         self.maxSlider.setValue(int(value/self.scale))
 
     def values(self):
         return self.currentMin*self.scale, self.currentMax*self.scale
 
-    def minChanged(self):
+    def min_changed(self):
         self.currentMin = self.minSlider.value()
         if self.currentMin > self.currentMax:
             self.maxSlider.setValue(self.currentMin)
         self.minLabel.setText(self.text+"_min = {:5.2f} ".format(self.currentMin*self.scale)+"("+self.unit+")")
-        self.valueChanged.emit()
+        self.VALUE_CHANGED.emit()
 
-    def maxChanged(self):
+    def max_changed(self):
         self.currentMax = self.maxSlider.value()
         if self.currentMin > self.currentMax:
             self.minSlider.setValue(self.currentMax)
         self.maxLabel.setText(self.text+"_max = {:5.2f} ".format(self.currentMax*self.scale)+"("+self.unit+")")
-        self.valueChanged.emit()
+        self.VALUE_CHANGED.emit()
 
     def setEnabled(self,enable):
         self.minSlider.setEnabled(enable)
         self.maxSlider.setEnabled(enable)
 
 class VerticalLabelSlider(QtWidgets.QWidget):
-    valueChanged = QtCore.pyqtSignal()
+    VALUE_CHANGED = QtCore.pyqtSignal()
     def __init__(self,minimum,maximum,scale,value,name,index,BG=False,direction='vertical',color='black'):
         super(VerticalLabelSlider,self).__init__()
         self.name = name
@@ -84,12 +84,12 @@ class VerticalLabelSlider(QtWidgets.QWidget):
         self.slider.setMinimum(minimum*scale)
         self.slider.setMaximum(maximum*scale)
         self.slider.setValue(value*self.scale)
-        self.slider.valueChanged.connect(self.updateLabel)
+        self.slider.valueChanged.connect(self.update_label)
 
         self.UIgrid = QtWidgets.QGridLayout()
         palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.Window, QtCore.Qt.transparent)
-        palette.setColor(QtGui.QPalette.WindowText,QtGui.QColor(color))
+        palette.set_color(QtGui.QPalette.Window, QtCore.Qt.transparent)
+        palette.set_color(QtGui.QPalette.WindowText,QtGui.QColor(color))
         if direction == 'vertical':
             if self.BG:
                 self.label = QtWidgets.QLabel('\u00A0\u00A0'+self.name+'\u00A0BG\n({:3.2f})'.format(value))
@@ -110,10 +110,10 @@ class VerticalLabelSlider(QtWidgets.QWidget):
     def value(self):
         return str(self.currentValue)
 
-    def setValue(self,value):
+    def set_value(self,value):
         self.slider.setValue(value*self.scale)
 
-    def updateLabel(self,value):
+    def update_label(self,value):
         self.currentValue = value/self.scale
         if self.direction == 'vertical':
             if self.BG:
@@ -122,11 +122,11 @@ class VerticalLabelSlider(QtWidgets.QWidget):
                 self.label.setText('\u00A0\u00A0'+self.name+'{}\n({:3.2f})'.format(self.index,self.currentValue))
         elif self.direction == 'horizontal':
             self.label.setText(self.name+'\u00A0({:3.2f})'.format(self.currentValue))
-        self.valueChanged.emit()
+        self.VALUE_CHANGED.emit()
 
 class ColorPicker(QtWidgets.QWidget):
 
-    colorChanged = QtCore.pyqtSignal(str,str)
+    COLOR_CHANGED = QtCore.pyqtSignal(str,str)
 
     def __init__(self,name,color,enableLabel=True):
         super(ColorPicker,self).__init__()
@@ -134,30 +134,30 @@ class ColorPicker(QtWidgets.QWidget):
         self.name = name
         self.label = QtWidgets.QLabel(self.name)
         self.PB = QtWidgets.QPushButton()
-        self.PB.clicked.connect(self.changeColor)
-        self.setColor(self.color)
+        self.PB.clicked.connect(self.change_color)
+        self.set_color(self.color)
         self.grid = QtWidgets.QGridLayout(self)
         self.grid.setContentsMargins(0,0,0,0)
         if enableLabel:
             self.grid.addWidget(self.label,0,0,1,1)
         self.grid.addWidget(self.PB,0,1,1,1)
 
-    def changeColor(self):
-        new_color = QtWidgets.QColorDialog.getColor(QtGui.QColor(self.color))
+    def change_color(self):
+        new_color = QtWidgets.QColorDialog.get_color(QtGui.QColor(self.color))
         self.color = new_color.name()
-        self.setColor(self.color)
-        self.colorChanged.emit(self.name,self.color)
+        self.set_color(self.color)
+        self.COLOR_CHANGED.emit(self.name,self.color)
 
-    def setColor(self,color):
+    def set_color(self,color):
         self.PB.setStyleSheet("background-color:"+color)
         self.color = color
 
-    def getColor(self):
+    def get_color(self):
         return self.color
 
 class LabelSlider(QtWidgets.QWidget):
 
-    valueChanged = QtCore.pyqtSignal(float,int)
+    VALUE_CHANGED = QtCore.pyqtSignal(float,int)
 
     def __init__(self,min,max,initial,scale,text,unit='',orientation = QtCore.Qt.Horizontal,index=-1):
         super(LabelSlider, self).__init__()
@@ -214,19 +214,19 @@ class LabelSlider(QtWidgets.QWidget):
             self.label.setText(self.label_text+" = {:6.4f} ".format(value/self.scale)+self.unit)
         else:
             self.label.setText(self.label_text+" = {:7.5f} ".format(value/self.scale)+self.unit)
-        self.valueChanged.emit(value/self.scale,self.index)
+        self.VALUE_CHANGED.emit(value/self.scale,self.index)
 
-    def getValue(self):
+    def get_value(self):
         return self.valueSlider.value()/self.scale
 
-    def setValue(self,value):
+    def set_value(self,value):
         self.valueSlider.setValue(value*self.scale)
 
-    def getIndex(self):
+    def get_index(self):
         return self.index
 
 class LockableDoubleSlider(QtWidgets.QWidget):
-    valueChanged = QtCore.pyqtSignal(float,float,int)
+    VALUE_CHANGED = QtCore.pyqtSignal(float,float,int)
 
     def __init__(self,minimum,maximum,scale,head,tail,text,unit='',lock = False,direction='horizontal',index=-1):
         super(LockableDoubleSlider,self).__init__()
@@ -268,7 +268,7 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         else:
             self.minSlider.setMaximum(maximum)
         self.minSlider.setValue(self.currentMin*self.scale)
-        self.minSlider.valueChanged.connect(self.minChanged)
+        self.minSlider.valueChanged.connect(self.min_changed)
 
         if self.unit == '':
             if 1/self.scale >=1:
@@ -300,7 +300,7 @@ class LockableDoubleSlider(QtWidgets.QWidget):
             self.maxSlider.setMinimum(minimum)
         self.maxSlider.setMaximum(maximum)
         self.maxSlider.setValue(self.currentMax*self.scale)
-        self.maxSlider.valueChanged.connect(self.maxChanged)
+        self.maxSlider.valueChanged.connect(self.max_changed)
 
         self.UIgrid = QtWidgets.QGridLayout()
         self.UIgrid.addWidget(self.minLabel,0,0)
@@ -314,25 +314,25 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         self.minSlider.setValue(self.head*self.scale)
         self.maxSlider.setValue(self.tail*self.scale)
 
-    def setMaximum(self,value):
+    def set_maximum(self,value):
         if self.lock:
             self.minSlider.setMaximum(0)
         else:
             self.minSlider.setMaximum(value)
         self.maxSlider.setMaximum(value)
 
-    def setHead(self,value):
+    def set_head(self,value):
         if not self.lock:
             self.minSlider.setValue(np.round(value*self.scale,0))
 
-    def setTail(self,value):
+    def set_tail(self,value):
         if not self.lock:
             self.maxSlider.setValue(np.round(value*self.scale,0))
 
     def values(self):
         return self.currentMin, self.currentMax
 
-    def minChanged(self):
+    def min_changed(self):
         self.currentMin = self.minSlider.value()/self.scale
         if self.lock:
             if self.currentMin > self.currentMax:
@@ -364,9 +364,9 @@ class LockableDoubleSlider(QtWidgets.QWidget):
                 self.minLabel.setText(self.text+"_min = {:5.3f} ".format(self.currentMin)+"("+self.unit+")")
             elif 1/self.scale >=0.0001:
                 self.minLabel.setText(self.text+"_min = {:6.4f} ".format(self.currentMin)+"("+self.unit+")")
-        self.valueChanged.emit(np.round(self.currentMin,2),np.round(self.currentMax,2),self.index)
+        self.VALUE_CHANGED.emit(np.round(self.currentMin,2),np.round(self.currentMax,2),self.index)
 
-    def maxChanged(self):
+    def max_changed(self):
         self.currentMax = self.maxSlider.value()/self.scale
         if self.lock:
             if self.currentMin > self.currentMax:
@@ -397,16 +397,17 @@ class LockableDoubleSlider(QtWidgets.QWidget):
                 self.maxLabel.setText(self.text+"_max = {:5.3f} ".format(self.currentMax)+"("+self.unit+")")
             elif 1/self.scale >=0.0001:
                 self.maxLabel.setText(self.text+"_max = {:6.4f} ".format(self.currentMax)+"("+self.unit+")")
-        self.valueChanged.emit(np.round(self.currentMin,2),np.round(self.currentMax,2),self.index)
+        self.VALUE_CHANGED.emit(np.round(self.currentMin,2),np.round(self.currentMax,2),self.index)
 
     def setEnabled(self,enable):
+        """This is an overload function"""
         self.minSlider.setEnabled(enable)
         self.maxSlider.setEnabled(enable)
 
 class IndexedColorPicker(QtWidgets.QWidget):
 
-    colorChanged = QtCore.pyqtSignal(str,str,int)
-    sizeChanged = QtCore.pyqtSignal(str,float,int)
+    COLOR_CHANGED = QtCore.pyqtSignal(str,str,int)
+    SIZE_CHANGED = QtCore.pyqtSignal(str,float,int)
 
     def __init__(self,name,color,size=20,index=-1):
         super(IndexedColorPicker,self).__init__()
@@ -417,60 +418,60 @@ class IndexedColorPicker(QtWidgets.QWidget):
         self.label = QtWidgets.QLabel(self.name)
         self.label.setFixedWidth(20)
         self.PB = QtWidgets.QPushButton()
-        self.PB.clicked.connect(self.changeColor)
+        self.PB.clicked.connect(self.change_color)
         self.SB = QtWidgets.QSpinBox()
         self.SB.setMinimum(0)
         self.SB.setMaximum(100)
         self.SB.setSingleStep(1)
         self.SB.setValue(self.size)
-        self.SB.valueChanged.connect(self.changeSize)
-        self.setColor(self.color)
+        self.SB.valueChanged.connect(self.change_size)
+        self.set_color(self.color)
         self.grid = QtWidgets.QGridLayout(self)
         self.grid.addWidget(self.label,0,0)
         self.grid.addWidget(self.PB,0,1)
         self.grid.addWidget(self.SB,0,2)
 
-    def changeColor(self):
-        new_color = QtWidgets.QColorDialog.getColor(QtGui.QColor(self.color))
+    def change_color(self):
+        new_color = QtWidgets.QColorDialog.get_color(QtGui.QColor(self.color))
         self.color = new_color.name()
-        self.setColor(self.color)
-        self.colorChanged.emit(self.name,self.color,self.index)
+        self.set_color(self.color)
+        self.COLOR_CHANGED.emit(self.name,self.color,self.index)
 
-    def changeSize(self,text):
+    def change_size(self,text):
         self.size = int(text)
-        self.sizeChanged.emit(self.name, self.size/100,self.index)
+        self.SIZE_CHANGED.emit(self.name, self.size/100,self.index)
 
-    def getSize(self):
+    def get_size(self):
         return self.size
 
-    def setColor(self,color):
+    def set_color(self,color):
         self.PB.setStyleSheet("background-color:"+color)
         self.color = color
 
-    def getColor(self):
+    def get_color(self):
         return self.color
 
 class IndexedComboBox(QtWidgets.QComboBox):
-    textChanged = QtCore.pyqtSignal(str,int)
+    TEXT_CHANGED = QtCore.pyqtSignal(str,int)
 
     def __init__(self,index):
         super(IndexedComboBox,self).__init__()
         self.index = index
-        self.currentTextChanged.connect(self.changeText)
+        self.currentTextChanged.connect(self.change_text)
 
-    def changeText(self,text):
-        self.textChanged.emit(text,self.index)
+    def change_text(self,text):
+        self.TEXT_CHANGED.emit(text,self.index)
 
 class IndexedPushButton(QtWidgets.QPushButton):
-    buttonClicked = QtCore.pyqtSignal(int)
+    BUTTON_CLICKED = QtCore.pyqtSignal(int)
 
     def __init__(self,text,index):
         super(IndexedPushButton,self).__init__(text)
         self.index = index
-        self.clicked.connect(self.emitSignal)
+        self.clicked.connect(self.emit_signal)
 
-    def emitSignal(self):
-        self.buttonClicked.emit(self.index)
+    def emit_signal(self):
+        self.BUTTON_CLICKED.emit(self.index)
 
 class InfoBoard(QtWidgets.QGroupBox):
     def __init__(self,title,index):
@@ -483,6 +484,7 @@ class InfoBoard(QtWidgets.QGroupBox):
         self.setStyleSheet('QGroupBox::title {color:blue;}')
 
     def update(self,index,formula,a,b,c,alpha,beta,gamma):
+        """This is an overload function"""
         if index == self.index:
             self.lattice_constants_label.setText("  Formula: "+formula+"\n  a = {:5.3f}, b = {:5.3f}, c = {:5.3f}\n  alpha = {:5.3f}(\u00B0), beta = {:5.3f}(\u00B0), gamma = {:5.3f}(\u00B0)". \
                                                  format(a,b,c,alpha,beta,gamma))
@@ -525,10 +527,10 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.TwoDimMappingWindow.setMinimumSize(1000,800)
         self.TwoDimMappingWindow.show()
 
-    def showPlot(self):
+    def show_plot(self):
         self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)
 
-    def refreshFonts(self,fontname,fontsize):
+    def refresh_fonts(self,fontname,fontsize):
         self.fontname = fontname
         self.fontsize = fontsize
         plt.ion()
@@ -558,7 +560,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.cbar.ax.tick_params(labelsize=self.fontsize)
         self.figure.draw()
 
-    def refreshFWHM(self,showFWHM):
+    def refresh_FWHM(self,showFWHM):
         if showFWHM == self.showFWHM:
             pass
         else:
@@ -613,9 +615,50 @@ class DynamicalColorMap(QtWidgets.QWidget):
             max_intensity = np.amax(np.amax(matrix))
             self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         self.cbar = self.figure.fig.colorbar(self.cs,format='%.2f')
-        self.refreshFWHM(self.showFWHM)
-        self.refreshFonts(self.fontname,self.fontsize)
+        self.refresh_FWHM(self.showFWHM)
+        self.refresh_fonts(self.fontname,self.fontsize)
 
-    def refreshColormap(self,colormap):
+    def refresh_colormap(self,colormap):
         self.colormap = colormap
         self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)
+
+
+class LabelLineEdit(QtWidgets.QWidget):
+
+    ERROR = QtCore.pyqtSignal(str)
+    VALUE_CHANGED = QtCore.pyqtSignal(str,float)
+
+    def __init__(self,label,width,text,unit=''):
+        super(LabelLineEdit, self).__init__()
+        self.label_text = label
+        self.label_width = width
+        self.text = text
+        self.unit = unit
+        if not self.unit == '':
+            self.label = QtWidgets.QLabel(self.label_text+' ('+self.unit+')')
+        else:
+            self.label = QtWidgets.QLabel(self.label_text)
+        self.label.setFixedWidth(self.label_width)
+        self.line = QtWidgets.QLineEdit()
+        self.line.textEdited.connect(self.update_text)
+        self.line.setText(self.text)
+        self.grid = QtWidgets.QGridLayout()
+        self.grid.addWidget(self.label,0,0)
+        self.grid.addWidget(self.line,0,1)
+        self.grid.setContentsMargins(0,0,0,0)
+        self.setLayout(self.grid)
+
+    def update_text(self,text):
+        try:
+            self.VALUE_CHANGED.emit(self.label_text,float(text))
+        except:
+            self.ERROR.emit("Wrong input!")
+
+    def set_value(self,value):
+        self.line.setText(str(np.round(value,1)))
+
+    def value(self):
+        return float(self.line.text())
+
+    def text(self):
+        return self.line.text()

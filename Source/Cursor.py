@@ -5,10 +5,10 @@ class Cursor(QtWidgets.QWidget):
 
     def __init__(self,parent):
         super(Cursor,self).__init__(parent)
-        self.initUI()
+        self.init_UI()
 
 
-    def initUI(self):
+    def init_UI(self):
         #the Cursor Information group box
         self.cursorInfoBox = QtWidgets.QGroupBox('Cursor Information')
         self.cursorInfoBox.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -43,11 +43,11 @@ class Cursor(QtWidgets.QWidget):
         self.setLayout(self.UIgrid)
         self.show()
 
-    def chosenRegionUpdate(self,start,end):
+    def chosen_region_update(self,start,end):
         self.startXYEdit.setText('{},{}'.format(int(start.x()), int(start.y())))
         self.endXYEdit.setText('{},{}'.format(int(end.x()), int(end.y())))
 
-    def chiScanRegionUpdate(self,start,radius):
+    def chi_scan_region_update(self,start,radius):
         self.startXYEdit.setText('{},{}'.format(int(start.x()), int(start.y())))
         self.endXYEdit.setText('{}'.format(np.round(radius,2)))
 

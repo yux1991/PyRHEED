@@ -1,37 +1,38 @@
-from Canvas import *
-from Browser import *
-from Properties import *
-from Cursor import *
-import ProfileChart
+from PyQt5 import QtCore, QtGui, QtWidgets
+import canvas
+import browser
+import properties
+import cursor
+import profile_chart
 import configparser
 import os
 import numpy as np
-from Process import Image
+from process import Image
 
 class Window(QtWidgets.QMainWindow):
 
     #Public Signals
-    fileOpened = QtCore.pyqtSignal(str)
-    imgCreated = QtCore.pyqtSignal(np.ndarray)
-    scaleFactorChanged = QtCore.pyqtSignal(float)
-    canvasScaleFactorChanged = QtCore.pyqtSignal(float)
-    labelChanged = QtCore.pyqtSignal(float,float,str,int)
-    calibrationChanged = QtCore.pyqtSignal(float,float,str,int)
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressEnd = QtCore.pyqtSignal()
-    DefaultPropertiesRestRequested = QtCore.pyqtSignal()
-    ReciprocalSpaceMappingRequested = QtCore.pyqtSignal(str)
-    ThreeDimensionalGraphRequested = QtCore.pyqtSignal(str)
-    BroadeningRequested = QtCore.pyqtSignal(str)
-    ManualFitRequested = QtCore.pyqtSignal(str,int)
-    StatisticalFactorRequested = QtCore.pyqtSignal()
-    DiffractionPatternRequested = QtCore.pyqtSignal()
-    GenerateReportRequested = QtCore.pyqtSignal(str)
-    window_initialized = QtCore.pyqtSignal()
-    propertiesRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
-    canvasRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
-    chartRefresh = QtCore.pyqtSignal(configparser.ConfigParser)
-    returnStatus = QtCore.pyqtSignal(dict)
+    FILE_OPENED = QtCore.pyqtSignal(str)
+    IMG_CREATED = QtCore.pyqtSignal(np.ndarray)
+    SCALE_FACTOR_CHANGED = QtCore.pyqtSignal(float)
+    CANVAS_SCALE_FACTOR_CHANGED = QtCore.pyqtSignal(float)
+    LABEL_CHANGED = QtCore.pyqtSignal(float,float,str,int)
+    CALIBRATION_CHANGED = QtCore.pyqtSignal(float,float,str,int)
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_END = QtCore.pyqtSignal()
+    DEFAULT_PROPERTIES_REQUESTED = QtCore.pyqtSignal()
+    RECIPROCAL_SPACE_MAPPING_REQUESTED = QtCore.pyqtSignal(str)
+    THREE_DIMENSIONAL_GRAPH_REQUESTED = QtCore.pyqtSignal(str)
+    BROADENING_REQUESTED = QtCore.pyqtSignal(str)
+    MANUAL_FIT_REQUESTED = QtCore.pyqtSignal(str,int)
+    STATISTICAL_FACTOR_REQUESTED = QtCore.pyqtSignal()
+    DIFFRACTION_PATTERN_REQUESTED = QtCore.pyqtSignal()
+    GENERATE_REPORT_REQUESTED = QtCore.pyqtSignal(str)
+    WINDOW_INITIALIZED = QtCore.pyqtSignal()
+    PROPERTIES_REFRESH = QtCore.pyqtSignal(configparser.ConfigParser)
+    CANVAS_REFRESH = QtCore.pyqtSignal(configparser.ConfigParser)
+    CHART_REFRESH = QtCore.pyqtSignal(configparser.ConfigParser)
+    RETURN_STATUS = QtCore.pyqtSignal(dict)
 
     def __init__(self,config):
 
@@ -74,35 +75,35 @@ class Window(QtWidgets.QMainWindow):
         self.setMenuBar(self.menu)
 
         #File Menu
-        self.openFile = self.menuFile.addAction("Open",self.MenuActions_Open)
+        self.openFile = self.menuFile.addAction("Open",self.manu_actions_open)
         self.export = self.menuFile.addMenu("Export")
-        self.saveCanvasAsImage = self.export.addAction("RHEED pattern as Image",self.MenuActions_Save_As_Image)
-        self.saveProfileAsText = self.export.addAction("Line profile as text",self.MenuActions_Save_As_Text)
-        self.saveProfileAsText = self.export.addAction("Line profile as image",self.MenuActions_Save_Profile_As_Image)
-        self.saveProfileAsText = self.export.addAction("Line profile as SVG",self.MenuActions_Save_As_SVG)
+        self.saveCanvasAsImage = self.export.addAction("RHEED pattern as Image",self.menu_actions_save_as_image)
+        self.saveProfileAsText = self.export.addAction("Line profile as text",self.menu_actions_save_as_text)
+        self.saveProfileAsImage = self.export.addAction("Line profile as image",self.menu_actions_save_profile_as_image)
+        self.saveProfileAsSVG = self.export.addAction("Line profile as SVG",self.menu_actions_save_as_svg)
 
         #Preference Menu
         self.defaultSettings = self.menuPreference.addAction("Default Settings",\
-                                    self.MenuActions_Preference_DefaultSettings)
+                                    self.menu_actions_preferences_default_settings)
 
         #2D Map Menu
         self.Two_Dimensional_Mapping = self.menu2DMap.addAction("Configuration", \
-                                            self.MenuActions_Two_Dimensional_Mapping)
+                                            self.menu_actions_two_dimensional_mapping)
 
         self.Three_Dimensional_Graph = self.menu2DMap.addAction("3D Surface", \
-                                        self.MenuActions_Three_Dimensional_Graph)
+                                        self.menu_actions_three_dimensional_graph)
 
         #Fit Menu
-        self.Fit_Broadening = self.menuFit.addAction("Broadening",self.MenuActions_Broadening)
-        self.Fit_ManualFit = self.menuFit.addAction("Manual Fit", self.MenuActions_ShowManualFit)
-        self.Fit_Report = self.menuFit.addAction("Generate Report", self.MenuActions_GenerateReport)
+        self.Fit_Broadening = self.menuFit.addAction("Broadening",self.menu_actions_broadening)
+        self.Fit_ManualFit = self.menuFit.addAction("Manual Fit", self.menu_actions_show_manual_fit)
+        self.Fit_Report = self.menuFit.addAction("Generate Report", self.menu_actions_generate_report)
 
         #Simulation Menu
-        self.Statistical_Factor = self.menuSimulation.addAction("Statistical Factor",self.MenuActions_Statistical_Factor)
-        self.Diffraction_pattern = self.menuSimulation.addAction("Diffraction Pattern",self.MenuActions_Diffraction_Pattern)
+        self.Statistical_Factor = self.menuSimulation.addAction("Statistical Factor",self.menu_actions_statistical_factor)
+        self.Diffraction_pattern = self.menuSimulation.addAction("Diffraction Pattern",self.menu_actions_diffraction_pattern)
 
         #Help Menu
-        self.about = self.menuHelp.addAction("About",self.MenuActions_About)
+        self.about = self.menuHelp.addAction("About",self.menu_actions_about)
 
         #Center Widget
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
@@ -115,17 +116,17 @@ class Window(QtWidgets.QMainWindow):
         self.controlPanelGrid = QtWidgets.QGridLayout(self.controlPanelFrame)
         self.controlPanelGrid.setContentsMargins(0,0,0,0)
         self.controlPanelSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.browser = Browser(self)
+        self.browser_widget = browser.Browser(self)
         self.controlPanelBottomWidget = QtWidgets.QWidget()
         self.controlPanelBottomGrid = QtWidgets.QGridLayout(self.controlPanelBottomWidget)
         self.controlPanelBottomGrid.setContentsMargins(0,0,2,0)
-        self.properties = Properties(self,self.config)
-        self.cursorInfo = Cursor(self)
-        self.profile = ProfileChart.ProfileChart(self.config)
-        self.controlPanelBottomGrid.addWidget(self.properties,0,0)
+        self.properties_widget = properties.Properties(self,self.config)
+        self.cursorInfo = cursor.Cursor(self)
+        self.profile = profile_chart.ProfileChart(self.config)
+        self.controlPanelBottomGrid.addWidget(self.properties_widget,0,0)
         self.controlPanelBottomGrid.addWidget(self.cursorInfo,1,0)
         self.controlPanelBottomGrid.addWidget(self.profile,2,0)
-        self.controlPanelSplitter.addWidget(self.browser)
+        self.controlPanelSplitter.addWidget(self.browser_widget)
         self.controlPanelSplitter.addWidget(self.controlPanelBottomWidget)
 
         self.controlPanelSplitter.setSizes([100,500])
@@ -187,7 +188,6 @@ class Window(QtWidgets.QMainWindow):
         self.messageLoadingImage.setVisible(False)
         self.progressBar = QtWidgets.QProgressBar(self)
         self.progressBar.setMaximumHeight(12)
-        self.progressBar.setMaximumWidth(200)
         self.progressBar.setVisible(False)
         self.progressBar.setOrientation(QtCore.Qt.Horizontal)
         self.progressBarSizePolicy = self.progressBar.sizePolicy()
@@ -208,70 +208,68 @@ class Window(QtWidgets.QMainWindow):
         self.setWindowTitle("PyRHEED")
 
         #Main Tab Connections
-        self.mainTab.currentChanged.connect(self.switchTab)
-        self.mainTab.tabCloseRequested.connect(self.closeTab)
+        self.mainTab.currentChanged.connect(self.switch_tab)
+        self.mainTab.tabCloseRequested.connect(self.close_tab)
 
         #Toolbar Connections
-        self.open.triggered.connect(lambda path: self.openImage(path=self.getImgPath()))
-        self.line.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="line"))
-        self.rectangle.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="rectangle"))
-        self.arc.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="arc"))
-        self.pan.triggered.connect(lambda cursormode: self.toggleCanvasMode(cursormode="pan"))
+        self.open.triggered.connect(lambda path: self.open_image(path=self.get_img_path()))
+        self.line.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="line"))
+        self.rectangle.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="rectangle"))
+        self.arc.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="arc"))
+        self.pan.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="pan"))
 
         #Progress Bar Connections
-        self.progressAdvance.connect(self.progress)
-        self.progressEnd.connect(self.progressReset)
-        self.profile.progressAdvance.connect(self.progress)
-        self.profile.progressEnd.connect(self.progressReset)
+        self.PROGRESS_ADVANCE.connect(self.progress)
+        self.PROGRESS_END.connect(self.progress_reset)
 
         #Browser Connections
-        self.fileOpened.connect(self.browser.treeUpdate)
-        self.imgCreated.connect(self.profile.setImg)
-        self.browser.fileDoubleClicked.connect(self.openImage)
+        self.FILE_OPENED.connect(self.browser_widget.tree_update)
+        self.IMG_CREATED.connect(self.profile.set_img)
+        self.browser_widget.FILE_DOUBLE_CLICKED.connect(self.open_image)
 
         #Parameters Page Connections
-        self.properties.sensitivityEdit.textChanged.connect(self.changeSensitivity)
-        self.properties.energyEdit.textChanged.connect(self.changeEnergy)
-        self.properties.azimuthEdit.textChanged.connect(self.changeAzimuth)
-        self.properties.scaleBarEdit.textChanged.connect(self.changeScaleBar)
-        self.properties.labelButton.clicked.connect(self.labelImage)
-        self.properties.calibrateButton.clicked.connect(self.calibrateImage)
+        self.properties_widget.sensitivityEdit.textChanged.connect(self.check_sensitivity)
+        self.properties_widget.energyEdit.textChanged.connect(self.change_energy)
+        self.properties_widget.azimuthEdit.textChanged.connect(self.change_azimuth)
+        self.properties_widget.scaleBarEdit.textChanged.connect(self.change_scale_bar)
+        self.properties_widget.labelButton.clicked.connect(self.label_image)
+        self.properties_widget.calibrateButton.clicked.connect(self.calibrate_image)
 
         #Image Adjust Page Connections
-        self.properties.brightnessSlider.valueChanged.connect(self.changeBrightness)
-        self.properties.blackLevelSlider.valueChanged.connect(self.changeBlackLevel)
-        self.properties.autoWBCheckBox.stateChanged.connect(self.changeAutoWB)
-        self.properties.applyButton2.clicked.connect(self.applyImageAdjusts)
-        self.properties.resetButton2.clicked.connect(self.resetImageAdjusts)
+        self.properties_widget.brightnessSlider.valueChanged.connect(self.change_brightness)
+        self.properties_widget.blackLevelSlider.valueChanged.connect(self.change_black_level)
+        self.properties_widget.autoWBCheckBox.stateChanged.connect(self.change_auto_WB)
+        self.properties_widget.applyButton2.clicked.connect(self.apply_image_adjusts)
+        self.properties_widget.resetButton2.clicked.connect(self.reset_image_adjusts)
 
         #Profile Options Page Connections
-        self.properties.integralHalfWidthSlider.valueChanged.connect(self.changeWidth)
-        self.properties.chiRangeSlider.valueChanged.connect(self.changeChiRange)
-        self.properties.radiusSlider.valueChanged.connect(self.changeRadius)
-        self.properties.tiltAngleSlider.valueChanged.connect(self.changeTiltAngle)
-        self.properties.applyButton3.clicked.connect(self.applyProfileOptions)
-        self.properties.resetButton3.clicked.connect(self.resetProfileOptions)
+        self.properties_widget.integralHalfWidthSlider.valueChanged.connect(self.change_width)
+        self.properties_widget.chiRangeSlider.valueChanged.connect(self.change_chi_range)
+        self.properties_widget.radiusSlider.valueChanged.connect(self.change_radius)
+        self.properties_widget.tiltAngleSlider.valueChanged.connect(self.change_tilt_angle)
+        self.properties_widget.applyButton3.clicked.connect(self.apply_profile_options)
+        self.properties_widget.resetButton3.clicked.connect(self.reset_profile_options)
 
         #Appearance Page Connections
-        self.profile.setFonts(self.properties.fontList.currentFont().family(),self.properties.chartFontSizeSlider.value())
-        self.properties.chartFontsChanged.connect(self.profile.adjustFonts)
+        self.profile.set_fonts(self.properties_widget.fontList.currentFont().family(),self.properties_widget.chartFontSizeSlider.value())
+        self.properties_widget.CHART_FONTS_CHANGED.connect(self.profile.adjust_fonts)
 
         #Cursor Information Connections
-        self.cursorInfo.choosedXYEdit.textChanged.connect(self.editChoosedXY)
-        self.cursorInfo.startXYEdit.textChanged.connect(self.editStartXY)
-        self.cursorInfo.endXYEdit.textChanged.connect(self.editEndXY)
-        self.cursorInfo.widthEdit.textEdited.connect(self.editWidth)
+        self.cursorInfo.choosedXYEdit.textChanged.connect(self.edit_choosed_XY)
+        self.cursorInfo.startXYEdit.textChanged.connect(self.edit_start_XY)
+        self.cursorInfo.endXYEdit.textChanged.connect(self.edit_end_XY)
+        self.cursorInfo.widthEdit.textEdited.connect(self.edit_width)
 
         #Profile Canvas Connections
-        self.scaleFactorChanged.connect(self.profile.setScaleFactor)
-        self.profile.chartMouseMovement.connect(self.photoMouseMovement)
+        self.SCALE_FACTOR_CHANGED.connect(self.profile.set_scale_factor)
+        self.profile.CHART_MOUSE_MOVEMENT.connect(self.photo_mouse_movement)
 
         #Refresh Connections
-        self.propertiesRefresh.connect(self.properties.refresh)
-        self.chartRefresh.connect(self.profile.refresh)
+        self.PROPERTIES_REFRESH.connect(self.properties_widget.refresh)
+        self.CHART_REFRESH.connect(self.profile.refresh)
 
-        self.getScaleFactor()
-        self.window_initialized.emit()
+        self.get_scale_factor()
+        self.WINDOW_INITIALIZED.emit()
 
     def refresh(self,config):
         self.windowDefault = dict(config['windowDefault'].items())
@@ -292,11 +290,11 @@ class Window(QtWidgets.QMainWindow):
         self.tiltAngle = int(self.windowDefault['tiltangle'])
         self.tiltAngleSliderScale = int(self.windowDefault['tiltanglesliderscale'])
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
-        self.propertiesRefresh.emit(config)
-        self.chartRefresh.emit(config)
-        self.canvasRefresh.emit(config)
-        self.resetImageAdjusts()
-        self.getScaleFactor()
+        self.PROPERTIES_REFRESH.emit(config)
+        self.CHART_REFRESH.emit(config)
+        self.CANVAS_REFRESH.emit(config)
+        self.reset_image_adjusts()
+        self.get_scale_factor()
 
     def progress(self,min,max,val):
         self.progressBar.setVisible(True)
@@ -304,183 +302,183 @@ class Window(QtWidgets.QMainWindow):
         self.progressBar.setMaximum(max)
         self.progressBar.setValue(val)
 
-    def progressReset(self):
+    def progress_reset(self):
         self.progressBar.reset()
         self.progressBar.setVisible(False)
 
-    def MenuActions_Open(self):
-        self.openImage(path=self.getImgPath())
+    def manu_actions_open(self):
+        self.open_image(path=self.get_img_path())
 
-    def MenuActions_Save_As_Image(self):
-        canvas = self.mainTab.currentWidget()
+    def menu_actions_save_as_image(self):
+        canvas_widget = self.mainTab.currentWidget()
         try:
-            canvas.saveScene()
+            canvas_widget.save_scene()
         except:
-            self.Raise_Error("Please open a RHEED pattern first")
+            self.raise_error("Please open a RHEED pattern first")
 
-    def MenuActions_Statistical_Factor(self):
-        self.StatisticalFactorRequested.emit()
+    def menu_actions_statistical_factor(self):
+        self.STATISTICAL_FACTOR_REQUESTED.emit()
 
-    def MenuActions_Diffraction_Pattern(self):
-        self.DiffractionPatternRequested.emit()
+    def menu_actions_diffraction_pattern(self):
+        self.DIFFRACTION_PATTERN_REQUESTED.emit()
 
-    def MenuActions_Save_As_Text(self):
-        self.profile.saveProfileAsText()
+    def menu_actions_save_as_text(self):
+        self.profile.save_profile_as_text()
 
-    def MenuActions_Save_Profile_As_Image(self):
-        self.profile.saveProfileAsImage()
+    def menu_actions_save_profile_as_image(self):
+        self.profile.save_profile_as_image()
 
-    def MenuActions_Save_As_SVG(self):
-        self.profile.saveProfileAsSVG()
+    def menu_actions_save_as_svg(self):
+        self.profile.save_profile_as_SVG()
 
-    def MenuActions_Preference_DefaultSettings(self):
-        self.DefaultPropertiesRestRequested.emit()
+    def menu_actions_preferences_default_settings(self):
+        self.DEFAULT_PROPERTIES_REQUESTED.emit()
 
-    def MenuActions_Two_Dimensional_Mapping(self):
-        self.ReciprocalSpaceMappingRequested.emit(self.currentPath)
+    def menu_actions_two_dimensional_mapping(self):
+        self.RECIPROCAL_SPACE_MAPPING_REQUESTED.emit(self.currentPath)
 
-    def MenuActions_Three_Dimensional_Graph(self):
-        self.ThreeDimensionalGraphRequested.emit('')
+    def menu_actions_three_dimensional_graph(self):
+        self.THREE_DIMENSIONAL_GRAPH_REQUESTED.emit('')
 
-    def MenuActions_Broadening(self):
-        self.BroadeningRequested.emit(self.currentPath)
+    def menu_actions_broadening(self):
+        self.BROADENING_REQUESTED.emit(self.currentPath)
 
-    def MenuActions_ShowManualFit(self):
-        self.ManualFitRequested.emit(self.currentPath,0)
+    def menu_actions_show_manual_fit(self):
+        self.MANUAL_FIT_REQUESTED.emit(self.currentPath,0)
 
-    def MenuActions_GenerateReport(self):
-        self.GenerateReportRequested.emit(self.currentPath)
+    def menu_actions_generate_report(self):
+        self.GENERATE_REPORT_REQUESTED.emit(self.currentPath)
 
-    def MenuActions_About(self):
-        self.Raise_Attention(information="Author: Yu Xiang\nEmail: yux1991@gmail.com")
+    def menu_actions_about(self):
+        self.raise_attention(information="Author: Yu Xiang\nEmail: yux1991@gmail.com")
 
-    def getScaleFactor(self):
-        self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(self.properties.energyEdit.text()))
-        self.scaleFactorChanged.emit(self.scaleFactor)
-        self.canvasScaleFactorChanged.emit(self.scaleFactor)
+    def get_scale_factor(self):
+        self.scaleFactor = float(self.properties_widget.sensitivityEdit.text())/np.sqrt(float(self.properties_widget.energyEdit.text()))
+        self.SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
+        self.CANVAS_SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
 
-    def checkInput(self,text,type="int"):
+    def check_input(self,text,type="int"):
         if type == "int":
             try:
                 int(text)
                 return True
             except ValueError:
-                self.Raise_Error("Please input a integer number!")
+                self.raise_error("Please input a integer number!")
                 return False
         elif type == "float":
             try:
                 float(text)
                 return True
             except ValueError:
-                self.Raise_Error("Please input a float number!")
+                self.raise_error("Please input a float number!")
                 return False
 
-    def changeSensitivity(self,sensitivity):
-        if self.checkInput(sensitivity,"float"):
-            self.scaleFactor = float(sensitivity)/np.sqrt(float(self.properties.energyEdit.text()))
-            self.scaleFactorChanged.emit(self.scaleFactor)
-            self.canvasScaleFactorChanged.emit(self.scaleFactor)
+    def check_sensitivity(self,sensitivity):
+        if self.check_input(sensitivity,"float"):
+            self.scaleFactor = float(sensitivity)/np.sqrt(float(self.properties_widget.energyEdit.text()))
+            self.SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
+            self.CANVAS_SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
 
-    def changeEnergy(self,energy):
-        if self.checkInput(energy,"float"):
-            self.scaleFactor = float(self.properties.sensitivityEdit.text())/np.sqrt(float(energy))
-            self.scaleFactorChanged.emit(self.scaleFactor)
-            self.canvasScaleFactorChanged.emit(self.scaleFactor)
+    def change_energy(self,energy):
+        if self.check_input(energy,"float"):
+            self.scaleFactor = float(self.properties_widget.sensitivityEdit.text())/np.sqrt(float(energy))
+            self.SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
+            self.CANVAS_SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
             self.energy = float(energy)
 
-    def changeAzimuth(self,azimuth):
-        if self.checkInput(azimuth,"float"):
+    def change_azimuth(self,azimuth):
+        if self.check_input(azimuth,"float"):
             self.azimuth = float(azimuth)
 
-    def changeScaleBar(self,scaleBar):
-        if self.checkInput(scaleBar,"float"):
+    def change_scale_bar(self,scaleBar):
+        if self.check_input(scaleBar,"float"):
             self.scaleBarLength = float(scaleBar)
 
-    def labelImage(self):
-        self.labelChanged.emit(self.energy,self.azimuth,self.properties.fontList.currentFont().family(),\
-                               self.properties.canvasFontSizeSlider.value())
+    def label_image(self):
+        self.LABEL_CHANGED.emit(self.energy,self.azimuth,self.properties_widget.fontList.currentFont().family(),\
+                               self.properties_widget.canvasFontSizeSlider.value())
 
-    def calibrateImage(self):
-        self.calibrationChanged.emit(self.scaleFactor,self.scaleBarLength,self.properties.fontList.currentFont().family(),\
-                               self.properties.canvasFontSizeSlider.value())
+    def calibrate_image(self):
+        self.CALIBRATION_CHANGED.emit(self.scaleFactor,self.scaleBarLength,self.properties_widget.fontList.currentFont().family(),\
+                               self.properties_widget.canvasFontSizeSlider.value())
 
 
-    def changeBrightness(self,brightness):
-        self.properties.brightnessLabel.setText('Brightness ({})'.format(brightness))
+    def change_brightness(self,brightness):
+        self.properties_widget.brightnessLabel.setText('Brightness ({})'.format(brightness))
 
-    def changeBlackLevel(self,blackLevel):
-        self.properties.blackLevelLabel.setText('Black Level ({})'.format(blackLevel))
+    def change_black_level(self,blackLevel):
+        self.properties_widget.blackLevelLabel.setText('Black Level ({})'.format(blackLevel))
 
-    def changeAutoWB(self):
+    def change_auto_WB(self):
         return
 
-    def applyImageAdjusts(self):
-        self.updateImage(self.currentPath,bitDepth = 16, enableAutoWB = self.properties.autoWBCheckBox.isChecked(),\
-                           brightness = self.properties.brightnessSlider.value(),blackLevel=self.properties.blackLevelSlider.value())
+    def apply_image_adjusts(self):
+        self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(),\
+                           brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value())
 
-    def resetImageAdjusts(self):
-        self.properties.autoWBCheckBox.setChecked(False)
-        self.properties.brightnessSlider.setValue(int(self.propertiesDefault['brightness']))
-        self.properties.blackLevelSlider.setValue(int(self.propertiesDefault['blacklevel']))
-        self.updateImage(self.currentPath,bitDepth = 16, enableAutoWB = self.properties.autoWBCheckBox.isChecked(), \
-                       brightness = self.properties.brightnessSlider.value(),blackLevel=self.properties.blackLevelSlider.value())
+    def reset_image_adjusts(self):
+        self.properties_widget.autoWBCheckBox.setChecked(False)
+        self.properties_widget.brightnessSlider.setValue(int(self.propertiesDefault['brightness']))
+        self.properties_widget.blackLevelSlider.setValue(int(self.propertiesDefault['blacklevel']))
+        self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(), \
+                       brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value())
 
-    def changeWidth(self,width):
-        self.properties.integralHalfWidthLabel.setText('Integral Half Width ({:3.2f} \u212B\u207B\u00B9)'.format(width/self.widthSliderScale))
+    def change_width(self,width):
+        self.properties_widget.integralHalfWidthLabel.setText('Integral Half Width ({:3.2f} \u212B\u207B\u00B9)'.format(width/self.widthSliderScale))
         if not self.cursorInfo.widthEdit.text() == "":
             if self._mode == "rectangle" or self._mode == "arc":
                 self.cursorInfo.widthEdit.setText('{:3.2f}'.format(width/self.widthSliderScale))
-        self.updateDrawing()
+        self.update_drawing()
         for i in range(0,self.mainTab.count()):
             self.mainTab.widget(i).width = width/self.widthSliderScale * self.scaleFactor
 
-    def changeChiRange(self,chi):
-        self.properties.chiRangeLabel.setText('Chi Range ({}\u00B0)'.format(chi))
-        self.updateDrawing()
+    def change_chi_range(self,chi):
+        self.properties_widget.chiRangeLabel.setText('Chi Range ({}\u00B0)'.format(chi))
+        self.update_drawing()
         for i in range(0,self.mainTab.count()):
             self.mainTab.widget(i).span = chi
 
-    def changeRadius(self,radius):
-        self.properties.radiusLabel.setText('Radius ({:3.2f} \u212B\u207B\u00B9)'.format(radius/self.radiusSliderScale))
+    def change_radius(self,radius):
+        self.properties_widget.radiusLabel.setText('Radius ({:3.2f} \u212B\u207B\u00B9)'.format(radius/self.radiusSliderScale))
         if not self.mainTab.count() == 0:
             if not self.mainTab.currentWidget()._drawingArc:
-                self.updateDrawing()
+                self.update_drawing()
 
-    def changeTiltAngle(self,tilt):
-        self.properties.tiltAngleLabel.setText('Tilt Angle ({:2.1f}\u00B0)'.format(tilt/self.tiltAngleSliderScale))
-        self.updateDrawing()
+    def change_tilt_angle(self,tilt):
+        self.properties_widget.tiltAngleLabel.setText('Tilt Angle ({:2.1f}\u00B0)'.format(tilt/self.tiltAngleSliderScale))
+        self.update_drawing()
         for i in range(0,self.mainTab.count()):
             self.mainTab.widget(i).tilt = tilt/self.tiltAngleSliderScale
 
-    def applyProfileOptions(self):
+    def apply_profile_options(self):
         if not self.mainTab.count() == 0:
             if self.mainTab.currentWidget().canvasObject == "line":
-                self.mainTab.currentWidget().lineScanSignalEmit()
+                self.mainTab.currentWidget().line_scan_signal_emit()
             if self.mainTab.currentWidget().canvasObject == "rectangle":
-                self.mainTab.currentWidget().integralSignalEmit()
+                self.mainTab.currentWidget().integral_signal_emit()
             if self.mainTab.currentWidget().canvasObject == "arc":
-                self.mainTab.currentWidget().chiScanSignalEmit()
+                self.mainTab.currentWidget().chi_scan_signal_emit()
 
-    def resetProfileOptions(self):
-        self.properties.integralHalfWidthSlider.setValue(self.width*self.widthSliderScale)
-        self.properties.chiRangeSlider.setValue(self.chiRange)
-        self.properties.radiusSlider.setValue(self.radius*self.radiusSliderScale)
-        self.properties.tiltAngleSlider.setValue(self.tiltAngle)
-        self.applyProfileOptions()
+    def reset_profile_options(self):
+        self.properties_widget.integralHalfWidthSlider.setValue(self.width*self.widthSliderScale)
+        self.properties_widget.chiRangeSlider.setValue(self.chiRange)
+        self.properties_widget.radiusSlider.setValue(self.radius*self.radiusSliderScale)
+        self.properties_widget.tiltAngleSlider.setValue(self.tiltAngle)
+        self.apply_profile_options()
 
-    def editChoosedXY(self):
+    def edit_choosed_XY(self):
         return
 
-    def editStartXY(self):
+    def edit_start_XY(self):
         return
 
-    def editEndXY(self):
+    def edit_end_XY(self):
         return
 
-    def editWidth(self,width):
-        self.properties.integralHalfWidthSlider.setValue(int(width)*self.widthSliderScale)
+    def edit_width(self,width):
+        self.properties_widget.integralHalfWidthSlider.setValue(int(width)*self.widthSliderScale)
 
-    def getImgPath(self):
+    def get_img_path(self):
         supportedRawFormats = {'.3fr','.ari','.arw','.srf','.sr2','.bay','.cri','.crw','.cr2','.cr3','.cap','.iiq','.eip',\
                             '.dcs','.dcr','.drf','.k25','.kdc','.dng','.erf','.fff','.mef','.mdc','.mos','.mrw','.nef',\
                             '.nrw','.orf','.pef','.ptx','.pxn','.r3d','.raf','.raw','.rw2','.rwl','.rwz','.srw','.x3f',\
@@ -495,44 +493,44 @@ class Window(QtWidgets.QMainWindow):
         path = fileDlg.getOpenFileName(filter="Nikon (*.nef;*.nrw);;Sony (*.arw;*.srf;*.sr2);;Canon (*.crw;*.cr2;*.cr3);;JPEG (*.jpg;*.jpeg;*.jpeg2000);;GIF (*.gif);;PNG (*.png);;TIF (*.tif;*.tiff);;BMP (*.bmp);;All Files (*.*)")[0]
         if not path == '':
             if not (os.path.splitext(path)[1] in supportedRawFormats or os.path.splitext(path)[1] in supportedImageFormats):
-                self.Raise_Error("Not supported image type!")
+                self.raise_error("Not supported image type!")
                 return ''
             else:
                 return path
         else:
             return ''
 
-    def openImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+    def open_image(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':
-            canvas = Canvas(self,self.config)
-            self.connectCanvas(canvas)
-            self.canvasScaleFactorChanged.emit(self.scaleFactor)
-            img_array = self.loadImage(canvas,path,bitDepth,enableAutoWB,brightness,blackLevel)
+            canvas_widget = canvas.Canvas(self,self.config)
+            self.connect_canvas(canvas_widget)
+            self.CANVAS_SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
+            img_array = self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel)
             self.photoList.append(img_array)
             self.pathList.append(path)
-            self.mainTab.addTab(canvas,os.path.basename(path))
+            self.mainTab.addTab(canvas_widget,os.path.basename(path))
             self.mainTab.setCurrentIndex(self.mainTab.count()-1)
-            canvas.fitCanvas()
-            canvas.toggleMode(self._mode)
+            canvas_widget.fit_canvas()
+            canvas_widget.toggle_mode(self._mode)
             self.currentPath = path
-            self.fileOpened.emit(path)
+            self.FILE_OPENED.emit(path)
 
-    def switchTab(self,index):
+    def switch_tab(self,index):
         if self.mainTab.count() > 0:
             if not self.tabClosed:
                 self._img=self.photoList[index]
             self.currentPath=self.pathList[index]
             self.messageLoadingImage.setText("Path of the image: "+self.currentPath)
-            self.disconnectCanvas()
-            self.reconnectCanvas(self.mainTab.currentWidget())
-            self.imgCreated.emit(self._img)
+            self.disconnect_canvas()
+            self.reconnect_canvas(self.mainTab.currentWidget())
+            self.IMG_CREATED.emit(self._img)
         elif self.mainTab.count() == 0:
             self.messageLoadingImage.clear()
-            self.disconnectCanvas()
+            self.disconnect_canvas()
         if self.tabClosed:
             self.tabClosed = False
 
-    def closeTab(self,index):
+    def close_tab(self,index):
         if index == self.mainTab.currentIndex() and not self.mainTab.count()== 1:
             if index == self.mainTab.count()-1:
                 self._img=self.photoList[index-1]
@@ -556,116 +554,116 @@ class Window(QtWidgets.QMainWindow):
         self.photoList.pop(index)
         self.pathList.pop(index)
 
-    def connectCanvas(self,canvas):
+    def connect_canvas(self,canvas_widget):
         #canvas signals
-        canvas.photoMouseMovement.connect(self.photoMouseMovement)
-        canvas.photoMousePress.connect(self.photoMousePress)
-        canvas.photoMouseRelease.connect(self.photoMouseRelease)
-        canvas.photoMouseDoubleClick.connect(self.photoMouseDoubleClick)
-        canvas.plotLineScan.connect(self.profile.lineScan)
-        canvas.plotIntegral.connect(self.profile.integral)
-        canvas.plotChiScan.connect(self.profile.chiScan)
-        canvas.KeyPress.connect(self.cursorInfo.chosenRegionUpdate)
-        canvas.KeyPressWhileArc.connect(self.cursorInfo.chiScanRegionUpdate)
+        canvas_widget.PHOTO_MOUSE_MOVEMENT.connect(self.photo_mouse_movement)
+        canvas_widget.PHOTO_MOUSE_PRESS.connect(self.photo_mouse_press)
+        canvas_widget.PHOTO_MOUSE_RELEASE.connect(self.photo_mouse_release)
+        canvas_widget.PHOTO_MOUSE_DOUBLE_CLICK.connect(self.photo_mouse_double_click)
+        canvas_widget.PLOT_LINE_SCAN.connect(self.profile.line_scan)
+        canvas_widget.PLOT_INTEGRAL.connect(self.profile.integral)
+        canvas_widget.PLOT_CHI_SCAN.connect(self.profile.chi_scan)
+        canvas_widget.KEY_PRESS.connect(self.cursorInfo.chosen_region_update)
+        canvas_widget.KEY_PRESS_WHILE_ARC.connect(self.cursorInfo.chi_scan_region_update)
 
         #canvas slots
-        self.zoomIn.triggered.connect(canvas.zoomIn)
-        self.zoomOut.triggered.connect(canvas.zoomOut)
-        self.fitCanvas.triggered.connect(canvas.fitCanvas)
-        self.properties.clearButton.clicked.connect(canvas.clearAnnotations)
-        self.labelChanged.connect(canvas.label)
-        self.calibrationChanged.connect(canvas.calibrate)
-        self.canvasScaleFactorChanged.connect(canvas.setScaleFactor)
-        self.canvasRefresh.connect(canvas.refresh)
-        self.properties.canvasFontsChanged.connect(canvas.adjustFonts)
+        self.zoomIn.triggered.connect(canvas_widget.zoom_in)
+        self.zoomOut.triggered.connect(canvas_widget.zoom_out)
+        self.fitCanvas.triggered.connect(canvas_widget.fit_canvas)
+        self.properties_widget.clearButton.clicked.connect(canvas_widget.clear_annotations)
+        self.LABEL_CHANGED.connect(canvas_widget.label)
+        self.CALIBRATION_CHANGED.connect(canvas_widget.calibrate)
+        self.CANVAS_SCALE_FACTOR_CHANGED.connect(canvas_widget.set_scale_factor)
+        self.CANVAS_REFRESH.connect(canvas_widget.refresh)
+        self.properties_widget.CANVAS_FONTS_CHANGED.connect(canvas_widget.adjust_fonts)
 
-    def disconnectCanvas(self):
+    def disconnect_canvas(self):
         self.zoomIn.disconnect()
         self.zoomOut.disconnect()
         self.fitCanvas.disconnect()
-        self.properties.clearButton.disconnect()
-        self.labelChanged.disconnect()
-        self.calibrationChanged.disconnect()
-        self.canvasScaleFactorChanged.disconnect()
+        self.properties_widget.clearButton.disconnect()
+        self.LABEL_CHANGED.disconnect()
+        self.CALIBRATION_CHANGED.disconnect()
+        self.CANVAS_SCALE_FACTOR_CHANGED.disconnect()
 
-    def reconnectCanvas(self,canvas):
-        self.zoomIn.triggered.connect(canvas.zoomIn)
-        self.zoomOut.triggered.connect(canvas.zoomOut)
-        self.fitCanvas.triggered.connect(canvas.fitCanvas)
-        self.properties.clearButton.clicked.connect(canvas.clearAnnotations)
-        self.labelChanged.connect(canvas.label)
-        self.calibrationChanged.connect(canvas.calibrate)
-        self.canvasScaleFactorChanged.connect(canvas.setScaleFactor)
+    def reconnect_canvas(self,canvas_widget):
+        self.zoomIn.triggered.connect(canvas_widget.zoom_in)
+        self.zoomOut.triggered.connect(canvas_widget.zoom_out)
+        self.fitCanvas.triggered.connect(canvas_widget.fit_canvas)
+        self.properties_widget.clearButton.clicked.connect(canvas_widget.clear_annotations)
+        self.LABEL_CHANGED.connect(canvas_widget.label)
+        self.CALIBRATION_CHANGED.connect(canvas_widget.calibrate)
+        self.CANVAS_SCALE_FACTOR_CHANGED.connect(canvas_widget.set_scale_factor)
 
-    def updateImage(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+    def update_image(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not self.mainTab.count() == 0:
-            canvas = self.mainTab.currentWidget()
-            img_array=self.loadImage(canvas,path,bitDepth,enableAutoWB,brightness,blackLevel)
+            canvas_widget = self.mainTab.currentWidget()
+            img_array=self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel)
             self.photoList[self.mainTab.currentIndex()]=img_array
-            self.applyProfileOptions()
+            self.apply_profile_options()
 
-    def loadImage(self,canvas,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+    def load_image(self,canvas_widget,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         self.messageLoadingImage.setText("Processing ... ")
         self.messageLoadingImage.setVisible(True)
         QtWidgets.QApplication.sendPostedEvents()
         self.messageLoadingImage.setVisible(True)
         QtWidgets.QApplication.sendPostedEvents()
-        qImg,img_array = self.image_worker.getImage(bitDepth,path, enableAutoWB, brightness, blackLevel,self.image_crop)
+        qImg,img_array = self.image_worker.get_image(bitDepth,path, enableAutoWB, brightness, blackLevel,self.image_crop)
         qPixImg = QtGui.QPixmap(qImg.size())
         QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.MonoOnly)
-        canvas.setPhoto(QtGui.QPixmap(qPixImg))
+        canvas_widget.set_photo(QtGui.QPixmap(qPixImg))
         self._img = img_array
-        self.imgCreated.emit(self._img)
+        self.IMG_CREATED.emit(self._img)
         self.messageLoadingImage.setText("Path of the image: "+path)
         return img_array
 
-    def updateDrawing(self):
+    def update_drawing(self):
         if not self.mainTab.count() == 0:
             if self.mainTab.currentWidget().canvasObject == "rectangle":
-                self.mainTab.currentWidget().drawRect(self.mainTab.currentWidget().start,self.mainTab.currentWidget().end,self.properties.integralHalfWidthSlider.value()/100*1*self.scaleFactor)
+                self.mainTab.currentWidget().draw_rect(self.mainTab.currentWidget().start,self.mainTab.currentWidget().end,self.properties_widget.integralHalfWidthSlider.value()/100*1*self.scaleFactor)
             if self.mainTab.currentWidget().canvasObject == "arc":
-                self.mainTab.currentWidget().drawArc(self.mainTab.currentWidget().start,self.properties.radiusSlider.value()/self.radiusSliderScale*self.scaleFactor,\
-                                    self.properties.integralHalfWidthSlider.value()/self.widthSliderScale*self.scaleFactor,self.properties.chiRangeSlider.value(),\
-                                    self.properties.tiltAngleSlider.value()/self.tiltAngleSliderScale)
+                self.mainTab.currentWidget().draw_arc(self.mainTab.currentWidget().start,self.properties_widget.radiusSlider.value()/self.radiusSliderScale*self.scaleFactor,\
+                                    self.properties_widget.integralHalfWidthSlider.value()/self.widthSliderScale*self.scaleFactor,self.properties_widget.chiRangeSlider.value(),\
+                                    self.properties_widget.tiltAngleSlider.value()/self.tiltAngleSliderScale)
 
-    def restoreDefaults(self):
-        self.mainTab.currentWidget().clearCanvas()
-        self.mainTab.currentWidget().clearAnnotations()
+    def restore_defaults(self):
+        self.mainTab.currentWidget().clear_canvas()
+        self.mainTab.currentWidget().clear_annotations()
         self.pan.setChecked(True)
-        self.properties.autoWBCheckBox.setChecked(False)
-        self.properties.brightnessSlider.setValue(20)
-        self.properties.blackLevelSlider.setValue(50)
-        self.clearCursorInfo()
+        self.properties_widget.autoWBCheckBox.setChecked(False)
+        self.properties_widget.brightnessSlider.setValue(20)
+        self.properties_widget.blackLevelSlider.setValue(50)
+        self.clear_cursor_info()
 
 
-    def toggleCanvasMode(self,cursormode):
+    def toggle_canvas_mode(self,cursormode):
         for i in range(0,self.mainTab.count()):
-            self.mainTab.widget(i).toggleMode(cursormode)
+            self.mainTab.widget(i).toggle_mode(cursormode)
         if cursormode == "arc":
             self.cursorInfo.startXYLabel.setText('Center (X,Y)')
             self.cursorInfo.endXYLabel.setText('Radius (px)')
         else:
             self.cursorInfo.startXYLabel.setText('Start (X,Y)')
             self.cursorInfo.endXYLabel.setText('End (X,Y)')
-        self.clearCursorInfo()
+        self.clear_cursor_info()
         self._mode = cursormode
 
-    def clearCursorInfo(self):
+    def clear_cursor_info(self):
         self.cursorInfo.choosedXYEdit.clear()
         self.cursorInfo.intensityEdit.clear()
         self.cursorInfo.startXYEdit.clear()
         self.cursorInfo.endXYEdit.clear()
         self.cursorInfo.widthEdit.clear()
 
-    def photoMousePress(self, pos):
+    def photo_mouse_press(self, pos):
         self.cursorInfo.startXYEdit.setText('{},{}'.format(int(pos.x()), int(pos.y())))
         self.cursorInfo.endXYEdit.clear()
         if self._mode == "rectangle" or self._mode == "arc":
-            self.cursorInfo.widthEdit.setText('{:3.2f}'.format(self.properties.integralHalfWidthSlider.value()/self.widthSliderScale))
+            self.cursorInfo.widthEdit.setText('{:3.2f}'.format(self.properties_widget.integralHalfWidthSlider.value()/self.widthSliderScale))
         elif self._mode == "line":
             self.cursorInfo.widthEdit.setText('{:3.2f}'.format(0.00))
 
-    def photoMouseRelease(self, pos,start,ShiftModified):
+    def photo_mouse_release(self, pos,start,ShiftModified):
         if self._mode == "arc":
             self.cursorInfo.endXYEdit.setText('{}'.format(np.round(self.mainTab.currentWidget().PFRadius,2)))
         else:
@@ -682,37 +680,37 @@ class Window(QtWidgets.QMainWindow):
                     pos.setY(pos.x()-start.x()+start.y())
             self.cursorInfo.endXYEdit.setText('{},{}'.format(int(pos.x()), int(pos.y())))
         if self.mainTab.currentWidget()._drawingArc:
-            self.properties.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
+            self.properties_widget.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
 
-    def photoMouseMovement(self, pos, type="canvas"):
+    def photo_mouse_movement(self, pos, type="canvas"):
         if type == "canvas":
             self.editPixInfo.setText('x = %d, y = %d' % (int(pos.x()), int(pos.y())))
         elif type == "chart":
             self.editPixInfo.setText('K = %3.2f, Int. = %3.2f' % (pos.x(), pos.y()))
         if self.mainTab.currentWidget()._drawingArc:
-            self.properties.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
+            self.properties_widget.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
 
-    def photoMouseDoubleClick(self, pos):
+    def photo_mouse_double_click(self, pos):
         self.cursorInfo.choosedXYEdit.setText('{},{}'.format(pos.x(), pos.y()))
         self.cursorInfo.intensityEdit.setText('{:3.2f}'.format(self._img[pos.y(), pos.x()]/np.amax(np.amax(self._img))))
 
-    def keyPressEvent(self,event):
+    def key_press_event(self,event):
         if event.key() == QtCore.Qt.Key_Up or QtCore.Qt.Key_Down or QtCore.Qt.Key_Left or QtCore.Qt.Key_Right :
             self.mainTab.currentWidget().setFocus()
             self.mainTab.currentWidget().keyPressEvent(event)
 
     def status(self):
-        status = {"sensitivity": float(self.properties.sensitivityEdit.text()),\
-                "energy": float(self.properties.energyEdit.text()),\
-                "azimuth": float(self.properties.azimuthEdit.text()),\
-                "scaleBar": float(self.properties.scaleBarEdit.text()),\
-                "brightness": self.properties.brightnessSlider.value(),\
-                "blackLevel": self.properties.blackLevelSlider.value(),\
-                "integralWidth": self.properties.integralHalfWidthSlider.value()/self.properties.widthSliderScale,\
-                "chiRange": self.properties.chiRangeSlider.value(),\
-                "radius": self.properties.radiusSlider.value()/self.properties.radiusSliderScale,\
-                "tiltAngle": self.properties.tiltAngleSlider.value()/self.properties.tiltAngleSliderScale,\
-                "autoWB": self.properties.autoWBCheckBox.isChecked(),\
+        status = {"sensitivity": float(self.properties_widget.sensitivityEdit.text()),\
+                "energy": float(self.properties_widget.energyEdit.text()),\
+                "azimuth": float(self.properties_widget.azimuthEdit.text()),\
+                "scaleBar": float(self.properties_widget.scaleBarEdit.text()),\
+                "brightness": self.properties_widget.brightnessSlider.value(),\
+                "blackLevel": self.properties_widget.blackLevelSlider.value(),\
+                "integralWidth": self.properties_widget.integralHalfWidthSlider.value()/self.properties_widget.widthSliderScale,\
+                "chiRange": self.properties_widget.chiRangeSlider.value(),\
+                "radius": self.properties_widget.radiusSlider.value()/self.properties_widget.radiusSliderScale,\
+                "tiltAngle": self.properties_widget.tiltAngleSlider.value()/self.properties_widget.tiltAngleSliderScale,\
+                "autoWB": self.properties_widget.autoWBCheckBox.isChecked(),\
                 "mode": self._mode}
         try:
             status["choosedX"] = int(self.cursorInfo.choosedXYEdit.text().split(',')[0])
@@ -736,9 +734,9 @@ class Window(QtWidgets.QMainWindow):
             status["width"] = float(self.cursorInfo.widthEdit.text())
         except:
             status["width"] = ""
-        self.returnStatus.emit(status)
+        self.RETURN_STATUS.emit(status)
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -747,7 +745,7 @@ class Window(QtWidgets.QMainWindow):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)

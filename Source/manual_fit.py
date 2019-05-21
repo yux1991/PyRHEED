@@ -3,15 +3,15 @@ import numpy as np
 import os
 import glob
 import configparser
-import ProfileChart
-from Process import Image, Fit
-from MyWidgets import *
+import profile_chart
+from process import Image, Fit
+from my_widgets import VerticalLabelSlider
 
 class Window(QtCore.QObject):
 
-    StatusRequested = QtCore.pyqtSignal()
-    FitSatisfied = QtCore.pyqtSignal(list)
-    color = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
+    STATUS_REQUESTED = QtCore.pyqtSignal()
+    FIT_SATISFIED = QtCore.pyqtSignal(list)
+    COLOR = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
 
     def __init__(self,fontname='Arial',fontsize=10):
         super(Window,self).__init__()
@@ -25,20 +25,20 @@ class Window(QtCore.QObject):
     def refresh(self,config):
         self.config = config
         try:
-            self.FitChart.refresh(config)
+            self.fit_chart.refresh(config)
         except:
             pass
 
-    def Set_Status(self,status):
+    def set_status(self,status):
         self.status = status
 
-    def getInput(self):
+    def get_input(self):
         items = ['1','1+BG','3','3+BG','5','5+BG','7','7+BG','9','9+BG','11','11+BG']
         return QtWidgets.QInputDialog.getItem(None,'Input','Choose the Number of Peaks',items,0,False)
 
-    def Main(self,path,nop=1,BG=False):
+    def main(self,path,nop=1,BG=False):
         if nop == 0:
-            text, OK = self.getInput()
+            text, OK = self.get_input()
             if OK:
                 if text.isdigit():
                     self.nop = int(text)
@@ -51,14 +51,14 @@ class Window(QtCore.QObject):
         else:
             self.nop = nop
             self.BG = BG
-        self.StatusRequested.emit()
+        self.STATUS_REQUESTED.emit()
         self.initialGuess = ['1','0.1','1','0.5']
         if os.path.isdir(path):
             self.path = os.path.join(path,'*.nef')
         elif os.path.isfile(path):
             self.path = path
         else:
-            self.Raise_Error('Please open a pattern!')
+            self.raise_error('Please open a pattern!')
             return
         self.Dialog = QtWidgets.QWidget()
         self.Grid = QtWidgets.QGridLayout(self.Dialog)
@@ -80,33 +80,33 @@ class Window(QtCore.QObject):
             for name,index,value,minimum,maximum in mode:
                 if self.BG and i==self.nop:
                     if name == 'W':
-                        slider = VerticalLabelSlider(minimum,self.RC[-1],100,value,name,index,self.BG,'vertical',self.color[i-1])
+                        slider = VerticalLabelSlider(minimum,self.RC[-1],100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
                     elif name == 'H':
-                        slider = VerticalLabelSlider(minimum,5,100,value,name,index,self.BG,'vertical',self.color[i-1])
+                        slider = VerticalLabelSlider(minimum,5,100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
                     elif name =='C':
-                        slider = VerticalLabelSlider(minimum,maximum,100,self.RC[-1]/2,name,index,self.BG,'vertical',self.color[i-1])
+                        slider = VerticalLabelSlider(minimum,maximum,100,self.RC[-1]/2,name,index,self.BG,'vertical',self.COLOR[i-1])
                 else:
-                    slider = VerticalLabelSlider(minimum,maximum,100,value,name,index,False,'vertical',self.color[i-1])
-                slider.valueChanged.connect(self.updateGuess)
+                    slider = VerticalLabelSlider(minimum,maximum,100,value,name,index,False,'vertical',self.COLOR[i-1])
+                slider.VALUE_CHANGED.connect(self.update_guess)
                 parametersVLayout.addWidget(slider)
             self.parametersHLayout.addLayout(parametersVLayout)
         self.OffsetSlider = VerticalLabelSlider(0,1,100,(self.I[0]+self.I[-1])/2,'O',0)
-        self.OffsetSlider.valueChanged.connect(self.updateGuess)
+        self.OffsetSlider.VALUE_CHANGED.connect(self.update_guess)
         self.parametersHLayout.addWidget(self.OffsetSlider)
 
         self.AcceptButton = QtWidgets.QPushButton("Accept")
-        self.AcceptButton.clicked.connect(self.Accept)
+        self.AcceptButton.clicked.connect(self.accept)
         self.FitChartTitle = QtWidgets.QLabel('Profile')
-        self.FitChart = ProfileChart.ProfileChart(self.config)
-        self.FitChart.setFonts(self.fontname,self.fontsize)
-        self.FitChart.addChart(self.RC,self.I)
-        self.FitChart.profileChart.setMinimumWidth(650)
-        self.updateGuess()
+        self.fit_chart = profile_chart.ProfileChart(self.config)
+        self.fit_chart.set_fonts(self.fontname,self.fontsize)
+        self.fit_chart.add_chart(self.RC,self.I)
+        self.fit_chart.profileChart.setMinimumWidth(650)
+        self.update_guess()
 
         self.LeftGrid.addWidget(self.parameters,0,0)
         self.LeftGrid.addWidget(self.AcceptButton,1,0)
         self.RightGrid.addWidget(self.FitChartTitle,0,0)
-        self.RightGrid.addWidget(self.FitChart,1,0)
+        self.RightGrid.addWidget(self.fit_chart,1,0)
         self.Grid.addWidget(self.LeftFrame,0,0)
         self.Grid.addWidget(self.RightFrame,0,1)
 
@@ -117,13 +117,13 @@ class Window(QtCore.QObject):
         center = desktopRect.center()
         self.Dialog.move(center.x()-self.Dialog.width()*0.5,center.y()-self.Dialog.height()*0.5)
 
-    def Accept(self):
-        self.Reject()
+    def accept(self):
+        self.reject()
         results = self.flatten(self.guess)
         results.append(float(self.OffsetSlider.value()))
-        self.FitSatisfied.emit(results)
+        self.FIT_SATISFIED.emit(results)
 
-    def Reject(self):
+    def reject(self):
         self.Dialog.close()
 
     def flatten(self,input):
@@ -133,7 +133,7 @@ class Window(QtCore.QObject):
                 new_list.append(float(input[j][i]))
         return new_list
 
-    def updateGuess(self):
+    def update_guess(self):
         guess = []
         for VLayout in self.parametersHLayout.children():
             row = []
@@ -141,7 +141,7 @@ class Window(QtCore.QObject):
                 row.append(VLayout.itemAt(i).widget().value())
             guess.append(row)
         self.guess = guess
-        self.plotResults(self.RC,self.guess)
+        self.plot_results(self.RC,self.guess)
 
     def profile(self):
         image_list = []
@@ -157,7 +157,7 @@ class Window(QtCore.QObject):
         if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
                 self.status["endY"] == ""\
             or self.status["width"] =="":
-            self.Raise_Error("Please choose the region!")
+            self.raise_error("Please choose the region!")
         else:
             start = QtCore.QPointF()
             end = QtCore.QPointF()
@@ -166,17 +166,17 @@ class Window(QtCore.QObject):
             end.setX(self.status["endX"])
             end.setY(self.status["endY"])
             width = self.status["width"]*scale_factor
-            qImg, img = self.image_worker.getImage(16,image_list[0],autoWB,brightness,blackLevel,image_crop)
+            qImg, img = self.image_worker.get_image(16,image_list[0],autoWB,brightness,blackLevel,image_crop)
             if width == 0.0:
-                RC,I = self.image_worker.getLineScan(start,end,img,scale_factor)
+                RC,I = self.image_worker.get_line_scan(start,end,img,scale_factor)
             else:
-                RC,I = self.image_worker.getIntegral(start,end,width,img,scale_factor)
+                RC,I = self.image_worker.get_integral(start,end,width,img,scale_factor)
             return RC,I
 
-    def plotResults(self,x0,guess):
-        if len(self.FitChart.profileChart.series())>1:
-            for series in self.FitChart.profileChart.series()[1:]:
-                self.FitChart.profileChart.removeSeries(series)
+    def plot_results(self,x0,guess):
+        if len(self.fit_chart.profileChart.series())>1:
+            for series in self.fit_chart.profileChart.series()[1:]:
+                self.fit_chart.profileChart.removeSeries(series)
         total = np.full(len(x0),float(self.OffsetSlider.value()))
         total_min = 100
         for i in range(len(guess)):
@@ -193,16 +193,16 @@ class Window(QtCore.QObject):
             if min(minH1,minH2) < total_min:
                 total_min = min(minH1,minH2)
             pen = QtGui.QPen(QtCore.Qt.DotLine)
-            pen.setColor(QtGui.QColor(self.color[i]))
+            pen.setColor(QtGui.QColor(self.COLOR[i]))
             pen.setWidth(2)
             self.series_fit = QtChart.QLineSeries()
             self.series_fit.setPen(pen)
             for x,y in zip(x0,fit):
                 self.series_fit.append(x,y)
-            self.FitChart.profileChart.addSeries(self.series_fit)
-            for ax in self.FitChart.profileChart.axes():
+            self.fit_chart.profileChart.addSeries(self.series_fit)
+            for ax in self.fit_chart.profileChart.axes():
                 self.series_fit.attachAxis(ax)
-            self.FitChart.profileChart.axisY().setRange(min(minH1,minH2,self.minIntensity),max(maxH,self.maxIntensity))
+            self.fit_chart.profileChart.axisY().setRange(min(minH1,minH2,self.minIntensity),max(maxH,self.maxIntensity))
         pen = QtGui.QPen(QtCore.Qt.DotLine)
         pen.setColor(QtGui.QColor('red'))
         pen.setWidth(2)
@@ -210,12 +210,12 @@ class Window(QtCore.QObject):
         series_total.setPen(pen)
         for x,y in zip(x0,total):
             series_total.append(x,y)
-        self.FitChart.profileChart.addSeries(series_total)
-        for ax in self.FitChart.profileChart.axes():
+        self.fit_chart.profileChart.addSeries(series_total)
+        for ax in self.fit_chart.profileChart.axes():
             series_total.attachAxis(ax)
-        self.FitChart.profileChart.axisY().setRange(min(total[0],total[-1],self.minIntensity,total_min),max(np.amax(total),self.maxIntensity))
+        self.fit_chart.profileChart.axisY().setRange(min(total[0],total[-1],self.minIntensity,total_min),max(np.amax(total),self.maxIntensity))
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -224,7 +224,7 @@ class Window(QtCore.QObject):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)

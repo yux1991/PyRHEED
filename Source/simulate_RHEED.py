@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
 import pandas as pd
 import itertools
-from Process import Convertor, DiffractionPattern
+from process import Convertor, DiffractionPattern
 import numpy as np
 import sys
 import re
@@ -10,27 +10,28 @@ from pymatgen.io.cif import CifParser
 from pymatgen.core import structure as pgStructure
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.lattice import Lattice
-from MyWidgets import *
+from my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
 
 class Window(QtWidgets.QWidget):
 
-    fontsChanged = QtCore.pyqtSignal(str,int)
-    viewDirectionChanged = QtCore.pyqtSignal(int)
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressHold = QtCore.pyqtSignal()
-    progressEnd = QtCore.pyqtSignal()
-    refreshPlotFonts = QtCore.pyqtSignal(str,int)
-    refreshPlotFWHM = QtCore.pyqtSignal(bool)
-    refreshPlotColormap = QtCore.pyqtSignal(str)
-    deleteSample = QtCore.pyqtSignal(int)
-    updateInformationBoard = QtCore.pyqtSignal(int,str,float,float,float,float,float,float)
-    stopCalculation = QtCore.pyqtSignal()
+    FONTS_CHANGED = QtCore.pyqtSignal(str,int)
+    VIEW_DIRECTION_CHANGED = QtCore.pyqtSignal(int)
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_HOLD = QtCore.pyqtSignal()
+    PROGRESS_END = QtCore.pyqtSignal()
+    REFRESH_PLOT_FONTS = QtCore.pyqtSignal(str,int)
+    REFRESH_PLOT_FWHM = QtCore.pyqtSignal(bool)
+    REFRESH_PLOT_COLORMAP = QtCore.pyqtSignal(str)
+    DELETE_SAMPLE = QtCore.pyqtSignal(int)
+    UPDATE_INOFRMATION_BOARD = QtCore.pyqtSignal(int,str,float,float,float,float,float,float)
+    UPDATE_CAMERA_POSITION = QtCore.pyqtSignal(float,float,float)
+    STOP_CALCULATION = QtCore.pyqtSignal()
 
     def __init__(self):
         super(Window,self).__init__()
         self.convertor_worker = Convertor()
 
-    def Main(self):
+    def main(self):
         self.graph = ScatterGraph()
         self.AFF = pd.read_excel(open('../doc/AtomicFormFactors.xlsx','rb'),sheet_name="Atomic Form Factors",index_col=0)
         self.AR = pd.read_excel(open('../doc/AtomicRadii.xlsx','rb'),sheet_name="Atomic Radius",index_col=0)
@@ -80,7 +81,7 @@ class Window(QtWidgets.QWidget):
         self.chooseCifLabel.setAlignment(QtCore.Qt.AlignTop)
         self.chooseCifLabel.setWordWrap(True)
         self.chooseCifButton = QtWidgets.QPushButton("Add CIF")
-        self.chooseCifButton.clicked.connect(self.getCifPath)
+        self.chooseCifButton.clicked.connect(self.get_cif_path)
         self.chooseCifGrid.addWidget(self.chooseCifLabel,0,0)
         self.chooseCifGrid.addWidget(self.chooseCifButton,1,0)
 
@@ -92,7 +93,7 @@ class Window(QtWidgets.QWidget):
         self.destinationNameEdit = QtWidgets.QLineEdit('3D_data')
         self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
         self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        self.chooseDestinationButton.clicked.connect(self.Choose_Destination)
+        self.chooseDestinationButton.clicked.connect(self.choose_destination)
         self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0)
         self.destinationGrid.addWidget(self.chooseDestinationButton,0,1)
         self.destinationGrid.addWidget(self.destinationNameLabel,1,0)
@@ -100,7 +101,7 @@ class Window(QtWidgets.QWidget):
 
         self.tab = QtWidgets.QTabWidget()
         self.tab.setTabsClosable(True)
-        self.tab.tabCloseRequested.connect(self.deleteStructure)
+        self.tab.tabCloseRequested.connect(self.delete_structure)
 
         self.reciprocal_range_box = QtWidgets.QWidget()
         self.reciprocal_range_grid = QtWidgets.QGridLayout(self.reciprocal_range_box)
@@ -112,22 +113,22 @@ class Window(QtWidgets.QWidget):
         self.number_of_steps_para.setMaximum(1000)
         self.number_of_steps_para.setSingleStep(1)
         self.number_of_steps_para.setValue(5)
-        self.number_of_steps_para.valueChanged.connect(self.updateNumberOfStepsPara)
+        self.number_of_steps_para.valueChanged.connect(self.update_number_of_steps_para)
         self.number_of_steps_perp_label = QtWidgets.QLabel("Number of K_perp Steps:")
         self.number_of_steps_perp = QtWidgets.QSpinBox()
         self.number_of_steps_perp.setMinimum(1)
         self.number_of_steps_perp.setMaximum(1000)
         self.number_of_steps_perp.setSingleStep(1)
         self.number_of_steps_perp.setValue(5)
-        self.number_of_steps_perp.valueChanged.connect(self.updateNumberOfStepsPerp)
+        self.number_of_steps_perp.valueChanged.connect(self.update_number_of_steps_perp)
         self.Kx_range = LockableDoubleSlider(-1000,1000,10,-10,10,"Kx range","\u212B\u207B\u00B9",True)
         self.Ky_range = LockableDoubleSlider(-1000,1000,10,-10,10,"Ky range","\u212B\u207B\u00B9",True)
         self.Kz_range = LockableDoubleSlider(-1000,1000,10,0,10,"Kz range","\u212B\u207B\u00B9",False)
         self.apply_reciprocal_range = QtWidgets.QPushButton("Start Calculation")
-        self.apply_reciprocal_range.clicked.connect(self.updateReciprocalRange)
+        self.apply_reciprocal_range.clicked.connect(self.update_reciprocal_range)
         self.apply_reciprocal_range.setEnabled(False)
         self.stop_calculation = QtWidgets.QPushButton("Abort Calculation")
-        self.stop_calculation.clicked.connect(self.stopDiffractionCalculation)
+        self.stop_calculation.clicked.connect(self.stop_diffraction_calculation)
         self.stop_calculation.setEnabled(False)
 
         self.reciprocal_range_grid.addWidget(self.number_of_steps_para_label,0,0,1,1)
@@ -152,41 +153,41 @@ class Window(QtWidgets.QWidget):
         self.plotOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.plotOptionsGrid = QtWidgets.QGridLayout(self.plotOptions)
         self.load_data_button = QtWidgets.QPushButton("Load data")
-        self.load_data_button.clicked.connect(self.loadData)
+        self.load_data_button.clicked.connect(self.load_data)
         self.KzIndex = LockableDoubleSlider(0,self.number_of_steps_perp.value()-1,1,0,0,"Kz Index range")
         self.KxyIndex = LockableDoubleSlider(0,self.number_of_steps_para.value()-1,1,0,0,"Kxy Index range")
         self.showFWHMCheckLabel = QtWidgets.QLabel("Show FWHM Contour?")
         self.showFWHMCheck = QtWidgets.QCheckBox()
         self.showFWHMCheck.setChecked(False)
-        self.showFWHMCheck.stateChanged.connect(self.updateFWHMCheck)
+        self.showFWHMCheck.stateChanged.connect(self.update_FWHM_check)
         self.reciprocalMapfontListLabel = QtWidgets.QLabel("Font Name")
         self.reciprocalMapfontList = QtWidgets.QFontComboBox()
         self.reciprocalMapfontList.setCurrentFont(QtGui.QFont("Arial"))
-        self.reciprocalMapfontList.currentFontChanged.connect(self.updatePlotFont)
+        self.reciprocalMapfontList.currentFontChanged.connect(self.update_plot_font)
         self.reciprocalMapfontSizeLabel = QtWidgets.QLabel("Font Size ({})".format(30))
         self.reciprocalMapfontSizeLabel.setFixedWidth(160)
         self.reciprocalMapfontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.reciprocalMapfontSizeSlider.setMinimum(1)
         self.reciprocalMapfontSizeSlider.setMaximum(100)
         self.reciprocalMapfontSizeSlider.setValue(30)
-        self.reciprocalMapfontSizeSlider.valueChanged.connect(self.updateReciprocalMapFontSize)
+        self.reciprocalMapfontSizeSlider.valueChanged.connect(self.update_reciprocal_map_font_size)
         self.reciprocalMapColormapLabel = QtWidgets.QLabel("Colormap")
         self.reciprocalMapColormapCombo = QtWidgets.QComboBox()
         for colormap in plt.colormaps():
             self.reciprocalMapColormapCombo.addItem(colormap)
         self.reciprocalMapColormapCombo.setCurrentText("jet")
-        self.reciprocalMapColormapCombo.currentTextChanged.connect(self.updatePlotColormap)
+        self.reciprocalMapColormapCombo.currentTextChanged.connect(self.update_plot_colormap)
         self.show_XY_plot_button = QtWidgets.QPushButton("Show XY Slices")
-        self.show_XY_plot_button.clicked.connect(self.showXYPlot)
+        self.show_XY_plot_button.clicked.connect(self.show_XY_plot)
         self.show_XY_plot_button.setEnabled(False)
         self.show_XZ_plot_button = QtWidgets.QPushButton("Show XZ Slices")
-        self.show_XZ_plot_button.clicked.connect(self.showXZPlot)
+        self.show_XZ_plot_button.clicked.connect(self.show_XZ_plot)
         self.show_XZ_plot_button.setEnabled(False)
         self.show_YZ_plot_button = QtWidgets.QPushButton("Show YZ Slices")
-        self.show_YZ_plot_button.clicked.connect(self.showYZPlot)
+        self.show_YZ_plot_button.clicked.connect(self.show_YZ_plot)
         self.show_YZ_plot_button.setEnabled(False)
         self.save_Results_button = QtWidgets.QPushButton("Save the 3D data")
-        self.save_Results_button.clicked.connect(self.saveResults)
+        self.save_Results_button.clicked.connect(self.save_results)
         self.save_Results_button.setEnabled(False)
         self.plotOptionsGrid.addWidget(self.load_data_button,0,0,1,3)
         self.plotOptionsGrid.addWidget(self.KxyIndex,1,0,1,3)
@@ -214,7 +215,7 @@ class Window(QtWidgets.QWidget):
         self.showCoordinatesLabel = QtWidgets.QLabel('Show Coordinate System?')
         self.showCoordinates = QtWidgets.QCheckBox()
         self.showCoordinates.setChecked(True)
-        self.showCoordinates.stateChanged.connect(self.updateCoordinates)
+        self.showCoordinates.stateChanged.connect(self.update_coordinates)
         self.showCoordinatesGrid.addWidget(self.showCoordinatesLabel,0,0)
         self.showCoordinatesGrid.addWidget(self.showCoordinates,0,1)
 
@@ -229,15 +230,15 @@ class Window(QtWidgets.QWidget):
         self.fontListLabel.setStyleSheet('QLabel {color:blue;}')
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
-        self.fontList.currentFontChanged.connect(self.RefreshFontName)
-        self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(50))
+        self.fontList.currentFontChanged.connect(self.refresh_font_name)
+        self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(5))
         self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
-        self.fontSizeSlider.setValue(50)
-        self.fontSizeSlider.valueChanged.connect(self.RefreshFontSize)
-        self.fontsChanged.connect(self.graph.changeFonts)
+        self.fontSizeSlider.setValue(5)
+        self.fontSizeSlider.valueChanged.connect(self.refresh_font_size)
+        self.FONTS_CHANGED.connect(self.graph.change_fonts)
 
         self.shadowQualityLabel = QtWidgets.QLabel("Shadow Quality")
         self.shadowQualityLabel.setStyleSheet('QLabel {color:blue;}')
@@ -250,7 +251,7 @@ class Window(QtWidgets.QWidget):
         self.shadowQuality.addItem("Medium Soft")
         self.shadowQuality.addItem("High Soft")
         self.shadowQuality.setCurrentText("None")
-        self.shadowQuality.currentIndexChanged.connect(self.graph.changeShadowQuality)
+        self.shadowQuality.currentIndexChanged.connect(self.graph.change_shadow_quality)
 
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -259,6 +260,9 @@ class Window(QtWidgets.QWidget):
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
                                           "\u00A0\u00A0\u00A0\u00A0Initialized!")
+        self.logCursor = QtGui.QTextCursor(self.logBox.document())
+        self.logCursor.movePosition(QtGui.QTextCursor.End)
+        self.logBox.setTextCursor(self.logCursor)
         self.logBox.ensureCursorVisible()
         self.logBox.setAlignment(QtCore.Qt.AlignTop)
         self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -273,16 +277,35 @@ class Window(QtWidgets.QWidget):
         self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
         self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Expanding)
         self.progressBar.setSizePolicy(self.progressBarSizePolicy)
-        self.progressAdvance.connect(self.progress)
-        self.progressHold.connect(self.progressOn)
-        self.progressEnd.connect(self.progressReset)
+        self.PROGRESS_ADVANCE.connect(self.progress)
+        self.PROGRESS_HOLD.connect(self.progress_on)
+        self.PROGRESS_END.connect(self.progress_reset)
         self.statusGrid.addWidget(self.logBoxScroll,0,0)
-        self.statusGrid.addWidget(self.progressBar,1,0)
         self.vLayout_left.addWidget(self.statusBar)
+        self.vLayout_left.addWidget(self.progressBar)
 
         themeLabel = QtWidgets.QLabel("Background Color")
         themeLabel.setStyleSheet("QLabel {color:blue;}")
+        self.appearanceGrid.addWidget(self.showCoordinatesWidget)
+        self.appearanceGrid.addWidget(themeLabel)
+        self.appearanceGrid.addWidget(self.themeList)
+        self.appearanceGrid.addWidget(self.fontListLabel)
+        self.appearanceGrid.addWidget(self.fontList)
+        self.appearanceGrid.addWidget(self.fontSizeLabel)
+        self.appearanceGrid.addWidget(self.fontSizeSlider)
+        self.appearanceGrid.addWidget(self.shadowQualityLabel)
+        self.appearanceGrid.addWidget(self.shadowQuality)
+        self.tab.addTab(self.appearance,"Appearance")
+        self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.tab.tabBar().setTabButton(1,QtWidgets.QTabBar.RightSide,None)
+        self.tab.tabBar().setTabButton(1,QtWidgets.QTabBar.LeftSide,None)
 
+        self.view = QtWidgets.QWidget()
+        self.viewGrid = QtWidgets.QVBoxLayout(self.view)
+        self.viewGrid.setContentsMargins(5,5,5,5)
+        self.viewGrid.setAlignment(QtCore.Qt.AlignTop)
+        viewLabel = QtWidgets.QLabel("Set View Direction")
+        viewLabel.setStyleSheet("QLabel {color:blue;}")
         self.viewDirection = QtWidgets.QWidget()
         self.viewDirectionGrid = QtWidgets.QGridLayout(self.viewDirection)
         self.viewDirectionButtonGroup = QtWidgets.QButtonGroup()
@@ -293,21 +316,27 @@ class Window(QtWidgets.QWidget):
             self.viewDirectionGrid.addWidget(QtWidgets.QPushButton(text),i,j)
             count = self.viewDirectionGrid.count()
             self.viewDirectionButtonGroup.addButton(self.viewDirectionGrid.itemAt(count-1).widget(),id=preset)
-        self.viewDirectionButtonGroup.buttonClicked.connect(self.viewDirectionChangedEmit)
-        self.appearanceGrid.addWidget(self.showCoordinatesWidget)
-        self.appearanceGrid.addWidget(themeLabel)
-        self.appearanceGrid.addWidget(self.themeList)
-        self.appearanceGrid.addWidget(self.fontListLabel)
-        self.appearanceGrid.addWidget(self.fontList)
-        self.appearanceGrid.addWidget(self.fontSizeLabel)
-        self.appearanceGrid.addWidget(self.fontSizeSlider)
-        self.appearanceGrid.addWidget(self.shadowQualityLabel)
-        self.appearanceGrid.addWidget(self.shadowQuality)
-        self.appearanceGrid.addWidget(self.viewDirection)
-        self.tab.addTab(self.appearance,"View")
+        self.viewDirectionButtonGroup.buttonClicked.connect(self.view_direction_changed_emit)
+
+        cameraPositionLabel = QtWidgets.QLabel("Set Camera Position")
+        cameraPositionLabel.setStyleSheet("QLabel {color:blue;}")
+        self.horizontalRotation = LabelLineEdit('Horizontal Rotation',150,'0.0','\u00B0')
+        self.verticalRotation = LabelLineEdit('Vertical Rotation',150,'0.0','\u00B0')
+        self.zoom = LabelLineEdit('Zoom Level',150,'100.0')
+        self.horizontalRotation.VALUE_CHANGED.connect(self.set_camera_position)
+        self.verticalRotation.VALUE_CHANGED.connect(self.set_camera_position)
+        self.zoom.VALUE_CHANGED.connect(self.set_camera_position)
+
+        self.viewGrid.addWidget(viewLabel)
+        self.viewGrid.addWidget(self.viewDirection)
+        self.viewGrid.addWidget(cameraPositionLabel)
+        self.viewGrid.addWidget(self.horizontalRotation)
+        self.viewGrid.addWidget(self.verticalRotation)
+        self.viewGrid.addWidget(self.zoom)
+        self.tab.addTab(self.view,"View")
         self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
-        self.tab.tabBar().setTabButton(1,QtWidgets.QTabBar.RightSide,None)
-        self.tab.tabBar().setTabButton(1,QtWidgets.QTabBar.LeftSide,None)
+        self.tab.tabBar().setTabButton(2,QtWidgets.QTabBar.RightSide,None)
+        self.tab.tabBar().setTabButton(2,QtWidgets.QTabBar.LeftSide,None)
 
         self.colorTab = QtWidgets.QTabWidget()
         self.colorTab.setVisible(False)
@@ -320,19 +349,34 @@ class Window(QtWidgets.QWidget):
         self.controlPanelScroll.setWidgetResizable(True)
         self.controlPanelScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
 
-        self.themeList.currentTextChanged.connect(self.graph.changeTheme)
+        self.themeList.currentTextChanged.connect(self.graph.change_theme)
         self.themeList.setCurrentIndex(3)
-        self.graph.logMessage.connect(self.updateLog)
-        self.graph.progressAdvance.connect(self.progress)
-        self.graph.progressEnd.connect(self.progressReset)
-        self.graph.calculationFinished.connect(self.finishCalculation)
-        self.graph.calculationAborted.connect(self.abortCalculation)
-        self.deleteSample.connect(self.graph.deleteData)
-        self.viewDirectionChanged.connect(self.graph.updateViewDirection)
-        self.stopCalculation.connect(self.graph.stop)
+        self.graph.LOG_MESSAGE.connect(self.update_log)
+        self.graph.PROGRESS_ADVANCE.connect(self.progress)
+        self.graph.PROGRESS_END.connect(self.progress_reset)
+        self.graph.CALCULATION_FINISHED.connect(self.finish_calculation)
+        self.graph.CALCULATION_ABORTED.connect(self.abort_calculation)
+        self.graph.CAMERA_CHANGED.connect(self.change_camera_position_values)
+        self.DELETE_SAMPLE.connect(self.graph.delete_data)
+        self.VIEW_DIRECTION_CHANGED.connect(self.graph.update_view_direction)
+        self.UPDATE_CAMERA_POSITION.connect(self.graph.update_camera_position)
+        self.STOP_CALCULATION.connect(self.graph.stop)
         self.showMaximized()
 
-    def deleteStructure(self,index):
+    def set_camera_position(self,label,value):
+        if label == 'Horizontal Rotation':
+            self.UPDATE_CAMERA_POSITION.emit(value,self.verticalRotation.value(),self.zoom.value())
+        elif label == 'Vertical Rotation':
+            self.UPDATE_CAMERA_POSITION.emit(self.horizontalRotation.value(),value,self.zoom.value())
+        elif label == 'Zoom Level':
+            self.UPDATE_CAMERA_POSITION.emit(self.horizontalRotation.value(),self.verticalRotation.value(),value)
+
+    def change_camera_position_values(self,h,v,zoom):
+        self.horizontalRotation.set_value(h)
+        self.verticalRotation.set_value(v)
+        self.zoom.set_value(zoom)
+
+    def delete_structure(self,index):
         self.tab.widget(index).destroy()
         self.tab.removeTab(index)
         self.colorTab.widget(index).destroy()
@@ -344,7 +388,7 @@ class Window(QtWidgets.QWidget):
         del self.box[self.sample_tab_index[index]]
         del self.element_species[self.sample_tab_index[index]]
         if self.sample_tab_index[index] in self.data_index_set:
-            self.deleteSample.emit(self.sample_tab_index[index])
+            self.DELETE_SAMPLE.emit(self.sample_tab_index[index])
         if self.sample_tab_index[index] in self.sample_index_set:
             self.sample_index_set.remove(self.sample_tab_index[index])
         next_available_index = 0
@@ -361,52 +405,52 @@ class Window(QtWidgets.QWidget):
         self.progressBar.setMaximum(max)
         self.progressBar.setValue(val)
 
-    def progressOn(self):
+    def progress_on(self):
         self.progressBar.setVisible(True)
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(0)
         self.progressBar.setValue(0)
 
-    def progressReset(self):
+    def progress_reset(self):
         self.progressBar.reset()
         self.progressBar.setVisible(False)
 
-    def Choose_Destination(self):
+    def choose_destination(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",'./',QtWidgets.QFileDialog.ShowDirsOnly)
         self.currentDestination = path
         self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
 
-    def viewDirectionChangedEmit(self,button):
+    def view_direction_changed_emit(self,button):
         p = self.viewDirectionButtonGroup.id(button)
-        self.viewDirectionChanged.emit(p)
+        self.VIEW_DIRECTION_CHANGED.emit(p)
 
-    def updateNumberOfStepsPerp(self,value):
-        self.KzIndex.setHead(0)
-        self.KzIndex.setTail(0)
-        self.KzIndex.setMaximum(value-1)
+    def update_number_of_steps_perp(self,value):
+        self.KzIndex.set_head(0)
+        self.KzIndex.set_tail(0)
+        self.KzIndex.set_maximum(value-1)
 
-    def updateNumberOfStepsPara(self,value):
-        self.KxyIndex.setHead(0)
-        self.KxyIndex.setTail(0)
-        self.KxyIndex.setMaximum(value-1)
+    def update_number_of_steps_para(self,value):
+        self.KxyIndex.set_head(0)
+        self.KxyIndex.set_tail(0)
+        self.KxyIndex.set_maximum(value-1)
 
-    def updateCoordinates(self,status):
-        self.graph.updateCoordinates(status)
+    def update_coordinates(self,status):
+        self.graph.update_coordinates(status)
 
-    def updateColors(self,name,color,index):
+    def update_colors(self,name,color,index):
         self.colorSheet[index][name] = color
-        self.graph.updateColors(self.colorSheet,index)
+        self.graph.update_colors(self.colorSheet,index)
 
-    def updateSize(self,name,size,index):
-        self.graph.updateSize(name,size,index)
+    def update_size(self,name,size,index):
+        self.graph.update_size(name,size,index)
 
-    def updateLog(self,msg):
+    def update_log(self,msg):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+msg)
 
-    def updateRange(self,index):
-        self.updateLog("Constructing sample " + str(index+1))
+    def update_range(self,index):
+        self.update_log("Constructing sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
-        self.graph.clearStructure(index)
+        self.graph.clear_structure(index)
         self.box[index] = self.get_extended_structure(self.molecule_dict[index], self.structure_dict[index].lattice.a, \
                                                       self.structure_dict[index].lattice.b, \
                                             self.structure_dict[index].lattice.c, self.structure_dict[index].lattice.alpha,\
@@ -417,21 +461,21 @@ class Window(QtWidgets.QWidget):
                                           int(self.real_space_specification_dict[index]['k_range'])),\
                                             rotation=self.real_space_specification_dict[index]['rotation'],\
           offset=np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],self.real_space_specification_dict[index]['z_shift']]))
-        self.updateLog("Finished construction of sample " + str(index+1))
-        self.updateLog("Applying changes in the real space range for sample " + str(index+1))
+        self.update_log("Finished construction of sample " + str(index+1))
+        self.update_log("Applying changes in the real space range for sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
 
-        self.graph.addData(index,self.box[index].sites,self.colorSheet, \
+        self.graph.add_data(index,self.box[index].sites,self.colorSheet, \
                             self.real_space_specification_dict[index]['lateral_size']*10, \
                             self.real_space_specification_dict[index]['z_range'],\
                             self.real_space_specification_dict[index]['shape'],\
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],self.AR)
         self.data_index_set.add(index)
-        self.updateLog("New real space range for sample" + str(index+1) +" applied!")
+        self.update_log("New real space range for sample" + str(index+1) +" applied!")
 
-    def updateReciprocalRange(self):
-        self.updateLog("Calculating diffraction pattern ......")
+    def update_reciprocal_range(self):
+        self.update_log("Calculating diffraction pattern ......")
         self.apply_reciprocal_range.setEnabled(False)
         self.stop_calculation.setEnabled(True)
         self.show_XY_plot_button.setEnabled(False)
@@ -446,9 +490,9 @@ class Window(QtWidgets.QWidget):
         self.Kx,self.Ky,self.Kz = np.meshgrid(self.x_linear,self.y_linear,self.z_linear)
         self.graph.calculate(self.Kx,self.Ky,self.Kz,self.AFF)
 
-    def finishCalculation(self,intensity):
+    def finish_calculation(self,intensity):
         self.diffraction_intensity = intensity
-        self.updateLog("Finished Calculation!")
+        self.update_log("Finished Calculation!")
         self.show_XY_plot_button.setEnabled(True)
         self.show_XZ_plot_button.setEnabled(True)
         self.show_YZ_plot_button.setEnabled(True)
@@ -456,18 +500,18 @@ class Window(QtWidgets.QWidget):
         self.apply_reciprocal_range.setEnabled(True)
         self.stop_calculation.setEnabled(False)
 
-    def abortCalculation(self):
+    def abort_calculation(self):
         self.apply_reciprocal_range.setEnabled(True)
         self.stop_calculation.setEnabled(False)
-        self.updateLog("Aborted Calculation!")
+        self.update_log("Aborted Calculation!")
         self.show_XY_plot_button.setEnabled(False)
         self.show_XZ_plot_button.setEnabled(False)
         self.show_YZ_plot_button.setEnabled(False)
         self.save_Results_button.setEnabled(False)
-        self.progressReset()
+        self.progress_reset()
 
-    def stopDiffractionCalculation(self):
-        self.stopCalculation.emit()
+    def stop_diffraction_calculation(self):
+        self.STOP_CALCULATION.emit()
 
     def update_h_range(self,value,index):
         self.real_space_specification_dict[index]['h_range'] = value
@@ -495,8 +539,8 @@ class Window(QtWidgets.QWidget):
         self.z_shift_history[index].append(value)
         min = self.tab.widget(index).layout().itemAt(11).widget().currentMin + value - self.z_shift_history[index][-2]
         max = self.tab.widget(index).layout().itemAt(11).widget().currentMax + value - self.z_shift_history[index][-2]
-        self.tab.widget(index).layout().itemAt(11).widget().setHead(min)
-        self.tab.widget(index).layout().itemAt(11).widget().setTail(max)
+        self.tab.widget(index).layout().itemAt(11).widget().set_head(min)
+        self.tab.widget(index).layout().itemAt(11).widget().set_tail(max)
 
     def update_rotation(self,value,index):
         self.real_space_specification_dict[index]['rotation'] = value
@@ -505,44 +549,44 @@ class Window(QtWidgets.QWidget):
         self.real_space_specification_dict[index]['z_range'] = min,max
 
 
-    def showXYPlot(self):
+    def show_XY_plot(self):
         for i in range(int(self.KzIndex.values()[0]),int(self.KzIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XY',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i,\
                          self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                          self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
-            TwoDimPlot.showPlot()
-            self.refreshPlotFonts.connect(TwoDimPlot.refreshFonts)
-            self.refreshPlotFWHM.connect(TwoDimPlot.refreshFWHM)
-            self.refreshPlotColormap.connect(TwoDimPlot.refreshColormap)
-        self.updateLog("Simulated diffraction patterns obtained!")
+            TwoDimPlot.show_plot()
+            self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
+            self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
+            self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
+        self.update_log("Simulated diffraction patterns obtained!")
 
-    def showXZPlot(self):
+    def show_XZ_plot(self):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                                                     self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
-            TwoDimPlot.showPlot()
-            self.refreshPlotFonts.connect(TwoDimPlot.refreshFonts)
-            self.refreshPlotFWHM.connect(TwoDimPlot.refreshFWHM)
-            self.refreshPlotColormap.connect(TwoDimPlot.refreshColormap)
-        self.updateLog("Simulated diffraction patterns obtained!")
+            TwoDimPlot.show_plot()
+            self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
+            self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
+            self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
+        self.update_log("Simulated diffraction patterns obtained!")
 
-    def showYZPlot(self):
+    def show_YZ_plot(self):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'YZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                                                     self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
-            self.refreshPlotFonts.connect(TwoDimPlot.refreshFonts)
-            self.refreshPlotFWHM.connect(TwoDimPlot.refreshFWHM)
-            self.refreshPlotColormap.connect(TwoDimPlot.refreshColormap)
-            TwoDimPlot.showPlot()
-        self.updateLog("Simulated diffraction patterns obtained!")
+            self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
+            self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
+            self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
+            TwoDimPlot.show_plot()
+        self.update_log("Simulated diffraction patterns obtained!")
 
-    def loadData(self):
+    def load_data(self):
         path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The 3D Data",'./',filter="TXT (*.txt);;All Files (*.*)")[0]
         if not path == "":
-            self.updateLog("Loading data ......")
-            self.progressHold.emit()
+            self.update_log("Loading data ......")
+            self.PROGRESS_HOLD.emit()
             QtCore.QCoreApplication.processEvents()
             with open(path,'r') as file:
                 for i, line in enumerate(file):
@@ -556,21 +600,21 @@ class Window(QtWidgets.QWidget):
             self.x_linear = np.linspace(information['Kx_min'],information['Kx_max'],information['N_para'])
             self.y_linear = np.linspace(information['Ky_min'],information['Ky_max'],information['N_para'])
             self.z_linear = np.linspace(information['Kz_min'],information['Kz_max'],information['N_perp'])
-            self.updateNumberOfStepsPara(information['N_para'])
-            self.updateNumberOfStepsPerp(information['N_perp'])
+            self.update_number_of_steps_para(information['N_para'])
+            self.update_number_of_steps_perp(information['N_perp'])
             intensity = np.loadtxt(path,skiprows=12, usecols=3)
             self.diffraction_intensity = intensity.reshape(information['N_para'],information['N_para'],information['N_perp'])
-            self.updateLog("Finished loading data!")
-            self.progressEnd.emit()
+            self.update_log("Finished loading data!")
+            self.PROGRESS_END.emit()
             self.show_XY_plot_button.setEnabled(True)
             self.show_XZ_plot_button.setEnabled(True)
             self.show_YZ_plot_button.setEnabled(True)
 
 
-    def getCifPath(self):
+    def get_cif_path(self):
         path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The CIF File",'./',filter="CIF (*.cif);;All Files (*.*)")[0]
         if not path == "":
-            self.updateLog("CIF opened!")
+            self.update_log("CIF opened!")
             self.cifPath = path
             self.chooseCifLabel.setText("The path of the CIF file is:\n"+self.cifPath)
             next_available_index = 0
@@ -578,22 +622,22 @@ class Window(QtWidgets.QWidget):
                 next_available_index+=1
             self.structure_index = next_available_index
             self.z_shift_history[self.structure_index] = [0]
-            self.addSampleStructure(self.structure_index)
-            self.addSampleData(self.structure_index)
+            self.add_sample_structure(self.structure_index)
+            self.add_sample_data(self.structure_index)
 
-    def addSampleStructure(self,index=0):
+    def add_sample_structure(self,index=0):
         range_structure = QtWidgets.QWidget()
         range_grid = QtWidgets.QGridLayout(range_structure)
         range_grid.setContentsMargins(5,5,5,5)
         range_grid.setAlignment(QtCore.Qt.AlignTop)
         lattice_constants_box = InfoBoard("Information",index)
-        self.updateInformationBoard.connect(lattice_constants_box.update)
+        self.UPDATE_INOFRMATION_BOARD.connect(lattice_constants_box.update)
         h_range = LabelSlider(1,100,3,1,"h",index=index)
-        h_range.valueChanged.connect(self.update_h_range)
+        h_range.VALUE_CHANGED.connect(self.update_h_range)
         k_range = LabelSlider(1,100,3,1,"k",index=index)
-        k_range.valueChanged.connect(self.update_k_range)
+        k_range.VALUE_CHANGED.connect(self.update_k_range)
         l_range = LabelSlider(1,100,1,1,"l",index=index)
-        l_range.valueChanged.connect(self.update_l_range)
+        l_range.VALUE_CHANGED.connect(self.update_l_range)
         shape_label = QtWidgets.QLabel("Shape")
         shape_label.setStyleSheet('QLabel {color:blue;}')
         shape = IndexedComboBox(index)
@@ -601,33 +645,33 @@ class Window(QtWidgets.QWidget):
         shape.addItem("Square")
         shape.addItem("Hexagon")
         shape.addItem("Circle")
-        shape.textChanged.connect(self.update_shape)
+        shape.TEXT_CHANGED.connect(self.update_shape)
         lateral_size = LabelSlider(1,100,1,1,"Lateral Size",'nm',index=index)
-        lateral_size.valueChanged.connect(self.update_lateral_size)
+        lateral_size.VALUE_CHANGED.connect(self.update_lateral_size)
         x_shift = LabelSlider(-1000,1000,0,100,"X Shift",'\u212B',index=index)
-        x_shift.valueChanged.connect(self.update_x_shift)
+        x_shift.VALUE_CHANGED.connect(self.update_x_shift)
         y_shift = LabelSlider(-1000,1000,0,100,"Y Shift",'\u212B',index=index)
-        y_shift.valueChanged.connect(self.update_y_shift)
+        y_shift.VALUE_CHANGED.connect(self.update_y_shift)
         z_shift = LabelSlider(-5000,5000,0,100,"Z Shift",'\u212B',index=index)
-        z_shift.valueChanged.connect(self.update_z_shift)
+        z_shift.VALUE_CHANGED.connect(self.update_z_shift)
         rotation = LabelSlider(-1800,1800,0,10,"rotation",'\u00B0',index=index)
-        rotation.valueChanged.connect(self.update_rotation)
+        rotation.VALUE_CHANGED.connect(self.update_rotation)
         z_range_slider = LockableDoubleSlider(-8000,8000,100,-10,10,"Z range","\u212B",False,index=index)
-        z_range_slider.valueChanged.connect(self.update_z_range)
+        z_range_slider.VALUE_CHANGED.connect(self.update_z_range)
 
-        self.real_space_specification_dict[index] = {'h_range':h_range.getValue(),'k_range':k_range.getValue(),'l_range':l_range.getValue(),\
-                                      'shape':shape.currentText(),'lateral_size':lateral_size.getValue(),\
-                                      'x_shift':x_shift.getValue(),'y_shift':y_shift.getValue(),'z_shift':z_shift.getValue(),\
-                                      'rotation':rotation.getValue(), 'z_range':z_range_slider.values()}
+        self.real_space_specification_dict[index] = {'h_range':h_range.get_value(),'k_range':k_range.get_value(),'l_range':l_range.get_value(),\
+                                      'shape':shape.currentText(),'lateral_size':lateral_size.get_value(),\
+                                      'x_shift':x_shift.get_value(),'y_shift':y_shift.get_value(),'z_shift':z_shift.get_value(),\
+                                      'rotation':rotation.get_value(), 'z_range':z_range_slider.values()}
 
         apply_range = IndexedPushButton("Apply",index)
-        apply_range.buttonClicked.connect(self.updateRange)
+        apply_range.BUTTON_CLICKED.connect(self.update_range)
         apply_range.setEnabled(False)
         replace_structure = IndexedPushButton("Replace",index)
-        replace_structure.buttonClicked.connect(self.replaceStructure)
+        replace_structure.BUTTON_CLICKED.connect(self.replace_structure)
         replace_structure.setEnabled(False)
         reset_structure = IndexedPushButton("Reset",index)
-        reset_structure.buttonClicked.connect(self.resetStructure)
+        reset_structure.BUTTON_CLICKED.connect(self.reset_structure)
         reset_structure.setEnabled(False)
         range_grid.addWidget(lattice_constants_box,0,0)
         range_grid.addWidget(h_range,1,0)
@@ -650,25 +694,25 @@ class Window(QtWidgets.QWidget):
         self.sample_tab_index.append(index)
         self.sample_tab_index.sort()
 
-    def addSampleData(self,index):
-        self.updateLog("Adding sample" + str(index+1))
+    def add_sample_data(self,index):
+        self.update_log("Adding sample" + str(index+1))
         QtCore.QCoreApplication.processEvents()
         h = int(self.real_space_specification_dict[index]['h_range'])
         k = int(self.real_space_specification_dict[index]['k_range'])
         l = int(self.real_space_specification_dict[index]['k_range'])
         self.structure_dict[index] = CifParser(self.cifPath).get_structures(primitive=False)[0]
-        self.updateInformationBoard.emit(index,self.structure_dict[index].composition.reduced_formula,self.structure_dict[index].lattice.a,self.structure_dict[index].lattice.b,self.structure_dict[index].lattice.c,\
+        self.UPDATE_INOFRMATION_BOARD.emit(index,self.structure_dict[index].composition.reduced_formula,self.structure_dict[index].lattice.a,self.structure_dict[index].lattice.b,self.structure_dict[index].lattice.c,\
                            self.structure_dict[index].lattice.alpha,self.structure_dict[index].lattice.beta,self.structure_dict[index].lattice.gamma)
         self.molecule_dict[index] = pgStructure.Molecule.from_sites(self.structure_dict[index].sites)
-        self.updateLog("Sample "+str(index+1)+" loaded!")
-        self.updateLog("Constructing sample " + str(index+1))
+        self.update_log("Sample "+str(index+1)+" loaded!")
+        self.update_log("Constructing sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
         self.box[index] = self.get_extended_structure(self.molecule_dict[index], self.structure_dict[index].lattice.a, self.structure_dict[index].lattice.b, \
                                             self.structure_dict[index].lattice.c, self.structure_dict[index].lattice.alpha,self.structure_dict[index].lattice.beta,\
                                             self.structure_dict[index].lattice.gamma, images=(h,k,l), \
                                           rotation=self.real_space_specification_dict[index]['rotation'],\
         offset=np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],self.real_space_specification_dict[index]['z_shift']]))
-        self.updateLog("Finished construction of sample " + str(index+1))
+        self.update_log("Finished construction of sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
         self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.box[index].sites)
         colorPalette = QtWidgets.QWidget()
@@ -676,16 +720,16 @@ class Window(QtWidgets.QWidget):
         self.colorSheet[index]={}
         for i,name in enumerate(self.element_species[index]):
             colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
-            colorPicker.colorChanged.connect(self.updateColors)
-            colorPicker.sizeChanged.connect(self.updateSize)
+            colorPicker.COLOR_CHANGED.connect(self.update_colors)
+            colorPicker.SIZE_CHANGED.connect(self.update_size)
             self.colorSheet[index][name] = self.colors[i]
             grid.addWidget(colorPicker)
         self.colorTab.setVisible(True)
         self.colorTab.insertTab(index,colorPalette,"Atom Design "+str(index+1))
         self.colorTab.setCurrentIndex(index)
-        self.updateLog("Adding data for sample " + str(index+1))
+        self.update_log("Adding data for sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
-        self.graph.addData(index,self.box[index].sites,\
+        self.graph.add_data(index,self.box[index].sites,\
                             self.colorSheet, \
                             self.real_space_specification_dict[index]['lateral_size']*10, \
                             self.real_space_specification_dict[index]['z_range'],\
@@ -694,39 +738,39 @@ class Window(QtWidgets.QWidget):
                            self.real_space_specification_dict[index]['rotation'],\
                             self.AR)
         self.data_index_set.add(index)
-        self.graph.changeFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
-        self.graph.changeShadowQuality(self.shadowQuality.currentIndex())
+        self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
         self.tab.widget(index).layout().itemAt(12).widget().setEnabled(True)
         self.tab.widget(index).layout().itemAt(13).widget().setEnabled(True)
         self.tab.widget(index).layout().itemAt(14).widget().setEnabled(True)
-        self.updateLog("Finished adding data for sample " + str(index+1))
+        self.update_log("Finished adding data for sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
         self.apply_reciprocal_range.setEnabled(True)
 
-    def replaceStructure(self,index):
-        self.updateLog("Replacing sample" + str(index+1))
+    def replace_structure(self,index):
+        self.update_log("Replacing sample" + str(index+1))
         QtCore.QCoreApplication.processEvents()
         path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The CIF File",'./',filter="CIF (*.cif);;All Files (*.*)")[0]
         if not path == "":
-            self.updateLog("CIF opened!")
+            self.update_log("CIF opened!")
             self.cifPath = path
             self.chooseCifLabel.setText("The path of the CIF file is:\n"+self.cifPath)
             h = int(self.real_space_specification_dict[index]['h_range'])
             k = int(self.real_space_specification_dict[index]['k_range'])
             l = int(self.real_space_specification_dict[index]['k_range'])
-            self.graph.clearStructure(index)
+            self.graph.clear_structure(index)
             self.structure_dict[index] = CifParser(self.cifPath).get_structures(primitive=False)[0]
-            self.updateInformationBoard.emit(index,self.structure_dict[index].composition.reduced_formula,self.structure_dict[index].lattice.a,self.structure_dict[index].lattice.b,self.structure_dict[index].lattice.c, \
+            self.UPDATE_INOFRMATION_BOARD.emit(index,self.structure_dict[index].composition.reduced_formula,self.structure_dict[index].lattice.a,self.structure_dict[index].lattice.b,self.structure_dict[index].lattice.c, \
                                self.structure_dict[index].lattice.alpha,self.structure_dict[index].lattice.beta,self.structure_dict[index].lattice.gamma)
             self.molecule_dict[index] = pgStructure.Molecule.from_sites(self.structure_dict[index].sites)
-            self.updateLog("Constructing sample " + str(index+1))
+            self.update_log("Constructing sample " + str(index+1))
             QtCore.QCoreApplication.processEvents()
             self.box[index] = self.get_extended_structure(self.molecule_dict[index], self.structure_dict[index].lattice.a, self.structure_dict[index].lattice.b, \
                                                 self.structure_dict[index].lattice.c, self.structure_dict[index].lattice.alpha,self.structure_dict[index].lattice.beta,\
                                                 self.structure_dict[index].lattice.gamma, images=(h,k,l), \
                                               rotation=self.real_space_specification_dict[index]['rotation'],\
         offset=np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],self.real_space_specification_dict[index]['z_shift']]))
-            self.updateLog("Finished construction for sample " + str(index+1))
+            self.update_log("Finished construction for sample " + str(index+1))
             QtCore.QCoreApplication.processEvents()
 
             self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.box[index].sites)
@@ -735,14 +779,14 @@ class Window(QtWidgets.QWidget):
             self.colorSheet[index] = {}
             for i,name in enumerate(self.element_species[index]):
                 colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
-                colorPicker.colorChanged.connect(self.updateColors)
-                colorPicker.sizeChanged.connect(self.updateSize)
+                colorPicker.COLOR_CHANGED.connect(self.update_colors)
+                colorPicker.SIZE_CHANGED.connect(self.update_size)
                 self.colorSheet[index][name] = self.colors[i]
                 grid.addWidget(colorPicker)
             self.colorTab.widget(index).destroy()
             self.colorTab.removeTab(index)
             self.colorTab.insertTab(index,colorPalette,"Atom Design "+str(index+1))
-            self.graph.addData(index,self.box[index].sites,\
+            self.graph.add_data(index,self.box[index].sites,\
                                 self.colorSheet,\
                                 self.real_space_specification_dict[index]['lateral_size']*10, \
                                 self.real_space_specification_dict[index]['z_range'],\
@@ -751,12 +795,12 @@ class Window(QtWidgets.QWidget):
                                self.real_space_specification_dict[index]['rotation'],\
                                 self.AR)
             self.data_index_set.add(index)
-            self.graph.changeFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
-            self.graph.changeShadowQuality(self.shadowQuality.currentIndex())
-            self.updateLog("Sample "+str(index+1)+" replaced!")
+            self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+            self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
+            self.update_log("Sample "+str(index+1)+" replaced!")
 
-    def resetStructure(self,index):
-        self.updateLog("Resetting sample" + str(index+1))
+    def reset_structure(self,index):
+        self.update_log("Resetting sample" + str(index+1))
         QtCore.QCoreApplication.processEvents()
         self.tab.widget(index).layout().itemAt(1).widget().reset()
         self.tab.widget(index).layout().itemAt(2).widget().reset()
@@ -771,19 +815,19 @@ class Window(QtWidgets.QWidget):
         h = int(self.real_space_specification_dict[index]['h_range'])
         k = int(self.real_space_specification_dict[index]['k_range'])
         l = int(self.real_space_specification_dict[index]['k_range'])
-        self.graph.clearStructure(index)
+        self.graph.clear_structure(index)
         self.structure_dict[index] = CifParser(self.cifPath).get_structures(primitive=False)[0]
-        self.updateInformationBoard.emit(index,self.structure_dict[index].composition.reduced_formula,self.structure_dict[index].lattice.a,self.structure_dict[index].lattice.b,self.structure_dict[index].lattice.c, \
+        self.UPDATE_INOFRMATION_BOARD.emit(index,self.structure_dict[index].composition.reduced_formula,self.structure_dict[index].lattice.a,self.structure_dict[index].lattice.b,self.structure_dict[index].lattice.c, \
                            self.structure_dict[index].lattice.alpha,self.structure_dict[index].lattice.beta,self.structure_dict[index].lattice.gamma)
         self.molecule_dict[index] = pgStructure.Molecule.from_sites(self.structure_dict[index].sites)
-        self.updateLog("Constructing sample " + str(index+1))
+        self.update_log("Constructing sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
         self.box[index] = self.get_extended_structure(self.molecule_dict[index], self.structure_dict[index].lattice.a, self.structure_dict[index].lattice.b, \
                                             self.structure_dict[index].lattice.c, self.structure_dict[index].lattice.alpha,self.structure_dict[index].lattice.beta,\
                                             self.structure_dict[index].lattice.gamma, images=(h,k,l), \
                                           rotation=self.real_space_specification_dict[index]['rotation'],\
     offset=np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],self.real_space_specification_dict[index]['z_shift']]))
-        self.updateLog("Finished construction for sample " + str(index+1))
+        self.update_log("Finished construction for sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
 
         self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.box[index].sites)
@@ -792,14 +836,14 @@ class Window(QtWidgets.QWidget):
         self.colorSheet[index] = {}
         for i,name in enumerate(self.element_species[index]):
             colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
-            colorPicker.colorChanged.connect(self.updateColors)
-            colorPicker.sizeChanged.connect(self.updateSize)
+            colorPicker.COLOR_CHANGED.connect(self.update_colors)
+            colorPicker.SIZE_CHANGED.connect(self.update_size)
             self.colorSheet[index][name] = self.colors[i]
             grid.addWidget(colorPicker)
         self.colorTab.widget(index).destroy()
         self.colorTab.removeTab(index)
         self.colorTab.insertTab(index,colorPalette,"Atom Design "+str(index+1))
-        self.graph.addData(index,self.box[index].sites,\
+        self.graph.add_data(index,self.box[index].sites,\
                             self.colorSheet,\
                             self.real_space_specification_dict[index]['lateral_size']*10, \
                             self.real_space_specification_dict[index]['z_range'],\
@@ -808,20 +852,20 @@ class Window(QtWidgets.QWidget):
                            self.real_space_specification_dict[index]['rotation'],\
                             self.AR)
         self.data_index_set.add(index)
-        self.graph.changeFonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
-        self.graph.changeShadowQuality(self.shadowQuality.currentIndex())
-        self.updateLog("Sample "+str(index+1)+" successfully reset!")
+        self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
+        self.update_log("Sample "+str(index+1)+" successfully reset!")
 
-    def saveResults(self):
+    def save_results(self):
         if not self.currentDestination == '':
-            self.progressHold.emit()
+            self.PROGRESS_HOLD.emit()
             QtCore.QCoreApplication.processEvents()
             self.convertor_worker.mtx2vtp(self.currentDestination,self.destinationNameEdit.text(),self.diffraction_intensity,self.KRange,\
                          self.number_of_steps_para.value(),self.number_of_steps_perp.value(),\
                          self.real_space_specification_dict,self.element_species)
-            self.progressEnd.emit()
+            self.PROGRESS_END.emit()
         else:
-            self.Raise_Error("Save destination is empty!")
+            self.raise_error("Save destination is empty!")
 
     def get_extended_structure(self,molecule,a,b,c,alpha,beta,gamma,images=(1,1,1), rotation=0,cls=None,offset=None):
 
@@ -847,9 +891,9 @@ class Window(QtWidgets.QWidget):
             m = op.rotation_matrix
             new_coords = np.dot(m, (centered_coords+box_center).T).T
             coords.extend(new_coords)
-            self.progressAdvance.emit(0,100,(i*(2*images[1]+1) * (2*images[2]+1)+j*(2*images[2]+1)+k)/nimages)
+            self.PROGRESS_ADVANCE.emit(0,100,(i*(2*images[1]+1) * (2*images[2]+1)+j*(2*images[2]+1)+k)/nimages)
             QtCore.QCoreApplication.processEvents()
-        self.progressEnd.emit()
+        self.PROGRESS_END.emit()
         sprops = {k: v * nimages for k, v in molecule.site_properties.items()}
 
         if cls is None:
@@ -857,30 +901,30 @@ class Window(QtWidgets.QWidget):
 
         return cls(lattice, molecule.species * nimages, coords,coords_are_cartesian=True,site_properties=sprops).get_sorted_structure()
 
-    def RefreshFontSize(self):
+    def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
-    def RefreshFontName(self):
-        self.fontsChanged.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+    def refresh_font_name(self):
+        self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
 
-    def updateFWHMCheck(self,state):
+    def update_FWHM_check(self,state):
         check = False
         if state == 2:
             check = True
-        self.refreshPlotFWHM.emit(check)
+        self.REFRESH_PLOT_FWHM.emit(check)
 
-    def updatePlotFont(self,font):
-        self.refreshPlotFonts.emit(font.family(),self.reciprocalMapfontSizeSlider.value())
+    def update_plot_font(self,font):
+        self.REFRESH_PLOT_FONTS.emit(font.family(),self.reciprocalMapfontSizeSlider.value())
 
-    def updatePlotColormap(self,colormap):
-        self.refreshPlotColormap.emit(colormap)
+    def update_plot_colormap(self,colormap):
+        self.REFRESH_PLOT_COLORMAP.emit(colormap)
 
-    def updateReciprocalMapFontSize(self,value):
+    def update_reciprocal_map_font_size(self,value):
         self.reciprocalMapfontSizeLabel.setText("Font Size ({})".format(value))
-        self.refreshPlotFonts.emit(self.reciprocalMapfontList.currentFont().family(),value)
+        self.REFRESH_PLOT_FONTS.emit(self.reciprocalMapfontList.currentFont().family(),value)
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -889,7 +933,7 @@ class Window(QtWidgets.QWidget):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)
@@ -900,12 +944,13 @@ class Window(QtWidgets.QWidget):
 
 class ScatterGraph(QtDataVisualization.Q3DScatter):
 
-    logMessage = QtCore.pyqtSignal(str)
-    progressAdvance = QtCore.pyqtSignal(int,int,int)
-    progressEnd = QtCore.pyqtSignal()
-    stopWorker = QtCore.pyqtSignal()
-    calculationFinished = QtCore.pyqtSignal(np.ndarray)
-    calculationAborted = QtCore.pyqtSignal()
+    LOG_MESSAGE = QtCore.pyqtSignal(str)
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_END = QtCore.pyqtSignal()
+    STOP_WORKER = QtCore.pyqtSignal()
+    CALCULATION_FINISHED = QtCore.pyqtSignal(np.ndarray)
+    CALCULATION_ABORTED = QtCore.pyqtSignal()
+    CAMERA_CHANGED = QtCore.pyqtSignal(float,float,float)
 
     def __init__(self):
         super(ScatterGraph,self).__init__()
@@ -915,18 +960,28 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         self.ion_dict = {}
         self.colors_dict = {}
         self.coordinateStatus = 2
-        self.setHorizontalAspectRatio(1)
+        self.x_max = {}
+        self.x_min = {}
+        self.y_max = {}
+        self.y_min = {}
+        self.z_max = {}
+        self.z_min = {}
+        self.scene().activeCamera().xRotationChanged.connect(self.camera_position_changed)
+        self.scene().activeCamera().yRotationChanged.connect(self.camera_position_changed)
+        self.scene().activeCamera().zoomLevelChanged.connect(self.camera_position_changed)
 
-    def addData(self,index,data,colorSheet,range,z_range,shape,offset,rotation,AR):
+    def add_data(self,index,data,colorSheet,range,z_range,shape,offset,rotation,AR):
         self.colors_dict = colorSheet
         element_species = list(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in data)
         self.elements_dict[index] = element_species
         self.coords = (site.coords for site in data)
         self.atoms_dict[index] = {}
-        self.z_max = -1000
-        self.z_min = 1000
-        self.x_max = -1000
-        self.x_min = 1000
+        z_max = -1000
+        z_min = 1000
+        x_max = -1000
+        x_min = 1000
+        y_max = -1000
+        y_min = 1000
         self.axisX().setTitle("X (\u212B)")
         self.axisY().setTitle("Z (\u212B)")
         self.axisZ().setTitle("Y (\u212B)")
@@ -966,14 +1021,18 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
                 ScatterProxy = QtDataVisualization.QScatterDataProxy()
                 ScatterSeries = QtDataVisualization.QScatter3DSeries(ScatterProxy)
                 item = QtDataVisualization.QScatterDataItem()
-                if coord[2] > self.z_max:
-                    self.z_max = coord[2]
-                if coord[2] < self.z_min:
-                    self.z_min = coord[2]
-                if coord[0] > self.x_max:
-                    self.x_max = coord[0]
-                if coord[0] < self.x_min:
-                    self.x_min = coord[0]
+                if coord[2] > z_max:
+                    z_max = coord[2]
+                if coord[2] < z_min:
+                    z_min = coord[2]
+                if coord[1] > y_max:
+                    y_max = coord[1]
+                if coord[1] < y_min:
+                    y_min = coord[1]
+                if coord[0] > x_max:
+                    x_max = coord[0]
+                if coord[0] < x_min:
+                    x_min = coord[0]
                 vector = QtGui.QVector3D(coord[0],coord[2],coord[1])
                 item.setPosition(vector)
                 dataArray.append(item)
@@ -986,9 +1045,16 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
                 ScatterSeries.setItemLabelFormat(self.elements_dict[index][i]+' (@xLabel, @zLabel, @yLabel)')
                 atomSeries[i] = ScatterSeries
                 self.addSeries(ScatterSeries)
-                self.progressAdvance.emit(0,100,i/number_of_coords*100)
-        self.setAspectRatio((self.x_max-self.x_min)/(self.z_max-self.z_min))
-        self.progressEnd.emit()
+                self.PROGRESS_ADVANCE.emit(0,100,i/number_of_coords*100)
+        self.x_max[index] = x_max
+        self.x_min[index] = x_min
+        self.y_max[index] = y_max
+        self.y_min[index] = y_min
+        self.z_max[index] = z_max
+        self.z_min[index] = z_min
+        self.setAspectRatio((max(self.x_max.values())-min(self.x_min.values()))/(max(self.z_max.values())-min(self.z_min.values())))
+        self.setHorizontalAspectRatio((max(self.x_max.values())-min(self.x_min.values()))/(max(self.y_max.values())-min(self.y_min.values())))
+        self.PROGRESS_END.emit()
         self.series_dict[index] = atomSeries
 
     def flatten(self,parent):
@@ -1007,47 +1073,59 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
     def prepare(self,Kx,Ky,Kz,AFF):
         atoms_list = self.flatten(self.atoms_dict)
         self.diffraction_worker = DiffractionPattern(Kx,Ky,Kz,AFF,atoms_list)
-        self.diffraction_worker.error.connect(self.Raise_Error)
-        self.diffraction_worker.progressAdvance.connect(self.progressAdvance)
-        self.diffraction_worker.progressEnd.connect(self.progressEnd)
-        self.diffraction_worker.accomplished.connect(self.calculationFinished)
-        self.diffraction_worker.aborted.connect(self.ProcessAborted)
+        self.diffraction_worker.ERROR.connect(self.raise_error)
+        self.diffraction_worker.PROGRESS_ADVANCE.connect(self.PROGRESS_ADVANCE)
+        self.diffraction_worker.PROGRESS_END.connect(self.PROGRESS_END)
+        self.diffraction_worker.ACCOMPLISHED.connect(self.CALCULATION_FINISHED)
+        self.diffraction_worker.ABORTED.connect(self.process_aborted)
 
         self.thread = QtCore.QThread()
         self.diffraction_worker.moveToThread(self.thread)
-        self.diffraction_worker.progressEnd.connect(self.thread.quit)
+        self.diffraction_worker.PROGRESS_END.connect(self.thread.quit)
         self.thread.started.connect(self.diffraction_worker.run)
-        self.stopWorker.connect(self.diffraction_worker.stop)
+        self.STOP_WORKER.connect(self.diffraction_worker.stop)
 
     def calculate(self,Kx,Ky,Kz,AFF):
         self.prepare(Kx,Ky,Kz,AFF)
         self.thread.start()
 
     def stop(self):
-        self.stopWorker.emit()
+        self.STOP_WORKER.emit()
         if self.thread.isRunning():
             self.thread.terminate()
             self.thread.wait()
 
-    def ProcessAborted(self):
-        self.logMessage.emit("Process aborted!")
-        self.calculationAborted.emit()
+    def process_aborted(self):
+        self.LOG_MESSAGE.emit("Process aborted!")
+        self.CALCULATION_ABORTED.emit()
 
     def clear(self):
         for series in self.seriesList():
             self.removeSeries(series)
 
-    def clearStructure(self,index):
+    def clear_structure(self,index):
         for series in list(self.series_dict[index].values()):
             self.removeSeries(series)
 
-    def deleteData(self,index):
-        self.clearStructure(index)
+    def delete_data(self,index):
+        self.clear_structure(index)
         del self.series_dict[index]
         del self.atoms_dict[index]
         del self.elements_dict[index]
+        del self.x_max[index]
+        del self.x_min[index]
+        del self.y_max[index]
+        del self.y_min[index]
+        del self.z_max[index]
+        del self.z_min[index]
+        try:
+            self.setAspectRatio((max(self.x_max.values())-min(self.x_min.values()))/(max(self.z_max.values())-min(self.z_min.values())))
+            self.setHorizontalAspectRatio((max(self.x_max.values())-min(self.x_min.values()))/(max(self.y_max.values())-min(self.y_min.values())))
+        except:
+            self.setAspectRatio(1)
+            self.setHorizontalAspectRatio(1)
 
-    def updateCoordinates(self,status):
+    def update_coordinates(self,status):
         self.coordinateStatus = status
         if status == 2:
             self.axisX().setTitleVisible(True)
@@ -1072,45 +1150,51 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
             self.activeTheme().setLabelBorderEnabled(False)
             self.activeTheme().setLabelTextColor(QtCore.Qt.transparent)
 
-    def updateViewDirection(self,preset):
+    def update_view_direction(self,preset):
         self.scene().activeCamera().setCameraPreset(preset)
 
-    def updateColors(self,colorSheet,index):
+    def update_camera_position(self,h,v,zoom):
+        self.scene().activeCamera().set_camera_position(h,v,zoom)
+
+    def camera_position_changed(self,value):
+        self.CAMERA_CHANGED.emit(self.scene().activeCamera().xRotation(),self.scene().activeCamera().yRotation(),self.scene().activeCamera().zoomLevel())
+
+    def update_colors(self,colorSheet,index):
         self.colors_dict = colorSheet
         for i,series in self.series_dict[index].items():
             series.setBaseColor(QtGui.QColor(colorSheet[index][self.elements_dict[index][i]]))
 
-    def updateAllColors(self):
+    def update_all_colors(self):
         for i,colorSheet in self.colors_dict.items():
             for j,series in self.series_dict[i].items():
                 series.setBaseColor(QtGui.QColor(colorSheet[self.elements_dict[i][j]]))
 
-    def updateSize(self,name,size,index):
+    def update_size(self,name,size,index):
         for i,series in self.series_dict[index].items():
             if name == self.elements_dict[index][i]:
                 series.setItemSize(size)
 
-    def changeFonts(self,fontname,fontsize):
+    def change_fonts(self,fontname,fontsize):
         self.activeTheme().setFont(QtGui.QFont(fontname,fontsize))
 
-    def changeTheme(self, color):
+    def change_theme(self, color):
         self.activeTheme().setBackgroundColor(QtGui.QColor(color))
         self.activeTheme().setWindowColor(QtGui.QColor(color))
         self.activeTheme().setLabelBackgroundEnabled(False)
         self.activeTheme().setLabelBorderEnabled(False)
         try:
-            self.updateCoordinates(self.coordinateStatus)
+            self.update_coordinates(self.coordinateStatus)
         except:
             pass
         try:
-            self.updateAllColors()
+            self.update_all_colors()
         except:
             pass
 
-    def changeShadowQuality(self,quality):
+    def change_shadow_quality(self,quality):
         self.setShadowQuality(quality)
 
-    def Raise_Error(self,message):
+    def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(message)
@@ -1119,7 +1203,7 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         msg.setEscapeButton(QtWidgets.QMessageBox.Close)
         msg.exec()
 
-    def Raise_Attention(self,information):
+    def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
         info.setIcon(QtWidgets.QMessageBox.Information)
         info.setText(information)
@@ -1128,11 +1212,11 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         info.setEscapeButton(QtWidgets.QMessageBox.Close)
         info.exec()
 
-def Test():
+def test():
     app = QtWidgets.QApplication(sys.argv)
     simulation = Window()
-    simulation.Main()
+    simulation.main()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    Test()
+    test()
