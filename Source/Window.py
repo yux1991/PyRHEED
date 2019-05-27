@@ -1,13 +1,13 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-import canvas
-import browser
-import properties
-import cursor
-import profile_chart
-import configparser
-import os
-import numpy as np
 from process import Image
+from PyQt5 import QtCore, QtGui, QtWidgets
+import browser
+import canvas
+import configparser
+import cursor
+import numpy as np
+import os
+import profile_chart
+import properties
 
 class Window(QtWidgets.QMainWindow):
 
@@ -685,10 +685,10 @@ class Window(QtWidgets.QMainWindow):
     def photo_mouse_movement(self, pos, type="canvas"):
         if type == "canvas":
             self.editPixInfo.setText('x = %d, y = %d' % (int(pos.x()), int(pos.y())))
+            if self.mainTab.currentWidget()._drawingArc:
+                self.properties_widget.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
         elif type == "chart":
             self.editPixInfo.setText('K = %3.2f, Int. = %3.2f' % (pos.x(), pos.y()))
-        if self.mainTab.currentWidget()._drawingArc:
-            self.properties_widget.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
 
     def photo_mouse_double_click(self, pos):
         self.cursorInfo.choosedXYEdit.setText('{},{}'.format(pos.x(), pos.y()))

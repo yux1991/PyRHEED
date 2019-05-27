@@ -1,9 +1,9 @@
-from PyQt5 import QtCore, QtWidgets, QtGui
-from matplotlib.figure import Figure
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
+from PyQt5 import QtCore, QtWidgets, QtGui
+import numpy as np
 
 class DoubleSlider(QtWidgets.QWidget):
     VALUE_CHANGED = QtCore.pyqtSignal()
@@ -88,8 +88,8 @@ class VerticalLabelSlider(QtWidgets.QWidget):
 
         self.UIgrid = QtWidgets.QGridLayout()
         palette = QtGui.QPalette()
-        palette.set_color(QtGui.QPalette.Window, QtCore.Qt.transparent)
-        palette.set_color(QtGui.QPalette.WindowText,QtGui.QColor(color))
+        palette.setColor(QtGui.QPalette.Window, QtCore.Qt.transparent)
+        palette.setColor(QtGui.QPalette.WindowText,QtGui.QColor(color))
         if direction == 'vertical':
             if self.BG:
                 self.label = QtWidgets.QLabel('\u00A0\u00A0'+self.name+'\u00A0BG\n({:3.2f})'.format(value))
@@ -143,7 +143,7 @@ class ColorPicker(QtWidgets.QWidget):
         self.grid.addWidget(self.PB,0,1,1,1)
 
     def change_color(self):
-        new_color = QtWidgets.QColorDialog.get_color(QtGui.QColor(self.color))
+        new_color = QtWidgets.QColorDialog.getColor(QtGui.QColor(self.color))
         self.color = new_color.name()
         self.set_color(self.color)
         self.COLOR_CHANGED.emit(self.name,self.color)
@@ -432,7 +432,7 @@ class IndexedColorPicker(QtWidgets.QWidget):
         self.grid.addWidget(self.SB,0,2)
 
     def change_color(self):
-        new_color = QtWidgets.QColorDialog.get_color(QtGui.QColor(self.color))
+        new_color = QtWidgets.QColorDialog.getColor(QtGui.QColor(self.color))
         self.color = new_color.name()
         self.set_color(self.color)
         self.COLOR_CHANGED.emit(self.name,self.color,self.index)

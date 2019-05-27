@@ -1,11 +1,11 @@
+from my_widgets import VerticalLabelSlider
+from process import Image, Fit
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+import configparser
+import glob
 import numpy as np
 import os
-import glob
-import configparser
 import profile_chart
-from process import Image, Fit
-from my_widgets import VerticalLabelSlider
 
 class Window(QtCore.QObject):
 

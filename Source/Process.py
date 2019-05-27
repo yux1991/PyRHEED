@@ -1,14 +1,14 @@
-import numpy as np
+from lxml import etree as ET
+from math import pi as Pi
 from PyQt5 import QtGui,QtCore, QtWidgets
 from scipy.optimize import least_squares
-import rawpy
-import math
-import os
 import glob
 import itertools
+import math
+import numpy as np
+import os
 import PIL.Image as pilImage
-from math import pi as Pi
-from lxml import etree as ET
+import rawpy
 
 class Image(object):
 

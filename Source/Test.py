@@ -1,5 +1,5 @@
-import unittest
 import simulate_RHEED
+import unittest
 
 class Test(unittest.TestCase):
 

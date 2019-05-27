@@ -1,16 +1,16 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
-import pandas as pd
-import itertools
+from my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
 from process import Convertor, DiffractionPattern
-import numpy as np
-import sys
-import re
-import matplotlib.pyplot as plt
 from pymatgen.io.cif import CifParser
 from pymatgen.core import structure as pgStructure
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.lattice import Lattice
-from my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
+from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
+import itertools
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import re
+import sys
 
 class Window(QtWidgets.QWidget):
 

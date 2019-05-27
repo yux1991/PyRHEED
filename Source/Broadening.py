@@ -1,13 +1,13 @@
+from my_widgets import LabelSlider
+from process import Image, Fit, FitBroadening
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+import configparser
+import generate_report
+import glob
+import manual_fit
 import numpy as np
 import os
-import glob
-import configparser
-from process import Image, Fit, FitBroadening
 import profile_chart
-import generate_report
-import manual_fit
-from my_widgets import *
 
 class Window(QtCore.QObject):
 
@@ -374,13 +374,13 @@ class Window(QtCore.QObject):
                 self.broadening_worker.UPDATE_LOG.connect(self.update_log)
                 self.broadening_worker.WRITE_OUTPUT.connect(self.write_results)
                 self.broadening_worker.CLOSE_OUTPUT.connect(self.close_results)
-                self.broadening_worker.ATTENTION.COnnect(self.raise_attention)
+                self.broadening_worker.ATTENTION.connect(self.raise_attention)
                 self.broadening_worker.PROGRESS_ADVANCE.connect(self.progress)
                 self.broadening_worker.PROGRESS_END.connect(self.progress_reset)
-                self.broadening_worker.FINISHED.CONnect(self.process_finished)
+                self.broadening_worker.FINISHED.connect(self.process_finished)
                 self.broadening_worker.DRAW_LINE_REQUESTED.connect(self.DRAW_LINE_REQUESTED)
                 self.broadening_worker.DRAW_RECT_REQUESTED.connect(self.DRAW_RECT_REQUESTED)
-                self.broadening_worker.ADD_COSTFUNCTION.connect(self.plot_cost_function)
+                self.broadening_worker.ADD_COST_FUNCTION.connect(self.plot_cost_function)
                 self.broadening_worker.ADD_PLOT.connect(self.plot_results)
 
                 self.thread = QtCore.QThread()
@@ -470,7 +470,7 @@ class Window(QtCore.QObject):
                 self.table.setItem(i,j+1,item2)
                 self.table.setItem(i,j+2,item3)
                 index+=1
-        self.offset.setValue(results[-1])
+        self.offset.set_value(results[-1])
 
     def plot_cost_function(self,iteration,cost,text):
         self.costChart.add_chart(iteration,cost,text)

@@ -1,9 +1,9 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
-import numpy as np
-import matplotlib.pyplot as plt
-from my_widgets import LabelSlider
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from my_widgets import LabelSlider
+from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
+import matplotlib.pyplot as plt
+import numpy as np
 
 class Window(QtWidgets.QWidget):
     SHOW_2D_CONTOUR_SIGNAL = QtCore.pyqtSignal(list,float,float,float,float,str,int,str)

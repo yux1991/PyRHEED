@@ -1,19 +1,20 @@
 #This sets up the entire application, which reads the default configuration and initialize the UI
 #Last updated on 04/15/2019 by Y. Xiang
 #This code is written in Python 3.6.3
+from PyQt5 import QtGui, QtWidgets
 import broadening
-from configuration import *
-import graph_3D_surface
+import configparser
 import generate_report
+import graph_3D_surface
 import manual_fit
 import preference
 import reciprocal_space_mapping
 import simulate_RHEED
 import statistical_factor
 import sys
-from window import *
+import window
 
-class Main():
+class Window():
     """The main class"""
     def __init__(self):
         config = configparser.ConfigParser()
@@ -21,7 +22,7 @@ class Main():
         app = QtWidgets.QApplication(sys.argv)
         icon = QtGui.QIcon('./icons/icon.png')
         app.setWindowIcon(icon)
-        self.window = Window(config)    #Initialze the main window using the default values in the configuration
+        self.window = window.Window(config)    #Initialze the main window using the default values in the configuration
         self.window.showMaximized()
         self.window.show()
         #Connect the signals emitted by the window object
@@ -126,5 +127,5 @@ class Main():
         self.reciprocal_space_mapping.DRAW_RECT_REQUESTED.connect(self.window.mainTab.currentWidget().draw_rect)
 
 if __name__ == '__main__':
-    Main()
+    Window()
 

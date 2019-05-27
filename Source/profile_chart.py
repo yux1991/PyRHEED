@@ -1,6 +1,6 @@
+from process import Image
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart, QtSvg
 import numpy as np
-from process import Image
 
 class ProfileChart(QtChart.QChartView):
 

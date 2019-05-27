@@ -1,7 +1,7 @@
-from PyQt5 import QtCore, QtWidgets, QtGui
-import os
-import configparser
 from process import Image, Convertor, ReciprocalSpaceMap
+from PyQt5 import QtCore, QtWidgets, QtGui
+import configparser
+import os
 import profile_chart
 
 class Window(QtCore.QObject):
@@ -335,8 +335,9 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
 
     def process_finished(self):
-        self.Show3DGraphButton.setEnabled(True)
-        self.Show2DContourButton.setEnabled(True)
+        if self.saveResults.isChecked():
+            self.Show3DGraphButton.setEnabled(True)
+            self.Show2DContourButton.setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)

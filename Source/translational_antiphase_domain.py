@@ -1,8 +1,10 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
-import plot_chart
+from numpy import random
+from scipy import stats
 from my_widgets import LabelSlider
 import matplotlib.pyplot as plt
 import numpy as np
+import plot_chart
 import sys
 
 class Window(QtCore.QObject):
@@ -14,7 +16,7 @@ class Window(QtCore.QObject):
         self.Dialog = QtWidgets.QWidget()
         self.Grid = QtWidgets.QGridLayout(self.Dialog)
         self.plot = plot_chart.PlotChart(0,"Normal")
-        self.REFRESH_PLOT.connect(self.plot.addChart)
+        self.REFRESH_PLOT.connect(self.plot.add_chart)
         self.lattice_a_label = QtWidgets.QLabel("a' (\u212B)")
         self.lattice_a = QtWidgets.QLineEdit('3.15')
         self.gamma_slider = LabelSlider(0,100,0.1,200,'Gamma')
@@ -35,7 +37,7 @@ class Window(QtCore.QObject):
     def plot_IS(self):
         self.Energy = 100
         self.Lambda = np.sqrt(150.4/(self.Energy))
-        self.plot.Main()
+        self.plot.main()
         self.S = np.linspace(-18,18,1000)/(2*np.pi/float(self.lattice_a.text()))
         self.I = self.intensity(self.S,self.gamma_slider.get_value(),float(self.lattice_a.text()))
         self.REFRESH_PLOT.emit(self.S,self.I,'general','Arial',25,'red',False,{'title':'Intensity Profile From 1D Translational-antiphase Domain Model\n(gamma={:5.3f})'.format(self.gamma_slider.get_value()),\
@@ -71,7 +73,12 @@ class Window(QtCore.QObject):
         self.REFRESH_PLOT.emit(self.S,self.I,'general','Arial',25,'red',False,{'title':'Intensity Profile From 1D Translational-antiphase Domain Model\n(gamma={:5.3f})'.format(self.gamma_slider.get_value()), \
                                                                                   'x_label':'h', 'x_unit':'S\u2090\u22C5a/2\u03C0','y_label':'Intensity','y_unit':'arb. units'})
 
-if __name__ == '__main__':
+def main():
     app = QtWidgets.QApplication(sys.argv)
     simulation = Window()
     sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    #main()
+    print(random.binomial(2,0.1,50))
+    print(stats.binom.cdf(1,1,0.1))

@@ -1,10 +1,10 @@
+from my_widgets import ColorPicker, DoubleSlider
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
-import numpy as np
-import os
 import configparser
 import matplotlib.pyplot as plt
+import numpy as np
+import os
 import plot_chart
-from my_widgets import ColorPicker, DoubleSlider
 
 class Window(QtCore.QObject):
 
@@ -520,13 +520,23 @@ class Window(QtCore.QObject):
         self.AzimuthSlider.setValue(0)
         self.KperpLabel.setText("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
         if self.BGCheck:
-            self.ReportInformation.setText("Date of the report: "+self.date+\
-            'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
-            .format(self.NumberOfPeaks,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+            if len(self.Kperps) > 1:
+                self.ReportInformation.setText("Date of the report: "+self.date+\
+                'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
+                .format(self.NumberOfPeaks,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+            else:
+                self.ReportInformation.setText("Date of the report: "+self.date+ \
+                'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)' \
+                .format(self.NumberOfPeaks,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,0))
         else:
-            self.ReportInformation.setText("Date of the report: "+self.date+ \
-            'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
-             .format(self.NumberOfPeaks+1,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+            if len(self.Kperps) > 1:
+                self.ReportInformation.setText("Date of the report: "+self.date+ \
+                'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
+                 .format(self.NumberOfPeaks+1,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+            else:
+                self.ReportInformation.setText("Date of the report: "+self.date+ \
+                'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)' \
+                .format(self.NumberOfPeaks+1,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,0))
         self.peak.clear()
         peaks = ['L5','L4','L3','L2','L1','Center','R1','R2','R3','R4','R5','BG']
         if self.BGCheck:

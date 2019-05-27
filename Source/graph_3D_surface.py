@@ -1,11 +1,11 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
-import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import pandas as pd
-import os
+from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
 import math
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import pandas as pd
 
 class Graph(QtWidgets.QWidget):
 
