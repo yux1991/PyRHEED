@@ -139,15 +139,38 @@ class Image(object):
         info.setEscapeButton(QtWidgets.QMessageBox.Close)
         info.exec()
 
-class Fit(object):
+class FitFunctions(object):
 
     def __init__(self):
-        super(Fit,self).__init__()
+        super(FitFunctions,self).__init__()
 
     def gaussian(self,x,height, center,FWHM,offset=0):
         if FWHM == 0:
             FWHM = 0.001
         return height/(FWHM*math.sqrt(math.pi/(4*math.log(2))))*np.exp(-4*math.log(2)*(x - center)**2/(FWHM**2))+offset
+
+    def translational_antiphase_domain_model_intensity(self,h,gamma):
+        return (1-np.multiply(self.boundary_structure_factor(h,gamma), self.boundary_structure_factor(h,gamma)))/\
+               (1+np.multiply(self.boundary_structure_factor(h,gamma), self.boundary_structure_factor(h,gamma))\
+               -2*np.multiply(self.boundary_structure_factor(h,gamma),np.cos(2*np.pi*h)))
+
+    def translational_antiphase_domain_model_intensity_2D(self,h,k,gamma_a,gamma_b):
+        return np.multiply(self.translational_antiphase_domain_model_intensity(h,gamma_a),self.translational_antiphase_domain_model_intensity(k,gamma_b))
+
+    def translational_antiphase_domain_model_intensity_2D_without_approximation(self,h,k,gamma_a,gamma_b,m1,m2):
+        result = np.full(h.shape,0).astype('complex128')
+        for it1 in range(-m1,m1+1):
+            for it2 in range(-m2,m2+1):
+                result += (np.multiply(np.multiply(np.power(self.boundary_structure_factor(h,gamma_a),m1),\
+                                    np.power(self.boundary_structure_factor(k,gamma_b),m2)),\
+                        np.exp(1j*(it1*2*np.pi*h+it2*2*np.pi*k))))
+        return np.absolute(result)
+
+    def boundary_structure_factor(self,h,gamma):
+        sum = h*0
+        for n in range(1,46):
+            sum += np.cos(2*np.pi*(1+0.0222*n)*h)
+        return 1-gamma+gamma*sum/45
 
     def gaussian_bg(self,x,H1,Hbg,C1,Cbg,W1,Wbg,offset=0):
         return (self.gaussian(x,H1,C1,W1,offset=0)+
@@ -578,38 +601,23 @@ class ReciprocalSpaceMap(QtCore.QObject):
                         qImg, img = self.image_worker.get_image(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                         if width==0.0:
                             RC,I = self.image_worker.get_line_scan(start,end,img,scale_factor)
-                            Phi1 = np.full(len(RC),nimg*1.8)
-                            Phi2 = np.full(len(RC),nimg*1.8)
-                            maxPos = np.argmax(I)
-                            for iphi in range(0,maxPos):
-                                Phi1[iphi]=nimg*1.8+180
-                            if maxPos<(len(RC)-1)/2:
-                                x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
-                                map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
-                                x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos], I[0:(2*maxPos+1)]/I[maxPos]
-                                map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
-                            else:
-                                x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
-                                x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
                         else:
                             RC,I = self.image_worker.get_integral(start,end,width,img,scale_factor)
-                            Phi1 = np.full(len(RC),nimg*1.8)
-                            Phi2 = np.full(len(RC),nimg*1.8)
-                            maxPos = np.argmax(I)
-                            for iphi in range(0,maxPos):
-                                Phi1[iphi]=nimg*1.8+180
-                            if maxPos<(len(RC)-1)/2:
-                                x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
-                                map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
-                                x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
-                                map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
-                            else:
-                                x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
-                                x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
+                        Phi1 = np.full(len(RC),nimg*1.8)
+                        Phi2 = np.full(len(RC),nimg*1.8)
+                        maxPos = np.argmax(I)
+                        for iphi in range(0,maxPos):
+                            Phi1[iphi]=nimg*1.8+180
+                        if maxPos<(len(RC)-1)/2:
+                            x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
+                            map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
+                            x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
+                            map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
+                        else:
+                            x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                            map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
+                            x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                            map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
                         if self.IsCentered:
                             self.UPDATE_CHART.emit(x2,y2,"line")
                         else:
@@ -672,56 +680,33 @@ class ReciprocalSpaceMap(QtCore.QObject):
                             QtCore.QCoreApplication.processEvents()
                             if width==0.0:
                                 RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,scale_factor)
-                                rem = np.remainder(len(RC),self.group)
-                                if not rem == 0:
-                                    RC = np.pad(RC,(0,self.group-rem),'edge')
-                                    I = np.pad(I,(0,self.group-rem),'edge')
-                                RC,I = RC.reshape(-1,self.group).mean(axis=1), I.reshape(-1,self.group).mean(axis=1)
                                 self.DRAW_LINE_REQUESTED.emit(newStart,newEnd,False)
-                                QtCore.QCoreApplication.processEvents()
-                                Phi1 = np.full(len(RC),nimg*1.8)
-                                Phi2 = np.full(len(RC),nimg*1.8)
-                                maxPos = np.argmax(I)
-                                for iphi in range(0,maxPos):
-                                    Phi1[iphi]=nimg*1.8+180
-                                if maxPos<(len(RC)-1)/2:
-                                    x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
-                                    K = np.full(len(x1),Kperp)
-                                    map_3D1 = np.vstack((map_3D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],K,y1)).T))
-                                    x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos], I[0:(2*maxPos+1)]/I[maxPos]
-                                    map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],K,y2)).T))
-                                else:
-                                    x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                    K = np.full(len(x1),Kperp)
-                                    map_3D1 = np.vstack((map_3D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],K,y1)).T))
-                                    x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                    map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],K,y2)).T))
                             else:
                                 RC,I = self.image_worker.get_integral(newStart,newEnd,width,img,scale_factor)
-                                rem = np.remainder(len(RC),self.group)
-                                if not rem == 0:
-                                    RC = np.pad(RC,(0,self.group-rem),'edge')
-                                    I = np.pad(I,(0,self.group-rem),'edge')
-                                RC,I = RC.reshape(-1,self.group).mean(axis=1), I.reshape(-1,self.group).mean(axis=1)
                                 self.DRAW_RECT_REQUESTED.emit(newStart,newEnd,width,False)
-                                QtCore.QCoreApplication.processEvents()
-                                Phi1 = np.full(len(RC),nimg*1.8)
-                                Phi2 = np.full(len(RC),nimg*1.8)
-                                maxPos = np.argmax(I)
-                                for iphi in range(0,maxPos):
-                                    Phi1[iphi]=nimg*1.8+180
-                                if maxPos<(len(RC)-1)/2:
-                                    x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
-                                    K = np.full(len(x1),Kperp)
-                                    map_3D1 = np.vstack((map_3D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],K,y1)).T))
-                                    x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
-                                    map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],K,y2)).T))
-                                else:
-                                    x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                    K = np.full(len(x1),Kperp)
-                                    map_3D1 = np.vstack((map_3D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],K,y1)).T))
-                                    x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                    map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],K,y2)).T))
+                            QtCore.QCoreApplication.processEvents()
+                            rem = np.remainder(len(RC),self.group)
+                            if not rem == 0:
+                                RC = np.pad(RC,(0,self.group-rem),'edge')
+                                I = np.pad(I,(0,self.group-rem),'edge')
+                            RC,I = RC.reshape(-1,self.group).mean(axis=1), I.reshape(-1,self.group).mean(axis=1)
+                            Phi1 = np.full(len(RC),nimg*1.8)
+                            Phi2 = np.full(len(RC),nimg*1.8)
+                            maxPos = np.argmax(I)
+                            for iphi in range(0,maxPos):
+                                Phi1[iphi]=nimg*1.8+180
+                            if maxPos<(len(RC)-1)/2:
+                                x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
+                                K = np.full(len(x1),Kperp)
+                                map_3D1 = np.vstack((map_3D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],K,y1)).T))
+                                x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
+                                map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],K,y2)).T))
+                            else:
+                                x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                                K = np.full(len(x1),Kperp)
+                                map_3D1 = np.vstack((map_3D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],K,y1)).T))
+                                x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
+                                map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],K,y2)).T))
                             if self.IsCentered:
                                 self.UPDATE_CHART.emit(x2,y2,"line")
                             else:
@@ -834,18 +819,18 @@ class DiffractionPattern(QtCore.QObject):
 
 class FitBroadening(QtCore.QObject):
 
+    ADD_COST_FUNCTION = QtCore.pyqtSignal(np.ndarray,list,str)
+    ADD_PLOT = QtCore.pyqtSignal(np.ndarray,np.ndarray,float,int)
+    ATTENTION = QtCore.pyqtSignal(str)
+    CLOSE_OUTPUT = QtCore.pyqtSignal()
     DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    FINISHED = QtCore.pyqtSignal()
     PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
     PROGRESS_END = QtCore.pyqtSignal()
     UPDATE_RESULTS = QtCore.pyqtSignal(list)
     UPDATE_LOG = QtCore.pyqtSignal(str)
     WRITE_OUTPUT = QtCore.pyqtSignal(str)
-    CLOSE_OUTPUT = QtCore.pyqtSignal()
-    ATTENTION = QtCore.pyqtSignal(str)
-    FINISHED = QtCore.pyqtSignal()
-    ADD_COST_FUNCTION = QtCore.pyqtSignal(np.ndarray,list,str)
-    ADD_PLOT = QtCore.pyqtSignal(np.ndarray,np.ndarray)
 
     def __init__(self,path,initialparameters,startIndex,endIndex,origin,start,end,width,analysisRange,scale_factor,autoWB,brightness,blackLevel,image_crop,\
                  numberOfPeaks,BGCheck,saveResult,guess,bounds,ftol,xtol,gtol,method,loss):
@@ -876,7 +861,7 @@ class FitBroadening(QtCore.QObject):
         self.loss = loss
         self.image_list = []
         self.image_worker = Image()
-        self.fit_worker = Fit()
+        self.fit_worker = FitFunctions()
         self._abort = False
 
     def run(self):
@@ -908,10 +893,10 @@ class FitBroadening(QtCore.QObject):
                     newEnd.setX(int(x1+i*step*np.sin(angle)))
                     newEnd.setY(int(y1+i*step*np.cos(angle)))
                 if self.width == 0.0:
-                    self.DRAW_LINE_REQUESTED.emit(newStart,newEnd,False)
+                    #self.DRAW_LINE_REQUESTED.emit(newStart,newEnd,False)
                     RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,self.scale_factor)
                 else:
-                    self.DRAW_RECT_REQUESTED.emit(newStart,newEnd,self.width,False)
+                    #self.DRAW_RECT_REQUESTED.emit(newStart,newEnd,self.width,False)
                     RC,I = self.image_worker.get_integral(newStart,newEnd,self.width,img,self.scale_factor)
                 results, cost = self.fit_worker.get_gaussian_fit(RC,I,self.numberOfPeaks,self.BGCheck,self.guess,(self.bound_low,self.bound_high),self.ftol,\
                                                                 self.xtol,self.gtol,self.method,self.loss)
@@ -931,7 +916,7 @@ class FitBroadening(QtCore.QObject):
                 if self.saveResult == 2:
                     self.WRITE_OUTPUT.emit(fitresults)
                 self.UPDATE_LOG.emit("MESSAGE:"+results.message)
-                self.ADD_PLOT.emit(RC,I)
+                self.ADD_PLOT.emit(RC,I,Kperp,nimg)
                 self.PROGRESS_ADVANCE.emit(0,100,((nimg-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
                 QtCore.QCoreApplication.processEvents()
                 if self._abort:

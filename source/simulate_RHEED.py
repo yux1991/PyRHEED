@@ -1154,7 +1154,7 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         self.scene().activeCamera().setCameraPreset(preset)
 
     def update_camera_position(self,h,v,zoom):
-        self.scene().activeCamera().set_camera_position(h,v,zoom)
+        self.scene().activeCamera().setCameraPosition(h,v,zoom)
 
     def camera_position_changed(self,value):
         self.CAMERA_CHANGED.emit(self.scene().activeCamera().xRotation(),self.scene().activeCamera().yRotation(),self.scene().activeCamera().zoomLevel())

@@ -1,5 +1,5 @@
 from my_widgets import VerticalLabelSlider
-from process import Image, Fit
+from process import Image, FitFunctions
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 import configparser
 import glob
@@ -20,7 +20,7 @@ class Window(QtCore.QObject):
         self.fontname = fontname
         self.fontsize = fontsize
         self.image_worker = Image()
-        self.fit_worker = Fit()
+        self.fit_worker = FitFunctions()
 
     def refresh(self,config):
         self.config = config

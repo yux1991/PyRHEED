@@ -25,15 +25,18 @@ It is written and tested with Python 3.6.6. The GUI is created using PyQt5. The 
 5. Read the crystal structure from a CIF file and create a customized structure by stacking different crystalline materials together. Calculate the diffraction pattern from this structure based on the kinematic diffraction theory.
 
 ## Requirements
-- pyqt5
-- numpy
-- matplotlib
-- rawpy
-- pandas
-- scipy
-- pymatgen
 - lxml
+- matplotlib
+- numpy
+- pandas
 - pillow
+- pymatgen
+- pyqt5
+- pyqtchart
+- pyqtdatavisualization
+- rawpy
+- scipy
+- xlrd
 
 ## Usage
 1. Installation
@@ -73,6 +76,7 @@ It is written and tested with Python 3.6.6. The GUI is created using PyQt5. The 
 - simulate_RHEED: simulate the diffraction pattern from a given atomic structure 
 - statistical_factor: calculate the statistical factor assuming a Markov process 
 - test: the test module
+- translational_antiphase_domain: calculate the 1D and 2D profile from a translational antiphase domain model
 - window: the main window of the application
 
 ## Contact

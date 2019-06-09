@@ -1,5 +1,5 @@
 from my_widgets import LabelSlider
-from process import Image, Fit, FitBroadening
+from process import Image, FitFunctions, FitBroadening
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 import configparser
 import generate_report
@@ -47,6 +47,7 @@ class Window(QtCore.QObject):
         self.GTol = '1e-6'
         self.numberOfSteps = "20"
         self.defaultFileName = "Broadening"
+        self.file_has_been_created = False
         self.path = os.path.dirname(path)
         self.currentSource = self.path
         self.currentDestination = self.currentSource
@@ -413,6 +414,7 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         self.fitOptions.setEnabled(True)
+        self.file_has_been_created = False
 
     def write_results(self,results):
         self.output.write(results)
@@ -475,7 +477,12 @@ class Window(QtCore.QObject):
     def plot_cost_function(self,iteration,cost,text):
         self.costChart.add_chart(iteration,cost,text)
 
-    def plot_results(self,x0,y0):
+    def plot_results(self,x0,y0,Kperp,nimg):
+        if not self.file_has_been_created:
+            if self.BGCheck.isChecked() and self.saveResult.isChecked():
+                self.map_without_background = np.array([0,0,0,0])
+                self.save_path_without_background = self.currentDestination+"/2D_map_without_background.txt"
+                self.file_has_been_created = True
         self.chart.add_chart(x0,y0)
         total = np.full(len(x0),float(self.offset.get_value()))
         total_min = 100
@@ -503,6 +510,17 @@ class Window(QtCore.QObject):
             for ax in self.chart.profileChart.axes():
                 series_fit.attachAxis(ax)
             self.chart.profileChart.axisY().setRange(min(minH1,minH2,min(y0)),max(maxH,max(y0)))
+            if i == self.table.rowCount()-1:
+                if self.BGCheck.isChecked() and self.saveResult.isChecked():
+                    maxPos = np.argmax(y0)
+                    phi = np.full(len(x0),nimg*1.8)
+                    radius = np.abs(x0-x0[maxPos])
+                    for iphi in range(0,maxPos):
+                        phi[iphi]=nimg*1.8+180
+                    K = np.full(len(x0),Kperp)
+                    self.map_without_background = np.vstack((self.map_without_background,np.vstack((radius,phi,K,y0-fit)).T))
+        if self.BGCheck.isChecked() and self.saveResult.isChecked():
+            np.savetxt(self.save_path_without_background,np.delete(self.map_without_background,0,0),fmt='%4.3f')
         pen = QtGui.QPen(QtCore.Qt.DotLine)
         pen.setColor(QtGui.QColor('red'))
         pen.setWidth(2)
