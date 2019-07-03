@@ -31,7 +31,7 @@ class Window():
         self.window.BROADENING_REQUESTED.connect(self.run_broadening)
         self.window.MANUAL_FIT_REQUESTED.connect(self.run_manual_fit)
         self.window.GENERATE_REPORT_REQUESTED.connect(self.run_generate_report)
-        self.window.STATISTICAL_FACTOR_REQUESTED.connect(self.run_simulate_RHEED)
+        self.window.STATISTICAL_FACTOR_REQUESTED.connect(self.run_statistical_factor)
         self.window.DIFFRACTION_PATTERN_REQUESTED.connect(self.run_simulate_RHEED)
         self.window.THREE_DIMENSIONAL_GRAPH_REQUESTED.connect(self.run_3D_graph)
         self.preference = preference.Window()

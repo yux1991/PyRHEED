@@ -8,7 +8,14 @@ import math
 import numpy as np
 import os
 import PIL.Image as pilImage
+from pymatgen.io.cif import CifParser
+from pymatgen.core import sites as pgSites
+from pymatgen.core import structure as pgStructure
 import rawpy
+import random
+from scipy.spatial import Voronoi
+from shapely.geometry import Point
+from shapely.geometry import Polygon
 
 class Image(object):
 
@@ -144,33 +151,59 @@ class FitFunctions(object):
     def __init__(self):
         super(FitFunctions,self).__init__()
 
-    def gaussian(self,x,height, center,FWHM,offset=0):
-        if FWHM == 0:
-            FWHM = 0.001
-        return height/(FWHM*math.sqrt(math.pi/(4*math.log(2))))*np.exp(-4*math.log(2)*(x - center)**2/(FWHM**2))+offset
+    def translational_antiphase_domain_model_intensity_using_h(self,h,gamma):
+        result =  (1-np.multiply(self.boundary_structure_factor_using_h(h,gamma), self.boundary_structure_factor_using_h(h,gamma)))/\
+               (1+np.multiply(self.boundary_structure_factor_using_h(h,gamma), self.boundary_structure_factor_using_h(h,gamma))\
+               -2*np.multiply(self.boundary_structure_factor_using_h(h,gamma),np.cos(2*np.pi*h)))
+        return np.where(np.isnan(result),100,result)
 
-    def translational_antiphase_domain_model_intensity(self,h,gamma):
-        return (1-np.multiply(self.boundary_structure_factor(h,gamma), self.boundary_structure_factor(h,gamma)))/\
-               (1+np.multiply(self.boundary_structure_factor(h,gamma), self.boundary_structure_factor(h,gamma))\
-               -2*np.multiply(self.boundary_structure_factor(h,gamma),np.cos(2*np.pi*h)))
+    def translational_antiphase_domain_model_intensity_using_S(self,S,a,gamma,height=1,offset=0):
+        result =  (1-np.multiply(self.boundary_structure_factor_using_S(S,a,gamma), self.boundary_structure_factor_using_S(S,a,gamma)))/ \
+                  (1+np.multiply(self.boundary_structure_factor_using_S(S,a,gamma), self.boundary_structure_factor_using_S(S,a,gamma)) \
+                   -2*np.multiply(self.boundary_structure_factor_using_S(S,a,gamma),np.cos(S*a*np.cos(np.pi/6))))
+        return result*height+offset
 
     def translational_antiphase_domain_model_intensity_2D(self,h,k,gamma_a,gamma_b):
-        return np.multiply(self.translational_antiphase_domain_model_intensity(h,gamma_a),self.translational_antiphase_domain_model_intensity(k,gamma_b))
+        return np.multiply(self.translational_antiphase_domain_model_intensity_using_h(h,gamma_a),\
+                           self.translational_antiphase_domain_model_intensity_using_h(k,gamma_b))
+
+    def translational_antiphase_domain_model_intensity_2D_four_indices(self,h,k,i,gamma_a,gamma_b,gamma_c):
+        return np.multiply(np.multiply(self.translational_antiphase_domain_model_intensity_using_h(h,gamma_a),\
+                           self.translational_antiphase_domain_model_intensity_using_h(k,gamma_b)),\
+                           self.translational_antiphase_domain_model_intensity_using_h(i,gamma_c))
 
     def translational_antiphase_domain_model_intensity_2D_without_approximation(self,h,k,gamma_a,gamma_b,m1,m2):
         result = np.full(h.shape,0).astype('complex128')
         for it1 in range(-m1,m1+1):
             for it2 in range(-m2,m2+1):
-                result += (np.multiply(np.multiply(np.power(self.boundary_structure_factor(h,gamma_a),m1),\
-                                    np.power(self.boundary_structure_factor(k,gamma_b),m2)),\
+                result += (np.multiply(np.multiply(np.power(self.boundary_structure_factor_using_h(h,gamma_a),m1),\
+                                    np.power(self.boundary_structure_factor_using_h(k,gamma_b),m2)),\
                         np.exp(1j*(it1*2*np.pi*h+it2*2*np.pi*k))))
         return np.absolute(result)
 
-    def boundary_structure_factor(self,h,gamma):
+    def FWHM_of_translational_antiphase_domain_model(self,h,gamma,a):
+        alpha = (4*self.boundary_structure_factor_using_h(h,gamma) - np.multiply(self.boundary_structure_factor_using_h(h,gamma),\
+                    self.boundary_structure_factor_using_h(h,gamma))-1)/(2*self.boundary_structure_factor_using_h(h,gamma))
+        return 1/2/a*np.arccos(alpha)
+
+    def boundary_structure_factor_using_h(self,h,gamma):
         sum = h*0
         for n in range(1,46):
             sum += np.cos(2*np.pi*(1+0.0222*n)*h)
-        return 1-gamma+gamma*sum/45
+        result = 1-gamma+gamma*sum/45
+        return result
+
+    def boundary_structure_factor_using_S(self,S,a,gamma):
+        sum = S*0
+        for n in range(1,46):
+            sum += np.cos((1+0.0222*n)*S*a*np.cos(np.pi/6))
+        result = 1-gamma+gamma*sum/45
+        return result
+
+    def gaussian(self,x,height, center,FWHM,offset=0):
+        if FWHM == 0:
+            FWHM = 0.001
+        return height/(FWHM*math.sqrt(math.pi/(4*math.log(2))))*np.exp(-4*math.log(2)*(x - center)**2/(FWHM**2))+offset
 
     def gaussian_bg(self,x,H1,Hbg,C1,Cbg,W1,Wbg,offset=0):
         return (self.gaussian(x,H1,C1,W1,offset=0)+
@@ -457,6 +490,27 @@ class Convertor(object):
         results = "\n".join("\t".join(str(data[i,j]) for j in range(4)) for i in range(N_para*N_para*N_perp))
         output.write(results)
         output.close()
+
+class Diffraction(object):
+
+    def __init__(self):
+        super(Diffraction,self).__init__()
+
+    def G_matrix(self,a,b,c,alpha,beta,gamma):
+        return np.array([[a**2, a*b*np.cos(gamma/180*np.pi), a*c*np.cos(beta/180*np.pi)],
+                        [a*b*np.cos(gamma/180*np.pi), b**2, b*c*np.cos(alpha/180*np.pi)],
+                        [a*c*np.cos(beta/180*np.pi), b*c*np.cos(alpha/180*np.pi), c**2]])
+
+    def G_star(self,a,b,c,alpha,beta,gamma):
+        return 2*np.pi*np.identity(3)*np.linalg.inv(self.G_matrix(a,b,c,alpha,beta,gamma))
+
+    def conversion_matrix(self,a,b,c,alpha,beta,gamma):
+        c1 = c*np.cos(beta/180*np.pi)
+        c2 = c*(np.cos(alpha/180*np.pi)-np.cos(gamma/180*np.pi)*np.cos(beta/180*np.pi))/np.sin(gamma/180*np.pi)
+        c3 = np.sqrt(c**2-c1**2-c2**2)
+        return np.array([[a, b*np.cos(gamma/180*np.pi), c1],
+                         [0, b*np.sin(gamma/180*np.pi), c2],
+                         [0, 0,                         c3]])
 
 class ReciprocalSpaceMap(QtCore.QObject):
 
@@ -937,3 +991,196 @@ class FitBroadening(QtCore.QObject):
 
     def stop(self):
         self._abort = True
+
+class TAPD_Simulation(QtCore.QObject):
+    PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
+    PROGRESS_END = QtCore.pyqtSignal()
+    ERROR = QtCore.pyqtSignal(str)
+    FINISHED = QtCore.pyqtSignal()
+    SEND_RESULTS = QtCore.pyqtSignal(pgStructure.Structure, pgStructure.Structure, list, list)
+    UPDATE_LOG = QtCore.pyqtSignal(str)
+    VORONOI_PLOT = QtCore.pyqtSignal(Voronoi, list, list, str, int, str, int, bool, bool)
+
+    def __init__(self,X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, distribution, plot_Voronoi = False, sub_orientation='(001)', epi_orientation='(001)', **kwargs):
+        super(TAPD_Simulation,self).__init__()
+        self.X_max = X_max
+        self.Y_max = Y_max
+        self.Z_min = Z_min
+        self.Z_max = Z_max
+        self.offset = offset
+        self.substrate_CIF_path = substrate_CIF_path
+        self.epilayer_CIF_path = epilayer_CIF_path
+        self.plot_Voronoi_diagram = plot_Voronoi
+        self.sub_orientation = sub_orientation
+        self.epi_orientation = epi_orientation
+        self.distribution = distribution
+        self.parameters = kwargs
+        self._abort = False
+
+    def run(self):
+        self.UPDATE_LOG.emit('Preparing the translational antiphase domain sites ...')
+        QtCore.QCoreApplication.processEvents()
+        structure_sub, structure_epi, substrate_sites, epilayer_sites = self.get_TAPD_sites(self.X_max,self.Y_max, self.Z_min, self.Z_max,\
+                                            self.offset, self.substrate_CIF_path, self.epilayer_CIF_path,self.sub_orientation,self.epi_orientation)
+        QtCore.QCoreApplication.processEvents()
+        if not self._abort:
+            self.UPDATE_LOG.emit('Translational antiphase domain sites are created!')
+            self.SEND_RESULTS.emit(structure_sub, structure_epi, substrate_sites,epilayer_sites)
+        else:
+            self.UPDATE_LOG.emit('Process aborted!')
+            self._abort = False
+        self.FINISHED.emit()
+
+    def stop(self):
+        self._abort = True
+
+    def get_TAPD_sites(self, X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, sub_orientation='(001)', epi_orientation='(001)'):
+        substrate_sites = []
+        epilayer_sites = []
+        structure_sub = CifParser(substrate_CIF_path).get_structures(primitive=False)[0]
+        structure_epi = CifParser(epilayer_CIF_path).get_structures(primitive=False)[0]
+        unit_cell_sites_sub = [pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x,site.y,site.z]) \
+                               for site in structure_sub.sites if (site.z>=Z_min*structure_sub.lattice.c and site.z<Z_max*structure_sub.lattice.c)]
+        self.UPDATE_LOG.emit('Preparing the substrate ...')
+        QtCore.QCoreApplication.processEvents()
+        substrate_set, substrate_list = self.get_substrate(structure_sub, sub_orientation, X_max, Y_max)
+        self.UPDATE_LOG.emit('Substrate created!')
+        self.UPDATE_LOG.emit('Creating nucleation ...')
+        QtCore.QCoreApplication.processEvents()
+        generators = self.generator_2D(substrate_set, self.distribution, **self.parameters)
+        if not generators.any():
+            return None, None
+        else:
+            self.UPDATE_LOG.emit('Nucleation created!')
+            self.UPDATE_LOG.emit('Creating Voronoi diagram ...')
+            QtCore.QCoreApplication.processEvents()
+            vor = Voronoi(generators)
+            unit_cell_sites_epi = [pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+offset[0],site.y+offset[1],site.z+offset[2]]) \
+                                   for site in structure_epi.sites if (site.z>=Z_min*structure_epi.lattice.c and site.z<Z_max*structure_epi.lattice.c)]
+            self.UPDATE_LOG.emit('Voronoi diagram created!')
+            self.UPDATE_LOG.emit('Epilayer is growing ...')
+            QtCore.QCoreApplication.processEvents()
+            epilayer_list = self.get_epilayer(vor, structure_epi, epi_orientation, X_max, Y_max)
+            if not epilayer_list:
+                return None, None
+            else:
+                self.UPDATE_LOG.emit('Epilayer growth is done!')
+                self.UPDATE_LOG.emit('Generating the TAPD sites ...')
+                QtCore.QCoreApplication.processEvents()
+
+                for lattice_point in substrate_list:
+                    x, y = lattice_point[0], lattice_point[1]
+                    for site in unit_cell_sites_sub:
+                        substrate_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
+
+                for lattice_point in epilayer_list:
+                    x, y = lattice_point[0], lattice_point[1]
+                    for site in unit_cell_sites_epi:
+                        epilayer_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
+                self.UPDATE_LOG.emit('TAPD sites created!')
+                QtCore.QCoreApplication.processEvents()
+                if self.plot_Voronoi_diagram:
+                    self.UPDATE_LOG.emit('Plotting the voronoi diagram ...')
+                    QtCore.QCoreApplication.processEvents()
+                    self.VORONOI_PLOT.emit(vor,substrate_list,epilayer_list,'green',10,'blue',1,True,False)
+                return structure_sub, structure_epi, substrate_sites, epilayer_sites
+
+    def generator_2D(self, total, distribution, **kwargs):
+        total_length = len(total)
+        randPoints = []
+        i = 0
+        while total:
+            x,y = random.choice(list(total))
+            randPoints.append([x,y])
+            if distribution == 'geometric':
+                radius = np.random.geometric(kwargs['gamma'])
+            elif distribution == 'delta':
+                radius = kwargs['radius']
+            elif distribution == 'uniform':
+                radius = np.random.uniform(kwargs['low'], kwargs['high'])
+            elif distribution == 'binomial':
+                radius = np.random.binomial(kwargs['n'],kwargs['p'])
+            total_temp = total.copy()
+            for (dx,dy) in total_temp:
+                if (dx-x)**2+(dy-y)**2 <= radius**2:
+                    total.remove((dx,dy))
+            i += 1
+            self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(total)/total_length*100,1))
+            QtCore.QCoreApplication.processEvents()
+            if self._abort:
+                break
+        self.PROGRESS_END.emit()
+        QtCore.QCoreApplication.processEvents()
+        if not self._abort:
+            return np.array(randPoints)
+        else:
+            return None
+
+    def get_substrate(self,structure, orientation, X_max, Y_max):
+        substrate_list = []
+        substrate_set = set()
+        if orientation == '(001)':
+            a = structure.lattice.a
+            b = structure.lattice.b
+            angle = structure.lattice.gamma
+        xa, yb = int(X_max/a), int(Y_max/b/np.cos(angle))
+        for i,j in itertools.product(range(-xa, xa+1), range(-yb, yb+1)):
+            offset = int(j*b*np.sin(angle)/a)
+            x = np.round((i-offset)*a+j*b*np.sin(angle),2)
+            y = np.round(j*b*np.cos(angle),2)
+            substrate_set.add((x,y))
+            substrate_list.append([x,y])
+        return substrate_set, substrate_list
+
+    def get_epilayer(self,vor,structure,orientation,X_max,Y_max):
+        epilayer_list = []
+        for point_index, region_index in enumerate(vor.point_region):
+            if not -1 in vor.regions[region_index]:
+                self.PROGRESS_ADVANCE.emit(0,100,np.round(point_index/len(vor.point_region)*100,1))
+                QtCore.QCoreApplication.processEvents()
+                point = vor.points[point_index]
+                vertices = [list(vor.vertices[vertex_index]) for vertex_index in vor.regions[region_index]]
+                epilayer_domain = self.get_domain(structure, orientation, point, vertices, X_max, Y_max)
+                epilayer_list += epilayer_domain
+            if self._abort:
+                break
+        self.PROGRESS_END.emit()
+        QtCore.QCoreApplication.processEvents()
+        if not self._abort:
+            return epilayer_list
+        else:
+            return None
+
+    def get_domain(self,structure, orientation, point, vertices, X_max, Y_max):
+        epilayer_domain = []
+        polygon = Polygon(self.sortpts_clockwise(np.array(vertices)))
+        if orientation == '(001)':
+            a = structure.lattice.a
+            b = structure.lattice.b
+            angle = structure.lattice.gamma
+        xa, yb = int(X_max/a), int(Y_max/b/np.cos(angle))
+        for i,j in itertools.product(range(-2*xa, 2*xa+1), range(-2*yb, 2*yb+1)):
+            offset = int(j*b*np.sin(angle)/a)
+            x = np.round((i-offset)*a+j*b*np.sin(angle),2) + point[0]
+            y = np.round(j*b*np.cos(angle),2) + point[1]
+            if x >= -X_max and x <= X_max and y >= -Y_max and y <= Y_max:
+                if polygon.contains(Point(x,y)):
+                    epilayer_domain.append([x,y])
+        return epilayer_domain
+
+    def sortpts_clockwise(self,points):
+        self.origin = np.mean(points,axis=0)
+        sorted_points = sorted(points, key=self.get_clockwise_angle_and_distance)
+        return sorted_points
+
+    def get_clockwise_angle_and_distance(self,point):
+        refvec=[0,1]
+        vector = [point[0]-self.origin[0], point[1]-self.origin[1]]
+        lenvector = math.hypot(vector[0], vector[1])
+        normalized = [vector[0]/lenvector, vector[1]/lenvector]
+        dotprod  = normalized[0]*refvec[0] + normalized[1]*refvec[1]
+        diffprod = refvec[1]*normalized[0] - refvec[0]*normalized[1]
+        angle = math.atan2(diffprod, dotprod)
+        if angle < 0:
+            return 2*math.pi+angle, lenvector
+        return angle, lenvector

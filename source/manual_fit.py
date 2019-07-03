@@ -6,6 +6,7 @@ import glob
 import numpy as np
 import os
 import profile_chart
+import my_widgets
 
 class Window(QtCore.QObject):
 
@@ -13,7 +14,7 @@ class Window(QtCore.QObject):
     FIT_SATISFIED = QtCore.pyqtSignal(list)
     COLOR = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
 
-    def __init__(self,fontname='Arial',fontsize=10):
+    def __init__(self,fontname='Arial',fontsize=30,function='gaussian'):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
         self.config.read('./configuration.ini')
@@ -21,6 +22,7 @@ class Window(QtCore.QObject):
         self.fontsize = fontsize
         self.image_worker = Image()
         self.fit_worker = FitFunctions()
+        self.function = function
 
     def refresh(self,config):
         self.config = config
@@ -32,13 +34,28 @@ class Window(QtCore.QObject):
     def set_status(self,status):
         self.status = status
 
+    #def get_input(self):
+    #    items = ['1','1+BG','3','3+BG','5','5+BG','7','7+BG','9','9+BG','11','11+BG']
+    #    return QtWidgets.QInputDialog.getItem(None,'Input','Choose the Number of Peaks',items,0,False)
+
     def get_input(self):
         items = ['1','1+BG','3','3+BG','5','5+BG','7','7+BG','9','9+BG','11','11+BG']
-        return QtWidgets.QInputDialog.getItem(None,'Input','Choose the Number of Peaks',items,0,False)
+        dialog = my_widgets.MultipleInputDialog()
+        return dialog.getItems({'type':'ComboBox','label':'Choose the Number of Peaks','content':items},\
+                               {'type':'ComboBox','label':'Choose the Fit Function','content':['gaussian',\
+                                                                            'translational_antiphase_domain_model']})
 
     def main(self,path,nop=1,BG=False):
         if nop == 0:
-            text, OK = self.get_input()
+            input = self.get_input()
+            print(input)
+            if input:
+                text = input['Choose the Number of Peaks']
+                OK = True
+                self.function = input['Choose the Fit Function']
+            else:
+                text=''
+                OK = False
             if OK:
                 if text.isdigit():
                     self.nop = int(text)
@@ -52,7 +69,13 @@ class Window(QtCore.QObject):
             self.nop = nop
             self.BG = BG
         self.STATUS_REQUESTED.emit()
-        self.initialGuess = ['1','0.1','1','0.5']
+        if self.function == 'gaussian':
+            self.fit_function = self.fit_worker.gaussian
+            self.initialGuess = ['1','0.1','1','0.5']
+        elif self.function == 'translational_antiphase_domain_model':
+            self.fit_function = self.fit_worker.translational_antiphase_domain_model_intensity_using_S
+            self.lattice_constant = 3.15
+            self.initialGuess = ['3.15','0.1','1','0']
         if os.path.isdir(path):
             self.path = os.path.join(path,'*.nef')
         elif os.path.isfile(path):
@@ -72,27 +95,48 @@ class Window(QtCore.QObject):
         self.windowDefault = dict(self.config['windowDefault'].items())
         self.RC, self.I = self.profile()
         self.maxIntensity = np.amax(self.I)
+        self.maxIntensityPosition = np.argmax(self.I)
         self.minIntensity = np.amin(self.I)
+        if self.function == 'translational_antiphase_domain_model':
+            self.RC = self.RC - self.RC[self.maxIntensityPosition]
         for i in range(1,self.nop+1):
             parametersVLayout = QtWidgets.QVBoxLayout()
-            mode = [('C',i,self.RC[-1]/self.nop*i,0,self.RC[-1]),('H',i,float(self.initialGuess[1]),0.01,0.5),\
-                    ('W',i,float(self.initialGuess[2]),0.01,5)]
+            if self.function == 'gaussian':
+                mode = [('C',i,self.RC[-1]/self.nop*i,0,self.RC[-1]),('H',i,float(self.initialGuess[1]),0.01,0.5),\
+                        ('W',i,float(self.initialGuess[2]),0.01,5)]
+            elif self.function == 'translational_antiphase_domain_model':
+                mode = [('G',i,float(self.initialGuess[1]),0.0001,1),('H',i,float(self.initialGuess[2]),0,5), \
+                        ('O',i,float(self.initialGuess[3]),-5,5)]
             for name,index,value,minimum,maximum in mode:
-                if self.BG and i==self.nop:
-                    if name == 'W':
-                        slider = VerticalLabelSlider(minimum,self.RC[-1],100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
-                    elif name == 'H':
-                        slider = VerticalLabelSlider(minimum,5,100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
-                    elif name =='C':
-                        slider = VerticalLabelSlider(minimum,maximum,100,self.RC[-1]/2,name,index,self.BG,'vertical',self.COLOR[i-1])
-                else:
-                    slider = VerticalLabelSlider(minimum,maximum,100,value,name,index,False,'vertical',self.COLOR[i-1])
+                if self.function == 'gaussian':
+                    if self.BG and i==self.nop:
+                        if name == 'W':
+                            slider = VerticalLabelSlider(minimum,self.RC[-1],100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
+                        elif name == 'H':
+                            slider = VerticalLabelSlider(minimum,5,100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
+                        elif name =='C':
+                            slider = VerticalLabelSlider(minimum,maximum,100,self.RC[-1]/2,name,index,self.BG,'vertical',self.COLOR[i-1])
+                    else:
+                        slider = VerticalLabelSlider(minimum,maximum,100,value,name,index,False,'vertical',self.COLOR[i-1])
+                elif self.function == 'translational_antiphase_domain_model':
+                    if self.BG and i==self.nop:
+                        if name == 'G':
+                            name = 'C'
+                            slider = VerticalLabelSlider(self.RC[0],self.RC[-1],100,0,name,index,self.BG,'vertical',self.COLOR[i-1])
+                        elif name == 'H':
+                            slider = VerticalLabelSlider(0,10,100,5,name,index,self.BG,'vertical',self.COLOR[i-1])
+                        elif name =='O':
+                            name = 'W'
+                            slider = VerticalLabelSlider(0,self.RC[-1]-self.RC[0],100,(self.RC[-1]-self.RC[0])/2,name,index,self.BG,'vertical',self.COLOR[i-1])
+                    else:
+                        slider = VerticalLabelSlider(minimum,maximum,100,value,name,index,False,'vertical',self.COLOR[i-1])
                 slider.VALUE_CHANGED.connect(self.update_guess)
                 parametersVLayout.addWidget(slider)
             self.parametersHLayout.addLayout(parametersVLayout)
-        self.OffsetSlider = VerticalLabelSlider(0,1,100,(self.I[0]+self.I[-1])/2,'O',0)
-        self.OffsetSlider.VALUE_CHANGED.connect(self.update_guess)
-        self.parametersHLayout.addWidget(self.OffsetSlider)
+        if self.function == 'gaussian':
+            self.OffsetSlider = VerticalLabelSlider(0,1,100,(self.I[0]+self.I[-1])/2,'O',0)
+            self.OffsetSlider.VALUE_CHANGED.connect(self.update_guess)
+            self.parametersHLayout.addWidget(self.OffsetSlider)
 
         self.AcceptButton = QtWidgets.QPushButton("Accept")
         self.AcceptButton.clicked.connect(self.accept)
@@ -120,7 +164,8 @@ class Window(QtCore.QObject):
     def accept(self):
         self.reject()
         results = self.flatten(self.guess)
-        results.append(float(self.OffsetSlider.value()))
+        if self.function == 'gaussian':
+            results.append(float(self.OffsetSlider.value()))
         self.FIT_SATISFIED.emit(results)
 
     def reject(self):
@@ -177,19 +222,50 @@ class Window(QtCore.QObject):
         if len(self.fit_chart.profileChart.series())>1:
             for series in self.fit_chart.profileChart.series()[1:]:
                 self.fit_chart.profileChart.removeSeries(series)
-        total = np.full(len(x0),float(self.OffsetSlider.value()))
+        if self.function == 'gaussian':
+            total = np.full(len(x0),float(self.OffsetSlider.value()))
+        elif self.function == 'translational_antiphase_domain_model':
+            total = np.full(len(x0),float(0))
         total_min = 100
         for i in range(len(guess)):
-            center = float(guess[i][0])
-            height = float(guess[i][1])
-            width = float(guess[i][2])
-            offset = float(self.OffsetSlider.value())
-            fit = self.fit_worker.gaussian(x0,height,center,width,offset)
-            fit0 = self.fit_worker.gaussian(x0,height,center,width,0)
-            total = np.add(total,fit0)
-            maxH = self.fit_worker.gaussian(center,height,center,width,offset)
-            minH1 = self.fit_worker.gaussian(x0[0],height,center,width,offset)
-            minH2 = self.fit_worker.gaussian(x0[-1],height,center,width,offset)
+            if self.function == 'gaussian':
+                center = float(guess[i][0])
+                height = float(guess[i][1])
+                width = float(guess[i][2])
+                offset = float(self.OffsetSlider.value())
+                fit = self.fit_function(x0,height,center,width,offset)
+                fit0 = self.fit_function(x0,height,center,width,0)
+                total = np.add(total,fit0)
+                maxH = self.fit_function(center,height,center,width,offset)
+                minH1 = self.fit_function(x0[0],height,center,width,offset)
+                minH2 = self.fit_function(x0[-1],height,center,width,offset)
+            elif self.function == 'translational_antiphase_domain_model':
+                if i == len(guess)-1:
+                    center = float(guess[i][0])
+                    height = float(guess[i][1])
+                    width = float(guess[i][2])
+                    offset = 0
+                    fit = self.fit_worker.gaussian(x0,height,center,width,offset)
+                    fit0 = self.fit_worker.gaussian(x0,height,center,width,0)
+                    total = np.add(total,fit0)
+                    maxH = self.fit_worker.gaussian(center,height,center,width,offset)
+                    minH1 = self.fit_worker.gaussian(x0[0],height,center,width,offset)
+                    minH2 = self.fit_worker.gaussian(x0[-1],height,center,width,offset)
+                else:
+                    center = float(guess[len(guess)-1][0])
+                    height = float(guess[len(guess)-1][1])
+                    width = float(guess[len(guess)-1][2])
+                    fit0 = self.fit_worker.gaussian(x0,height,center,width,0)
+                    fit0_normalized = fit0/np.amax(fit0)
+
+                    gamma = float(guess[i][0])
+                    height = float(guess[i][1])
+                    offset = float(guess[i][2])
+                    fit = self.fit_function(x0,self.lattice_constant,gamma,height,offset)*fit0_normalized
+                    total = np.add(total,fit)
+                    maxH = 1
+                    minH1 = self.fit_function(x0[0],self.lattice_constant,gamma,height,offset)
+                    minH2 = self.fit_function(x0[-1],self.lattice_constant,gamma,height,offset)
             if min(minH1,minH2) < total_min:
                 total_min = min(minH1,minH2)
             pen = QtGui.QPen(QtCore.Qt.DotLine)

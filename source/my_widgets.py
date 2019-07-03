@@ -149,7 +149,7 @@ class ColorPicker(QtWidgets.QWidget):
         self.COLOR_CHANGED.emit(self.name,self.color)
 
     def set_color(self,color):
-        self.PB.setStyleSheet("background-color:"+color)
+        self.PB.setStyleSheet("background-color:"+color+"; border: none")
         self.color = color
 
     def get_color(self):
@@ -628,12 +628,13 @@ class LabelLineEdit(QtWidgets.QWidget):
     ERROR = QtCore.pyqtSignal(str)
     VALUE_CHANGED = QtCore.pyqtSignal(str,float)
 
-    def __init__(self,label,width,text,unit=''):
+    def __init__(self,label,width,text,digit=1,unit=''):
         super(LabelLineEdit, self).__init__()
         self.label_text = label
         self.label_width = width
         self.text = text
         self.unit = unit
+        self.digit = digit
         if not self.unit == '':
             self.label = QtWidgets.QLabel(self.label_text+' ('+self.unit+')')
         else:
@@ -655,10 +656,108 @@ class LabelLineEdit(QtWidgets.QWidget):
             self.ERROR.emit("Wrong input!")
 
     def set_value(self,value):
-        self.line.setText(str(np.round(value,1)))
+        self.line.setText(str(np.round(value,self.digit)))
 
     def value(self):
         return float(self.line.text())
 
     def text(self):
         return self.line.text()
+
+class LabelMultipleLineEdit(QtWidgets.QWidget):
+
+    ERROR = QtCore.pyqtSignal(str)
+    VALUE_CHANGED = QtCore.pyqtSignal(str,list)
+
+    def __init__(self,number,label,width,text,unit=''):
+        super(LabelMultipleLineEdit, self).__init__()
+        self.number = number
+        self.label_text = label
+        self.label_width = width
+        self.text = text
+        self.unit = unit
+        if not self.unit == '':
+            self.label = QtWidgets.QLabel(self.label_text+' ('+self.unit+')')
+        else:
+            self.label = QtWidgets.QLabel(self.label_text)
+        self.label.setFixedWidth(self.label_width)
+        self.grid = QtWidgets.QGridLayout()
+        self.grid.addWidget(self.label,0,0)
+        self.grid.setContentsMargins(0,0,0,0)
+        self.setLayout(self.grid)
+        self.line_list = []
+        for i in range(self.number):
+            line = QtWidgets.QLineEdit()
+            line.textEdited.connect(self.update_text)
+            line.setText(self.text[i])
+            self.line_list.append(line)
+            self.grid.addWidget(line,0,i+1)
+
+    def update_text(self,text):
+        try:
+            text_list = []
+            for i,line in enumerate(self.line_list):
+                text_list.append(float(line.text()))
+            self.VALUE_CHANGED.emit(self.label_text,text_list)
+        except:
+            self.ERROR.emit("Wrong input!")
+
+    def set_values(self,values):
+        for i,line in enumerate(self.line_list):
+            line.setText(str(np.round(values[i],1)))
+
+    def values(self):
+        text_list = []
+        for i,line in enumerate(self.line_list):
+            text_list.append(float(line.text()))
+        return text_list
+
+class MultipleInputDialog(QtWidgets.QDialog):
+
+    def __init__(self):
+        super(MultipleInputDialog,self).__init__()
+
+    def getItems(self,*args):
+        self.form = QtWidgets.QFormLayout()
+        self.number_of_inputs = len(args)
+        self.widget_list = []
+        self.label_list = []
+        self.type_list = []
+        for count, dict in enumerate(args):
+            self.type_list.append(dict['type'])
+            self.label_list.append(dict['label'])
+            if dict['type'] == 'LineEdit':
+                self.widget_list.append(QtWidgets.QLineEdit(dict['content']))
+            elif dict['type'] == 'SpinBox':
+                self.widget_list.append(QtWidgets.QSpinBox())
+                self.widget_list[-1].setMinimum(dict['content']['minimum'])
+                self.widget_list[-1].setMaximum(dict['content']['maximum'])
+                self.widget_list[-1].setSingleStep(dict['content']['step'])
+                self.widget_list[-1].setValue(dict['content']['value'])
+            elif dict['type'] == 'ComboBox':
+                self.widget_list.append(QtWidgets.QComboBox())
+                self.widget_list[-1].addItems(dict['content'])
+            self.form.addRow(self.label_list[-1],self.widget_list[-1])
+
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel,\
+                                                QtCore.Qt.Horizontal)
+        self.form.addRow(button_box)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        self.setLayout(self.form)
+        return self.exec()
+
+    def exec(self):
+        code = super(MultipleInputDialog,self).exec()
+        if code == 1:
+            return_dict = {}
+            for i in range(self.number_of_inputs):
+                if self.type_list[i] == 'LineEdit':
+                    return_dict[self.label_list[i]] = self.widget_list[i].text()
+                elif self.type_list[i] == 'SpinBox':
+                    return_dict[self.label_list[i]] = str(self.widget_list[i].value())
+                elif self.type_list[i] == 'ComboBox':
+                    return_dict[self.label_list[i]] = self.widget_list[i].currentText()
+            return return_dict
+        elif code == 0:
+            return {}
