@@ -113,7 +113,7 @@ class Window(QtCore.QObject):
                         if name == 'W':
                             slider = VerticalLabelSlider(minimum,self.RC[-1],100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
                         elif name == 'H':
-                            slider = VerticalLabelSlider(minimum,5,100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
+                            slider = VerticalLabelSlider(minimum,10,100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
                         elif name =='C':
                             slider = VerticalLabelSlider(minimum,maximum,100,self.RC[-1]/2,name,index,self.BG,'vertical',self.COLOR[i-1])
                     else:

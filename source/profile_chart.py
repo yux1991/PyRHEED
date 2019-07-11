@@ -5,7 +5,9 @@ import numpy as np
 class ProfileChart(QtChart.QChartView):
 
     CHART_MOUSE_MOVEMENT = QtCore.pyqtSignal(QtCore.QPointF,str)
+    CHART_MOUSE_LEAVE = QtCore.pyqtSignal()
     CHART_IS_PRESENT = False
+    FONTS_CHANGED = QtCore.pyqtSignal(str,int)
 
     def __init__(self,config):
         super(ProfileChart,self).__init__()
@@ -97,6 +99,14 @@ class ProfileChart(QtChart.QChartView):
             self.axisY = QtChart.QLogValueAxis()
             self.axisX.setTitleText("Number of Iterations")
             self.axisY.setTitleText("Cost Function")
+        elif type == "kikuchi line":
+            self.axisX = QtChart.QValueAxis()
+            self.axisX.setTickCount(10)
+            self.axisY = QtChart.QValueAxis()
+            self.axisX.setTitleText("Kx (\u212B\u207B\u00B9)")
+            self.axisY.setTitleText("Ky (\u212B\u207B\u00B9)")
+            self.axisY.setTickCount(10)
+            self.axisY.setReverse(True)
         self.axisX.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
         self.axisX.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
         self.axisY.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
@@ -119,6 +129,22 @@ class ProfileChart(QtChart.QChartView):
             self.axisY.setTitleFont(QtGui.QFont(fontname,fontsize,57))
         except:
             pass
+
+    def set_axes_visible(self,state):
+        if state == 2:
+            self.profileChart.axisX().setVisible(True)
+            self.profileChart.axisY().setVisible(True)
+        elif state == 0:
+            self.profileChart.axisX().setVisible(False)
+            self.profileChart.axisY().setVisible(False)
+
+    def set_grids_visible(self,state):
+        if state == 2:
+            self.profileChart.axisX().setGridLineVisible(True)
+            self.profileChart.axisY().setGridLineVisible(True)
+        elif state == 0:
+            self.profileChart.axisX().setGridLineVisible(False)
+            self.profileChart.axisY().setGridLineVisible(False)
 
     def set_fonts(self,fontname,fontsize):
         self.fontname = fontname
@@ -150,6 +176,7 @@ class ProfileChart(QtChart.QChartView):
             self.CHART_MOUSE_MOVEMENT.emit(position,"chart")
         else:
             self.setCursor(QtCore.Qt.ArrowCursor)
+            self.CHART_MOUSE_LEAVE.emit()
         super(ProfileChart, self).mouseMoveEvent(event)
 
     def contextMenuEvent(self,event):

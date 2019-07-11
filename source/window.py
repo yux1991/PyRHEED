@@ -27,6 +27,7 @@ class Window(QtWidgets.QMainWindow):
     MANUAL_FIT_REQUESTED = QtCore.pyqtSignal(str,int)
     STATISTICAL_FACTOR_REQUESTED = QtCore.pyqtSignal()
     DIFFRACTION_PATTERN_REQUESTED = QtCore.pyqtSignal()
+    KIKUCHI_PATTERN_REQUESTED = QtCore.pyqtSignal()
     GENERATE_REPORT_REQUESTED = QtCore.pyqtSignal(str)
     WINDOW_INITIALIZED = QtCore.pyqtSignal()
     PROPERTIES_REFRESH = QtCore.pyqtSignal(configparser.ConfigParser)
@@ -101,6 +102,7 @@ class Window(QtWidgets.QMainWindow):
         #Simulation Menu
         self.Statistical_Factor = self.menuSimulation.addAction("Statistical Factor",self.menu_actions_statistical_factor)
         self.Diffraction_pattern = self.menuSimulation.addAction("Diffraction Pattern",self.menu_actions_diffraction_pattern)
+        self.Kikuchi_pattern = self.menuSimulation.addAction("Kikuchi Pattern",self.menu_actions_kikuchi_pattern)
 
         #Help Menu
         self.about = self.menuHelp.addAction("About",self.menu_actions_about)
@@ -321,6 +323,9 @@ class Window(QtWidgets.QMainWindow):
 
     def menu_actions_diffraction_pattern(self):
         self.DIFFRACTION_PATTERN_REQUESTED.emit()
+
+    def menu_actions_kikuchi_pattern(self):
+        self.KIKUCHI_PATTERN_REQUESTED.emit()
 
     def menu_actions_save_as_text(self):
         self.profile.save_profile_as_text()

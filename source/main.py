@@ -6,6 +6,7 @@ import broadening
 import configparser
 import generate_report
 import graph_3D_surface
+import kikuchi
 import manual_fit
 import preference
 import reciprocal_space_mapping
@@ -33,6 +34,7 @@ class Window():
         self.window.GENERATE_REPORT_REQUESTED.connect(self.run_generate_report)
         self.window.STATISTICAL_FACTOR_REQUESTED.connect(self.run_statistical_factor)
         self.window.DIFFRACTION_PATTERN_REQUESTED.connect(self.run_simulate_RHEED)
+        self.window.KIKUCHI_PATTERN_REQUESTED.connect(self.run_kikuchi)
         self.window.THREE_DIMENSIONAL_GRAPH_REQUESTED.connect(self.run_3D_graph)
         self.preference = preference.Window()
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.window.refresh)
@@ -79,6 +81,10 @@ class Window():
     def run_simulate_RHEED(self):
         self.simulation = simulate_RHEED.Window()
         self.simulation.main()
+
+    def run_kikuchi(self):
+        self.kikuchi = kikuchi.Window()
+        self.kikuchi.main()
 
     def run_3D_graph(self,path=''):
         """The window to show a 3D surface

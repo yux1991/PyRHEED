@@ -5,15 +5,21 @@ from scipy.optimize import least_squares
 import glob
 import itertools
 import math
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon as matPolygon
+from matplotlib.collections import PatchCollection
 import numpy as np
 import os
 import PIL.Image as pilImage
 from pymatgen.io.cif import CifParser
 from pymatgen.core import sites as pgSites
 from pymatgen.core import structure as pgStructure
+from pymatgen.core import periodic_table
 import rawpy
 import random
 from scipy.spatial import Voronoi
+from scipy.spatial import voronoi_plot_2d
+from scipy.spatial import cKDTree
 from shapely.geometry import Point
 from shapely.geometry import Polygon
 
@@ -502,7 +508,7 @@ class Diffraction(object):
                         [a*c*np.cos(beta/180*np.pi), b*c*np.cos(alpha/180*np.pi), c**2]])
 
     def G_star(self,a,b,c,alpha,beta,gamma):
-        return 2*np.pi*np.identity(3)*np.linalg.inv(self.G_matrix(a,b,c,alpha,beta,gamma))
+        return 2*np.pi*np.linalg.inv(self.G_matrix(a,b,c,alpha,beta,gamma))
 
     def conversion_matrix(self,a,b,c,alpha,beta,gamma):
         c1 = c*np.cos(beta/180*np.pi)
@@ -511,6 +517,14 @@ class Diffraction(object):
         return np.array([[a, b*np.cos(gamma/180*np.pi), c1],
                          [0, b*np.sin(gamma/180*np.pi), c2],
                          [0, 0,                         c3]])
+
+    def is_permitted(self,h,k,l,structure):
+        if structure.get_space_group_info()[1] == 167:
+            if ((-h+k+l)%3 == 0 and h!=-k) or ((h+l)%3==0 and l%2==0 and h==-k):
+                return True
+            else:
+                return False
+
 
 class ReciprocalSpaceMap(QtCore.QObject):
 
@@ -917,11 +931,17 @@ class FitBroadening(QtCore.QObject):
         self.image_worker = Image()
         self.fit_worker = FitFunctions()
         self._abort = False
+        self._periodic = False
 
     def run(self):
         for filename in glob.glob(self.path):
             self.image_list.append(filename)
+        if self.startIndex > self.endIndex:
+            self.endIndex += 101
+            self._periodic = True
         for nimg in range(self.startIndex,self.endIndex+1):
+            if self._periodic:
+                nimg = nimg%101
             self.UPDATE_RESULTS.emit(self.initialparameters)
             self.UPDATE_LOG.emit("The file being processed right now is: "+self.image_list[nimg])
             qImg, img = self.image_worker.get_image(16,self.image_list[nimg],self.autoWB,self.brightness,self.blackLevel,self.image_crop)
@@ -971,7 +991,14 @@ class FitBroadening(QtCore.QObject):
                     self.WRITE_OUTPUT.emit(fitresults)
                 self.UPDATE_LOG.emit("MESSAGE:"+results.message)
                 self.ADD_PLOT.emit(RC,I,Kperp,nimg)
-                self.PROGRESS_ADVANCE.emit(0,100,((nimg-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
+                if self._periodic:
+                    if nimg < self.startIndex:
+                        offset = 1
+                    else:
+                        offset = 0
+                    self.PROGRESS_ADVANCE.emit(0,100,((nimg+101*offset-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
+                else:
+                    self.PROGRESS_ADVANCE.emit(0,100,((nimg-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
                 QtCore.QCoreApplication.processEvents()
                 if self._abort:
                     break
@@ -999,9 +1026,9 @@ class TAPD_Simulation(QtCore.QObject):
     FINISHED = QtCore.pyqtSignal()
     SEND_RESULTS = QtCore.pyqtSignal(pgStructure.Structure, pgStructure.Structure, list, list)
     UPDATE_LOG = QtCore.pyqtSignal(str)
-    VORONOI_PLOT = QtCore.pyqtSignal(Voronoi, list, list, str, int, str, int, bool, bool)
+    VORONOI_PLOT = QtCore.pyqtSignal(Voronoi, list, list, dict)
 
-    def __init__(self,X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, distribution, plot_Voronoi = False, sub_orientation='(001)', epi_orientation='(001)', **kwargs):
+    def __init__(self,X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, distribution, plot_Voronoi = False, sub_orientation='(001)', epi_orientation='(001)', use_atoms = True, **kwargs):
         super(TAPD_Simulation,self).__init__()
         self.X_max = X_max
         self.Y_max = Y_max
@@ -1014,6 +1041,7 @@ class TAPD_Simulation(QtCore.QObject):
         self.sub_orientation = sub_orientation
         self.epi_orientation = epi_orientation
         self.distribution = distribution
+        self.use_atoms = use_atoms
         self.parameters = kwargs
         self._abort = False
 
@@ -1021,7 +1049,7 @@ class TAPD_Simulation(QtCore.QObject):
         self.UPDATE_LOG.emit('Preparing the translational antiphase domain sites ...')
         QtCore.QCoreApplication.processEvents()
         structure_sub, structure_epi, substrate_sites, epilayer_sites = self.get_TAPD_sites(self.X_max,self.Y_max, self.Z_min, self.Z_max,\
-                                            self.offset, self.substrate_CIF_path, self.epilayer_CIF_path,self.sub_orientation,self.epi_orientation)
+                                            self.offset, self.substrate_CIF_path, self.epilayer_CIF_path,self.sub_orientation,self.epi_orientation, self.use_atoms)
         QtCore.QCoreApplication.processEvents()
         if not self._abort:
             self.UPDATE_LOG.emit('Translational antiphase domain sites are created!')
@@ -1034,79 +1062,76 @@ class TAPD_Simulation(QtCore.QObject):
     def stop(self):
         self._abort = True
 
-    def get_TAPD_sites(self, X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, sub_orientation='(001)', epi_orientation='(001)'):
-        substrate_sites = []
-        epilayer_sites = []
+    def get_TAPD_sites(self, X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, sub_orientation='(001)', epi_orientation='(001)',use_atoms = True):
         structure_sub = CifParser(substrate_CIF_path).get_structures(primitive=False)[0]
         structure_epi = CifParser(epilayer_CIF_path).get_structures(primitive=False)[0]
-        unit_cell_sites_sub = [pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x,site.y,site.z]) \
-                               for site in structure_sub.sites if (site.z>=Z_min*structure_sub.lattice.c and site.z<Z_max*structure_sub.lattice.c)]
         self.UPDATE_LOG.emit('Preparing the substrate ...')
         QtCore.QCoreApplication.processEvents()
-        substrate_set, substrate_list = self.get_substrate(structure_sub, sub_orientation, X_max, Y_max)
-        self.UPDATE_LOG.emit('Substrate created!')
-        self.UPDATE_LOG.emit('Creating nucleation ...')
-        QtCore.QCoreApplication.processEvents()
-        generators = self.generator_2D(substrate_set, self.distribution, **self.parameters)
-        if not generators.any():
-            return None, None
-        else:
-            self.UPDATE_LOG.emit('Nucleation created!')
-            self.UPDATE_LOG.emit('Creating Voronoi diagram ...')
+        substrate_set, substrate_list, substrate_sites = self.get_substrate(structure_sub, sub_orientation, X_max, Y_max, Z_min, Z_max, use_atoms)
+        if not substrate_set is None:
+            self.UPDATE_LOG.emit('Substrate created!')
+            self.UPDATE_LOG.emit('Creating nucleation ...')
             QtCore.QCoreApplication.processEvents()
-            vor = Voronoi(generators)
-            unit_cell_sites_epi = [pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+offset[0],site.y+offset[1],site.z+offset[2]]) \
-                                   for site in structure_epi.sites if (site.z>=Z_min*structure_epi.lattice.c and site.z<Z_max*structure_epi.lattice.c)]
-            self.UPDATE_LOG.emit('Voronoi diagram created!')
-            self.UPDATE_LOG.emit('Epilayer is growing ...')
-            QtCore.QCoreApplication.processEvents()
-            epilayer_list = self.get_epilayer(vor, structure_epi, epi_orientation, X_max, Y_max)
-            if not epilayer_list:
+            generators = self.generator_2D(substrate_set, self.distribution, **self.parameters)
+            if not generators.any():
                 return None, None
             else:
-                self.UPDATE_LOG.emit('Epilayer growth is done!')
-                self.UPDATE_LOG.emit('Generating the TAPD sites ...')
+                self.UPDATE_LOG.emit('Nucleation created!')
+                self.UPDATE_LOG.emit('Creating Voronoi ...')
                 QtCore.QCoreApplication.processEvents()
-
-                for lattice_point in substrate_list:
-                    x, y = lattice_point[0], lattice_point[1]
-                    for site in unit_cell_sites_sub:
-                        substrate_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
-
-                for lattice_point in epilayer_list:
-                    x, y = lattice_point[0], lattice_point[1]
-                    for site in unit_cell_sites_epi:
-                        epilayer_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
-                self.UPDATE_LOG.emit('TAPD sites created!')
+                vor = Voronoi(generators)
+                self.UPDATE_LOG.emit('Voronoi is created!')
+                self.UPDATE_LOG.emit('Epilayer is growing ...')
                 QtCore.QCoreApplication.processEvents()
-                if self.plot_Voronoi_diagram:
-                    self.UPDATE_LOG.emit('Plotting the voronoi diagram ...')
+                epilayer_list, epilayer_sites = self.get_epilayer(vor, structure_epi, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
+                if not epilayer_list:
+                    self.UPDATE_LOG.emit('Epilayer is empty!')
                     QtCore.QCoreApplication.processEvents()
-                    self.VORONOI_PLOT.emit(vor,substrate_list,epilayer_list,'green',10,'blue',1,True,False)
-                return structure_sub, structure_epi, substrate_sites, epilayer_sites
+                    return None, None, None, None
+                else:
+                    self.UPDATE_LOG.emit('Atoms are filtered!')
+                    QtCore.QCoreApplication.processEvents()
+                    self.UPDATE_LOG.emit('Epilayer growth is done!')
+                    if self.plot_Voronoi_diagram:
+                        self.UPDATE_LOG.emit('Plotting the voronoi diagram ...')
+                        QtCore.QCoreApplication.processEvents()
+                        self.VORONOI_PLOT.emit(vor,substrate_list,epilayer_list,{'point_color':'green',\
+                            'point_size':10,'vertex_color':'blue','vertex_size':1,'show_points':True,'show_vertices':False})
+                    return structure_sub, structure_epi, substrate_sites, epilayer_sites
+        else:
+            return None, None, None, None
 
     def generator_2D(self, total, distribution, **kwargs):
         total_length = len(total)
         randPoints = []
+        number_of_sites = len(total)
         i = 0
         while total:
             x,y = random.choice(list(total))
             randPoints.append([x,y])
-            if distribution == 'geometric':
-                radius = np.random.geometric(kwargs['gamma'])
-            elif distribution == 'delta':
-                radius = kwargs['radius']
-            elif distribution == 'uniform':
-                radius = np.random.uniform(kwargs['low'], kwargs['high'])
-            elif distribution == 'binomial':
-                radius = np.random.binomial(kwargs['n'],kwargs['p'])
-            total_temp = total.copy()
-            for (dx,dy) in total_temp:
-                if (dx-x)**2+(dy-y)**2 <= radius**2:
-                    total.remove((dx,dy))
-            i += 1
-            self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(total)/total_length*100,1))
-            QtCore.QCoreApplication.processEvents()
+            if distribution == 'completely random':
+                density = kwargs['density']
+                number_of_sites = density*len(total)
+                total.remove((x,y))
+            else:
+                if distribution == 'geometric':
+                    radius = np.random.geometric(kwargs['gamma'])
+                elif distribution == 'delta':
+                    radius = kwargs['radius']
+                elif distribution == 'uniform':
+                    radius = np.random.uniform(kwargs['low'], kwargs['high'])
+                elif distribution == 'binomial':
+                    radius = np.random.binomial(kwargs['n'],kwargs['p'])
+                total_temp = total.copy()
+                for (dx,dy) in total_temp:
+                    if (dx-x)**2+(dy-y)**2 <= radius**2:
+                        total.remove((dx,dy))
+            if i <= number_of_sites:
+                i += 1
+                self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(total)/total_length*100,1))
+                QtCore.QCoreApplication.processEvents()
+            else:
+                break
             if self._abort:
                 break
         self.PROGRESS_END.emit()
@@ -1116,7 +1141,25 @@ class TAPD_Simulation(QtCore.QObject):
         else:
             return None
 
-    def get_substrate(self,structure, orientation, X_max, Y_max):
+    def get_heavist_element(self, structure):
+        atomic_number = 0
+        name = ''
+        for site in structure.sites:
+            element = periodic_table.Element(site.as_dict()['species'][0]['element'])
+            if element.Z > atomic_number:
+                atomic_number = element.Z
+                name = element.symbol
+        return name
+
+    def get_substrate(self,structure, orientation, X_max, Y_max, Z_min, Z_max, use_atoms):
+        if use_atoms:
+            unit_cell_sites_sub = [pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x,site.y,site.z]) \
+                                   for site in structure.sites if (site.z>=Z_min*structure.lattice.c and site.z<Z_max*structure.lattice.c)]
+        else:
+            species = self.get_heavist_element(structure)
+            unit_cell_sites_sub = [pgSites.Site({species:1},[0,0,0])]
+
+        substrate_sites = []
         substrate_list = []
         substrate_set = set()
         if orientation == '(001)':
@@ -1125,48 +1168,198 @@ class TAPD_Simulation(QtCore.QObject):
             angle = structure.lattice.gamma
         xa, yb = int(X_max/a), int(Y_max/b/np.cos(angle))
         for i,j in itertools.product(range(-xa, xa+1), range(-yb, yb+1)):
-            offset = int(j*b*np.sin(angle)/a)
-            x = np.round((i-offset)*a+j*b*np.sin(angle),2)
-            y = np.round(j*b*np.cos(angle),2)
+            offset = int(j*b*np.cos(angle/180*np.pi)/a)
+            x = (i-offset)*a+j*b*np.cos(angle/180*np.pi)
+            y = j*b*np.sin(angle/180*np.pi)
+            for site in unit_cell_sites_sub:
+                substrate_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
             substrate_set.add((x,y))
             substrate_list.append([x,y])
-        return substrate_set, substrate_list
+            QtCore.QCoreApplication.processEvents()
+            if self._abort:
+                break
+            else:
+                self.PROGRESS_ADVANCE.emit(0,100,((i+xa)*(2*yb)+(j+yb))/(2*xa*2*yb)*100)
+                QtCore.QCoreApplication.processEvents()
+        self.PROGRESS_END.emit()
+        QtCore.QCoreApplication.processEvents()
+        if not self._abort:
+            return substrate_set, substrate_list, substrate_sites
+        else:
+            return None, None, None
 
-    def get_epilayer(self,vor,structure,orientation,X_max,Y_max):
+    def get_epilayer(self,vor,structure,orientation,X_max,Y_max, Z_min, Z_max, offset, use_atoms):
         epilayer_list = []
+        epilayer_sites = []
+        if use_atoms:
+            unit_cell_sites_epi = [pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+offset[0],site.y+offset[1],site.z+offset[2]]) \
+                                   for site in structure.sites if (site.z>=Z_min*structure.lattice.c and site.z<Z_max*structure.lattice.c)]
+        else:
+            species = self.get_heavist_element(structure)
+            unit_cell_sites_epi = [pgSites.Site({species:1},[0,0,0])]
+
+        if orientation == '(001)':
+            a = structure.lattice.a
+            b = structure.lattice.b
+            angle = structure.lattice.gamma
         for point_index, region_index in enumerate(vor.point_region):
             if not -1 in vor.regions[region_index]:
                 self.PROGRESS_ADVANCE.emit(0,100,np.round(point_index/len(vor.point_region)*100,1))
                 QtCore.QCoreApplication.processEvents()
                 point = vor.points[point_index]
                 vertices = [list(vor.vertices[vertex_index]) for vertex_index in vor.regions[region_index]]
-                epilayer_domain = self.get_domain(structure, orientation, point, vertices, X_max, Y_max)
+                epilayer_domain, epilayer_domain_sites = self.get_domain(a, b, angle, point, vertices, X_max, Y_max,unit_cell_sites_epi)
                 epilayer_list += epilayer_domain
+                epilayer_sites += epilayer_domain_sites
             if self._abort:
                 break
         self.PROGRESS_END.emit()
         QtCore.QCoreApplication.processEvents()
         if not self._abort:
-            return epilayer_list
+            self.UPDATE_LOG.emit('Filtering atoms that are too close ...')
+            return self.filter_close_pairs(vor, epilayer_list,epilayer_sites, min(a,b)-0.01, len(unit_cell_sites_epi))
         else:
-            return None
+            return None, None
 
-    def get_domain(self,structure, orientation, point, vertices, X_max, Y_max):
+    def filter_close_pairs(self,vor, epilayer_list, epilayer_sites, r, unit_cell_size):
+        close_pair_indices = set()
+        excluded_indices = []
+        tree = cKDTree(epilayer_list)
+        for indices, distance in tree.sparse_distance_matrix(tree,r).items():
+            if not distance == 0:
+                close_pair_indices.add(indices[1])
+        #figure,ax = plt.subplots()
+        #ax.set_aspect('equal')
+        #voronoi_plot_2d(vor,ax)
+        #patches = []
+        #for index in close_pair_indices:
+        #    ax.scatter(epilayer_list[index][0],epilayer_list[index][1],10,'k',alpha=0.2)
+        it = 0
+        for vertex_index, point_index in zip(vor.ridge_vertices,vor.ridge_points):
+            if not (-1 in vertex_index or -1 in point_index):
+                vertex_1, vertex_2 = vor.vertices[vertex_index[0]], vor.vertices[vertex_index[1]]
+                point_1, point_2 = vor.points[point_index[0]], vor.points[point_index[1]]
+                if random.choice([1,2]) == 1:
+                    point = point_1
+                    #polygon = Polygon([vertex_1,point_1,vertex_2])
+                else:
+                    point = point_2
+                    #polygon = Polygon([vertex_1,point_2,vertex_2])
+                #patches.append(matPolygon(polygon.exterior.coords))
+                for index in list(close_pair_indices):
+                    if self.point_in_triangle(vertex_1,vertex_2,point,epilayer_list[index],r):
+                        #ax.scatter(epilayer_list[index][0],epilayer_list[index][1],1,'r')
+                        excluded_indices.append(index)
+                        close_pair_indices.remove(index)
+            it+=1
+            if self._abort:
+                break
+            else:
+                self.PROGRESS_ADVANCE.emit(0,100,np.round(it/len(vor.ridge_points)*100,1))
+                QtCore.QCoreApplication.processEvents()
+        #colors = 100*np.random.rand(len(patches))
+        #patch = PatchCollection(patches, alpha=0.4)
+        #patch.set_array(np.array(colors))
+        #ax.add_collection(patch)
+        #plt.show()
+        self.PROGRESS_END.emit()
+        self.UPDATE_LOG.emit('Preparing the result ...')
+        QtCore.QCoreApplication.processEvents()
+        excluded_site_indices = []
+        for i in range(unit_cell_size):
+           excluded_site_indices += [sum(x) for x in zip(excluded_indices,[i]*len(excluded_indices))]
+        new_epilayer_list = list(epilayer_list[index] for index in range(len(epilayer_list)) if not index in excluded_indices)
+        new_epilayer_sites = list(epilayer_sites[index] for index in range(len(epilayer_sites)) if not index in excluded_site_indices)
+        return new_epilayer_list, new_epilayer_sites
+
+    def point_in_triangle(self,v1,v2,v3,p,r):
+        d1 = self.left_or_right(p,v1,v2)
+        d2 = self.left_or_right(p,v2,v3)
+        d3 = self.left_or_right(p,v3,v1)
+        has_neg = (d1<0) or (d2<0) or (d3<0)
+        has_pos = (d1>0) or (d2>0) or (d3>0)
+        return (not (has_neg and has_pos)) or self.within_vertex(v1,p,r) or self.within_vertex(v2,p,r) or self.within_vertex(v3,p,r)
+
+    def left_or_right(self,p1,p2,p3):
+        return (p1[0]-p3[0])*(p2[1]-p3[1]) - (p2[0]-p3[0])*(p1[1]-p3[1])
+
+    def within_vertex(self,v,p,r):
+        return (v[0]-p[0])**2+(v[1]-p[1])**2 < (r/2)**2
+
+    def get_rectangle_position(self,start,end,width,side):
+        xc1, yc1, xc2, yc2 = start[0], start[1], end[0], end[1]
+        if end[1] == start[1]:
+            x0 = start[0]
+            y0 = start[1]-width
+            x1 = start[0]
+            y1 = start[1]+width
+            x2 = end[0]
+            y2 = end[1]+width
+            x3 = end[0]
+            y3 = end[1]-width
+        elif end[0] ==start[0]:
+            x0 = start[0]+width
+            y0 = start[1]
+            x1 = start[0]-width
+            y1 = start[1]
+            x2 = end[0]-width
+            y2 = end[1]
+            x3 = end[0]+width
+            y3 = end[1]
+        else:
+            slope0 =(start[0]-end[0])/(end[1]-start[1])
+            if abs(slope0) > 1:
+                x0 = start[0]+1/slope0*width
+                y0 = start[1]+width
+                x1 = start[0]-1/slope0*width
+                y1 = start[1]-width
+                x2 = end[0]-1/slope0*width
+                y2 = end[1]-width
+                x3 = end[0]+1/slope0*width
+                y3 = end[1]+width
+            else:
+                x0 = start[0]-width
+                y0 = start[1]-slope0*width
+                x1 = start[0]+width
+                y1 = start[1]+slope0*width
+                x2 = end[0]+width
+                y2 = end[1]+slope0*width
+                x3 = end[0]-width
+                y3 = end[1]-slope0*width
+        if side == 0:
+            return [x0,y0], [xc1,yc1], [xc2,yc2], [x3,y3]
+        elif side == 1:
+            return [x1,y1], [xc1,yc1], [xc2,yc2], [x2,y2]
+        elif side == 2:
+            return [x0,y0], [x1,y1], [x2,y2], [x3,y3]
+
+    def get_domain(self, a, b, angle, point, vertices, X_max, Y_max, unit_cell_sites_epi):
         epilayer_domain = []
+        epilayer_domain_sites = []
         polygon = Polygon(self.sortpts_clockwise(np.array(vertices)))
-        if orientation == '(001)':
-            a = structure.lattice.a
-            b = structure.lattice.b
-            angle = structure.lattice.gamma
-        xa, yb = int(X_max/a), int(Y_max/b/np.cos(angle))
-        for i,j in itertools.product(range(-2*xa, 2*xa+1), range(-2*yb, 2*yb+1)):
-            offset = int(j*b*np.sin(angle)/a)
-            x = np.round((i-offset)*a+j*b*np.sin(angle),2) + point[0]
-            y = np.round(j*b*np.cos(angle),2) + point[1]
-            if x >= -X_max and x <= X_max and y >= -Y_max and y <= Y_max:
-                if polygon.contains(Point(x,y)):
-                    epilayer_domain.append([x,y])
-        return epilayer_domain
+        bounding_box = list(polygon.bounds)
+        bounding_box[0] -= point[0]
+        if bounding_box[0] < -X_max:
+            bounding_box[0] = -X_max
+        bounding_box[1] -= point[1]
+        if bounding_box[1] < -Y_max:
+            bounding_box[1] = -Y_max
+        bounding_box[2] -= point[0]
+        if bounding_box[2] > X_max:
+            bounding_box[2] = X_max
+        bounding_box[3] -= point[1]
+        if bounding_box[3] > Y_max:
+            bounding_box[3] = Y_max
+        for i,j in itertools.product(range(int(bounding_box[0]/a),int(bounding_box[2]/a)+1), \
+                                     range(int(bounding_box[1]/b/np.cos(angle)),int(bounding_box[3]/b/np.cos(angle))+1)):
+            offset = int(j*b*np.cos(angle/180*np.pi)/a)
+            x = (i-offset)*a+j*b*np.cos(angle/180*np.pi) + point[0]
+            y = j*b*np.sin(angle/180*np.pi) + point[1]
+            if x >= -X_max and x <= X_max and y >= -Y_max and y <= Y_max and polygon.contains(Point(x,y)):
+                epilayer_domain.append([x,y])
+                for site in unit_cell_sites_epi:
+                    epilayer_domain_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
+        return epilayer_domain, epilayer_domain_sites
 
     def sortpts_clockwise(self,points):
         self.origin = np.mean(points,axis=0)
