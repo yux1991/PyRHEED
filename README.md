@@ -16,7 +16,7 @@ which can hardly be detected using XRD. Another merit of RHEED is that the spot 
 measure the wafer-scale average of the material's properties including the lattice constants, grain orientation distribution and
 even defect density.
 
-It is written and tested with Python 3.6.6. The GUI is created using PyQt5. The *simulate_RHEED* module utilized the [pymatgen](http://pymatgen.org/) library to read CIF files and create structures. Major features include:
+It is written and tested with Python 3.6.6 (64 bit). The GUI is created using PyQt5. The *simulate_RHEED* module utilized the [pymatgen](http://pymatgen.org/) library to read CIF files and create structures. Major features include:
 
 1. RHEED raw image process using [rawpy](https://pypi.org/project/rawpy/) and intensity profile extraction which is accelerated by [numpy](https://www.numpy.org/) vecterization. Construction of 2D reciprocal space map and pole figure is automated. The 3D data could be saved as *.vtp format, which could be processed by [paraview](https://www.paraview.org).
 2. Batch fit RHEED line profiles with pre-defined peak functions (only Gaussian is supported right now) and save the formatted results.
@@ -25,18 +25,19 @@ It is written and tested with Python 3.6.6. The GUI is created using PyQt5. The 
 5. Read the crystal structure from a CIF file and create a customized structure by stacking different crystalline materials together. Calculate the diffraction pattern from this structure based on the kinematic diffraction theory.
 
 ## Requirements
-- lxml
-- matplotlib
-- numpy
-- pandas
-- pillow
-- pymatgen
-- pyqt5
-- pyqtchart
-- pyqtdatavisualization
-- rawpy
-- scipy
-- xlrd
+- lxml 4.2.3
+- matplotlib 2.2.2
+- numpy 1.14.5
+- pandas 0.24.2
+- pillow 5.2.0
+- pymatgen 2019.4.11
+- pyqt5 5.12
+- pyqtchart 5.12
+- pyqtdatavisualization 5.12
+- rawpy 0.11.0
+- scipy 1.1.0
+- shapely 1.6.4.post2
+- xlrd 1.2.0
 
 ## Usage
 1. Installation
@@ -64,6 +65,7 @@ It is written and tested with Python 3.6.6. The GUI is created using PyQt5. The 
 - cursor: display cursor-related information
 - generate_report: generate a report that visualize the fitting results
 - graph_3D_surface: visualize the 3D surface in reciprocal space
+- kikuchi: simulate the Kikuchi pattern from a non-reconstructed crystal surface
 - main: the main module
 - manual_fit: manually fit the RHEED line profile to initialize the fitting parameters
 - my_widgets: customized widgets

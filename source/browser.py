@@ -6,14 +6,15 @@ class Browser(QtWidgets.QWidget):
     #Public Signals
     FILE_DOUBLE_CLICKED = QtCore.pyqtSignal(str)
 
-    def __init__(self,parent):
+    def __init__(self,parent,filter):
         super(Browser,self).__init__(parent)
+        self.filter = filter
         self.init_UI()
 
     def init_UI(self,path=QtCore.QDir.currentPath()):
         self.model = QtWidgets.QFileSystemModel()
         self.model.setRootPath(path)
-        self.model.setNameFilters({"*.nef","*.NEF","*.arw","*.ARW"})
+        self.model.setNameFilters(self.filter)
         self.model.setNameFilterDisables(False)
         self.tree = QtWidgets.QTreeView()
         self.tree.setModel(self.model)

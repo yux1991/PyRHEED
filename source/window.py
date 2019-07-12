@@ -118,7 +118,7 @@ class Window(QtWidgets.QMainWindow):
         self.controlPanelGrid = QtWidgets.QGridLayout(self.controlPanelFrame)
         self.controlPanelGrid.setContentsMargins(0,0,0,0)
         self.controlPanelSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.browser_widget = browser.Browser(self)
+        self.browser_widget = browser.Browser(self,{"*.nef","*.NEF","*.arw","*.ARW"})
         self.controlPanelBottomWidget = QtWidgets.QWidget()
         self.controlPanelBottomGrid = QtWidgets.QGridLayout(self.controlPanelBottomWidget)
         self.controlPanelBottomGrid.setContentsMargins(0,0,2,0)

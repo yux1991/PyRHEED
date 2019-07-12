@@ -1,4 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.collections import LineCollection
 from my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
 from process import Convertor, DiffractionPattern, TAPD_Simulation
@@ -6,6 +8,7 @@ from pymatgen.io.cif import CifParser
 from pymatgen.core import structure as pgStructure
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.lattice import Lattice
+import browser
 import itertools
 import matplotlib.pyplot as plt
 import numpy as np
@@ -82,13 +85,16 @@ class Window(QtWidgets.QWidget):
 
         self.chooseCif = QtWidgets.QWidget()
         self.chooseCifGrid = QtWidgets.QGridLayout(self.chooseCif)
+        self.chooseCifBrowser = browser.Browser(self.chooseCif, {"*.cif","*.CIF"})
         self.chooseCifLabel = QtWidgets.QLabel("The path of the CIF file is:\n")
         self.chooseCifLabel.setAlignment(QtCore.Qt.AlignTop)
         self.chooseCifLabel.setWordWrap(True)
         self.chooseCifButton = QtWidgets.QPushButton("Add CIF")
         self.chooseCifButton.clicked.connect(self.get_cif_path)
-        self.chooseCifGrid.addWidget(self.chooseCifLabel,0,0)
-        self.chooseCifGrid.addWidget(self.chooseCifButton,1,0)
+        self.chooseCifGrid.addWidget(self.chooseCifBrowser,0,0)
+        self.chooseCifGrid.addWidget(self.chooseCifLabel,1,0)
+        self.chooseCifGrid.addWidget(self.chooseCifButton,2,0)
+        self.chooseCifBrowser.FILE_DOUBLE_CLICKED.connect(self.set_cif_path)
 
         self.TAPD_model = QtWidgets.QWidget()
         self.TAPD_model_grid = QtWidgets.QGridLayout(self.TAPD_model)
@@ -115,7 +121,7 @@ class Window(QtWidgets.QWidget):
         self.TAPD_Shift_Y_label = QtWidgets.QLabel('Y shift (\u212B\u207B\u00B9)')
         self.TAPD_Shift_Y = QtWidgets.QLineEdit('0')
         self.TAPD_Shift_Z_label = QtWidgets.QLabel('Z shift (\u212B\u207B\u00B9)')
-        self.TAPD_Shift_Z = QtWidgets.QLineEdit('0')
+        self.TAPD_Shift_Z = QtWidgets.QLineEdit('3')
         self.TAPD_substrate_orientation_label = QtWidgets.QLabel('Substrate orientation')
         self.TAPD_substrate_orientation = QtWidgets.QComboBox()
         self.TAPD_substrate_orientation.addItem('(001)')
@@ -772,6 +778,19 @@ class Window(QtWidgets.QWidget):
             self.z_shift_history[self.structure_index] = [0]
             self.add_sample_structure(self.structure_index)
             self.add_sample_data(self.structure_index)
+            self.chooseCifBrowser.tree_update(self.cifPath)
+
+    def set_cif_path(self,path):
+        self.update_log("CIF opened!")
+        self.cifPath = path
+        self.chooseCifLabel.setText("The path of the CIF file is:\n"+self.cifPath)
+        next_available_index = 0
+        while (next_available_index in self.sample_index_set):
+            next_available_index+=1
+        self.structure_index = next_available_index
+        self.z_shift_history[self.structure_index] = [0]
+        self.add_sample_structure(self.structure_index)
+        self.add_sample_data(self.structure_index)
 
     def load_cif(self,text):
         path = QtWidgets.QFileDialog.getOpenFileName(None,text,'./',filter="CIF (*.cif);;All Files (*.*)")[0]
@@ -1348,7 +1367,13 @@ class Window(QtWidgets.QWidget):
             self.distribution_parameters_grid.addWidget(self.TAPD_delta_radius)
 
     def plot_voronoi(self, vor, substrate, epilayer, kw):
-        figure,ax = plt.subplots()
+        window = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(window)
+        figure = plt.figure()
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas,window)
+        figure.clear()
+        ax = figure.add_subplot(111)
         ax.set_aspect('equal')
         ax.scatter(np.array(substrate)[:,0],np.array(substrate)[:,1],5,'black')
         ax.scatter(np.array(epilayer)[:,0],np.array(epilayer)[:,1],5,'red')
@@ -1405,7 +1430,11 @@ class Window(QtWidgets.QWidget):
                     vor.points[:,0].max() + 0.1*ptp_bound[0])
         ax.set_ylim(vor.points[:,1].min() - 0.1*ptp_bound[1],
                     vor.points[:,1].max() + 0.1*ptp_bound[1])
-        plt.show()
+        canvas.draw()
+        layout.addWidget(toolbar)
+        layout.addWidget(canvas)
+        window.setWindowTitle("2D Contour")
+        window.show()
 
     def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))

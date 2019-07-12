@@ -377,13 +377,14 @@ class Simulation(QtCore.QObject):
         self.K_in = 0.512*scimath.sqrt(self.energy*1000)
         self.HA = np.cross(np.matmul(self.conversion,self.ZA), np.matmul(self.conversion,self.OPA))
         self._abort = False
+        self.space_group_number = structure.get_space_group_info()[1]
 
     def run(self):
         Bin, width = self.plot_range,self.plot_range
         self.UPDATE_LOG.emit("Calculating Kikuchi lines ...")
         QtCore.QCoreApplication.processEvents()
         for h,k,l in itertools.product(range(-self.index_max,self.index_max+1),repeat=3):
-            if self.diffraction_worker.is_permitted(h,k,l,self.structure):
+            if self.diffraction_worker.is_permitted(h,k,l,self.space_group_number):
                 ccc = np.transpose(np.linalg.multi_dot([self.conversion,self.star,[[h],[k],[l]]]))
                 kb = np.linalg.multi_dot([ccc,self.conversion,self.ZA])/np.linalg.norm(np.matmul(self.conversion,self.ZA))
                 if abs(kb) < Bin and kb > 0.01:

@@ -504,7 +504,7 @@ class MplCanvas(FigureCanvas):
         self.axes = self.fig.add_subplot(111)
 
 class DynamicalColorMap(QtWidgets.QWidget):
-    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False):
+    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False, log_scale = True):
         super(DynamicalColorMap,self).__init__(parent)
         self.figure = MplCanvas(self)
         self.x_linear = x
@@ -513,6 +513,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.intensity = intensity
         self.nkz = nkz
         self.showFWHM = showFWHM
+        self.log_scale = log_scale
         self.type = type
         self.fontname = fontname
         self.fontsize = fontsize
@@ -556,7 +557,10 @@ class DynamicalColorMap(QtWidgets.QWidget):
             self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
         self.figure.axes.set_aspect(1)
         self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
-        self.cbar.ax.set_ylabel("Normalized Intensity",fontname=self.fontname,fontsize=self.fontsize)
+        if self.log_scale:
+            self.cbar.ax.set_ylabel("Log Intensity",fontname=self.fontname,fontsize=self.fontsize)
+        else:
+            self.cbar.ax.set_ylabel("Normalized Intensity",fontname=self.fontname,fontsize=self.fontsize)
         self.cbar.ax.tick_params(labelsize=self.fontsize)
         self.figure.draw()
 
@@ -603,17 +607,29 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.type = type
         self.figure.clear()
         if self.type == 'XY':
-            matrix = self.intensity[:,:,self.nkz]
-            max_intensity = np.amax(np.amax(matrix))
-            self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=self.colormap)
+            if self.log_scale:
+                matrix = np.log10(self.intensity[:,:,self.nkz])
+                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T,100,cmap=self.colormap)
+            else:
+                matrix = self.intensity[:,:,self.nkz]
+                max_intensity = np.amax(np.amax(matrix))
+                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'XZ':
-            matrix = self.intensity[:,self.nkz,:]
-            max_intensity = np.amax(np.amax(matrix))
-            self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
+            if self.log_scale:
+                matrix = np.log10(self.intensity[:,self.nkz,:])
+                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T,100,cmap=self.colormap)
+            else:
+                matrix = self.intensity[:,self.nkz,:]
+                max_intensity = np.amax(np.amax(matrix))
+                self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'YZ':
-            matrix = self.intensity[self.nkz,:,:]
-            max_intensity = np.amax(np.amax(matrix))
-            self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
+            if self.log_scale:
+                matrix = np.log10(self.intensity[self.nkz,:,:])
+                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T,100,cmap=self.colormap)
+            else:
+                matrix = self.intensity[self.nkz,:,:]
+                max_intensity = np.amax(np.amax(matrix))
+                self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         self.cbar = self.figure.fig.colorbar(self.cs,format='%.2f')
         self.refresh_FWHM(self.showFWHM)
         self.refresh_fonts(self.fontname,self.fontsize)

@@ -1,22 +1,22 @@
-from lxml import etree as ET
-from math import pi as Pi
-from PyQt5 import QtGui,QtCore, QtWidgets
-from scipy.optimize import least_squares
 import glob
 import itertools
 import math
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon as matPolygon
-from matplotlib.collections import PatchCollection
 import numpy as np
 import os
 import PIL.Image as pilImage
+import rawpy
+import random
+from lxml import etree as ET
+from math import pi as Pi
+from matplotlib.patches import Polygon as matPolygon
+from matplotlib.collections import PatchCollection
 from pymatgen.io.cif import CifParser
 from pymatgen.core import sites as pgSites
 from pymatgen.core import structure as pgStructure
 from pymatgen.core import periodic_table
-import rawpy
-import random
+from PyQt5 import QtGui,QtCore, QtWidgets
+from scipy.optimize import least_squares
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import cKDTree
@@ -518,13 +518,11 @@ class Diffraction(object):
                          [0, b*np.sin(gamma/180*np.pi), c2],
                          [0, 0,                         c3]])
 
-    def is_permitted(self,h,k,l,structure):
-        if structure.get_space_group_info()[1] == 167:
-            if ((-h+k+l)%3 == 0 and h!=-k) or ((h+l)%3==0 and l%2==0 and h==-k):
-                return True
-            else:
-                return False
-
+    def is_permitted(self,h,k,l,space_group_number):
+        if space_group_number == 167:
+            return ((-h+k+l)%3 == 0 and h!=-k) or ((h+l)%3==0 and l%2==0 and h==-k)
+        elif space_group_number == 216:
+            return (h+k)%2==0 and (k+l)%2==0 and (h+l)%2==0
 
 class ReciprocalSpaceMap(QtCore.QObject):
 
@@ -1196,78 +1194,116 @@ class TAPD_Simulation(QtCore.QObject):
                                    for site in structure.sites if (site.z>=Z_min*structure.lattice.c and site.z<Z_max*structure.lattice.c)]
         else:
             species = self.get_heavist_element(structure)
-            unit_cell_sites_epi = [pgSites.Site({species:1},[0,0,0])]
+            unit_cell_sites_epi = [pgSites.Site({species:1},[offset[0],offset[1],offset[2]])]
 
         if orientation == '(001)':
             a = structure.lattice.a
             b = structure.lattice.b
             angle = structure.lattice.gamma
         for point_index, region_index in enumerate(vor.point_region):
+            self.PROGRESS_ADVANCE.emit(0,100,np.round(point_index/len(vor.point_region)*100,1))
+            QtCore.QCoreApplication.processEvents()
+            point = vor.points[point_index]
             if not -1 in vor.regions[region_index]:
-                self.PROGRESS_ADVANCE.emit(0,100,np.round(point_index/len(vor.point_region)*100,1))
-                QtCore.QCoreApplication.processEvents()
-                point = vor.points[point_index]
                 vertices = [list(vor.vertices[vertex_index]) for vertex_index in vor.regions[region_index]]
-                epilayer_domain, epilayer_domain_sites = self.get_domain(a, b, angle, point, vertices, X_max, Y_max,unit_cell_sites_epi)
-                epilayer_list += epilayer_domain
-                epilayer_sites += epilayer_domain_sites
+            else:
+                vertices = [list(vor.vertices[vertex_index]) for vertex_index in vor.regions[region_index] if vertex_index >=0]
+                for vertex in self.get_far_points(vor,vertices):
+                    vertices.append(vertex)
+            epilayer_domain, epilayer_domain_sites = self.get_domain(a, b, angle, point, vertices, X_max, Y_max,unit_cell_sites_epi)
+            epilayer_list += epilayer_domain
+            epilayer_sites += epilayer_domain_sites
             if self._abort:
                 break
         self.PROGRESS_END.emit()
         QtCore.QCoreApplication.processEvents()
         if not self._abort:
             self.UPDATE_LOG.emit('Filtering atoms that are too close ...')
+            #return epilayer_list, epilayer_sites
             return self.filter_close_pairs(vor, epilayer_list,epilayer_sites, min(a,b)-0.01, len(unit_cell_sites_epi))
         else:
             return None, None
 
-    def filter_close_pairs(self,vor, epilayer_list, epilayer_sites, r, unit_cell_size):
+    def get_far_points(self,vor,vertices):
+        ptp_bound = vor.points.ptp(axis=0)
+        center = vor.points.mean(axis=0)
+        sorted_vertices = self.sortpts_clockwise(np.array(vertices))
+        t1 = sorted_vertices[0] - center
+        t1 /= np.linalg.norm(t1)
+        t2 = sorted_vertices[-1] - center
+        t2 /= np.linalg.norm(t2)
+        far_point1 = sorted_vertices[0] + t1 * ptp_bound.max()
+        far_point2 = sorted_vertices[-1] + t2 * ptp_bound.max()
+        return list(far_point1), list(far_point2)
+
+    def get_far_points_for_indices(self,vor,vertex_indices):
+        ptp_bound = vor.points.ptp(axis=0)
+        center = vor.points.mean(axis=0)
+        for index in vertex_indices:
+            if index >=0:
+                vertex = vor.vertices[index]
+        t = vertex - center
+        t /= np.linalg.norm(t)
+        far_point1 = vertex + t * ptp_bound.max()
+        return vertex, list(far_point1)
+
+    def filter_close_pairs(self,vor, epilayer_list, epilayer_sites, r, unit_cell_size, plot_filter = False):
         close_pair_indices = set()
         excluded_indices = []
         tree = cKDTree(epilayer_list)
         for indices, distance in tree.sparse_distance_matrix(tree,r).items():
             if not distance == 0:
                 close_pair_indices.add(indices[1])
-        #figure,ax = plt.subplots()
-        #ax.set_aspect('equal')
-        #voronoi_plot_2d(vor,ax)
-        #patches = []
-        #for index in close_pair_indices:
-        #    ax.scatter(epilayer_list[index][0],epilayer_list[index][1],10,'k',alpha=0.2)
+        if plot_filter:
+            figure,ax = plt.subplots()
+            ax.set_aspect('equal')
+            voronoi_plot_2d(vor,ax)
+            patches = []
+            for index in close_pair_indices:
+                ax.scatter(epilayer_list[index][0],epilayer_list[index][1],10,'k',alpha=0.2)
         it = 0
         for vertex_index, point_index in zip(vor.ridge_vertices,vor.ridge_points):
-            if not (-1 in vertex_index or -1 in point_index):
+            point_1, point_2 = vor.points[point_index[0]], vor.points[point_index[1]]
+            if not -1 in vertex_index:
                 vertex_1, vertex_2 = vor.vertices[vertex_index[0]], vor.vertices[vertex_index[1]]
-                point_1, point_2 = vor.points[point_index[0]], vor.points[point_index[1]]
-                if random.choice([1,2]) == 1:
-                    point = point_1
-                    #polygon = Polygon([vertex_1,point_1,vertex_2])
-                else:
-                    point = point_2
-                    #polygon = Polygon([vertex_1,point_2,vertex_2])
-                #patches.append(matPolygon(polygon.exterior.coords))
-                for index in list(close_pair_indices):
-                    if self.point_in_triangle(vertex_1,vertex_2,point,epilayer_list[index],r):
-                        #ax.scatter(epilayer_list[index][0],epilayer_list[index][1],1,'r')
-                        excluded_indices.append(index)
-                        close_pair_indices.remove(index)
+            else:
+                vertex_1, vertex_2 = self.get_far_points_for_indices(vor,vertex_index)
+            if random.choice([1,2]) == 1:
+                point = point_1
+                if plot_filter:
+                    polygon = Polygon([vertex_1,point_1,vertex_2])
+            else:
+                point = point_2
+                if plot_filter:
+                    polygon = Polygon([vertex_1,point_2,vertex_2])
+            if plot_filter:
+                patches.append(matPolygon(polygon.exterior.coords))
+            for index in list(close_pair_indices):
+                if self.point_in_triangle(vertex_1,vertex_2,point,epilayer_list[index],r):
+                    if plot_filter:
+                        ax.scatter(epilayer_list[index][0],epilayer_list[index][1],1,'r')
+                    excluded_indices.append(index)
+                    close_pair_indices.remove(index)
             it+=1
             if self._abort:
                 break
             else:
                 self.PROGRESS_ADVANCE.emit(0,100,np.round(it/len(vor.ridge_points)*100,1))
                 QtCore.QCoreApplication.processEvents()
-        #colors = 100*np.random.rand(len(patches))
-        #patch = PatchCollection(patches, alpha=0.4)
-        #patch.set_array(np.array(colors))
-        #ax.add_collection(patch)
-        #plt.show()
+
+        if plot_filter:
+            colors = 100*np.random.rand(len(patches))
+            patch = PatchCollection(patches, alpha=0.4)
+            patch.set_array(np.array(colors))
+            ax.add_collection(patch)
+            plt.show()
         self.PROGRESS_END.emit()
         self.UPDATE_LOG.emit('Preparing the result ...')
         QtCore.QCoreApplication.processEvents()
         excluded_site_indices = []
-        for i in range(unit_cell_size):
-           excluded_site_indices += [sum(x) for x in zip(excluded_indices,[i]*len(excluded_indices))]
+        for index in excluded_indices:
+            for i in range(unit_cell_size):
+                excluded_site_indices.append(index*unit_cell_size+i)
         new_epilayer_list = list(epilayer_list[index] for index in range(len(epilayer_list)) if not index in excluded_indices)
         new_epilayer_sites = list(epilayer_sites[index] for index in range(len(epilayer_sites)) if not index in excluded_site_indices)
         return new_epilayer_list, new_epilayer_sites
