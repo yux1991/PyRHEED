@@ -1,4 +1,4 @@
-# <img src="https://github.com/yux1991/PyRHEED/tree/master/source/icons/icon.png" width="48"/> PyRHEED
+# <img src="https://github.com/yux1991/PyRHEED/blob/master/source/icons/icon.png" width="48"/> PyRHEED
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/yux1991/PyRHEED/graphs/commit-activity) [![GitHub license](https://img.shields.io/github/license/yux1991/PyRHEED.svg)](https://github.com/yux1991/PyRHEED/blob/master/LICENSE) [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](mailto:yux1991@gmail.com)
 
 ## Table of Content
