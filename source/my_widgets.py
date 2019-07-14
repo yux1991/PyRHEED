@@ -518,6 +518,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.fontname = fontname
         self.fontsize = fontsize
         self.colormap = colormap
+        self.minimum_log_intensity = -6
         self.TwoDimMappingWindow = QtWidgets.QWidget()
         self.TwoDimMappingWindow.setWindowTitle('Summary of Broadening Analysis')
         self.TwoDimMappingWindowLayout = QtWidgets.QGridLayout(self.TwoDimMappingWindow)
@@ -559,6 +560,8 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
         if self.log_scale:
             self.cbar.ax.set_ylabel("Log Intensity",fontname=self.fontname,fontsize=self.fontsize)
+            self.cbar.set_ticks(np.linspace(self.log_min,self.log_max,self.log_max-self.log_min+1))
+            self.cbar.set_ticklabels(list('$10^{{{}}}$'.format(i) for i in range(self.log_min,self.log_max+1,1)))
         else:
             self.cbar.ax.set_ylabel("Normalized Intensity",fontname=self.fontname,fontsize=self.fontsize)
         self.cbar.ax.tick_params(labelsize=self.fontsize)
@@ -607,28 +610,43 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.type = type
         self.figure.clear()
         if self.type == 'XY':
+            matrix = self.intensity[:,:,self.nkz]
+            max_intensity = np.amax(np.amax(matrix))
             if self.log_scale:
-                matrix = np.log10(self.intensity[:,:,self.nkz])
-                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T,100,cmap=self.colormap)
+                self.log_max = 1
+                int_min = np.amin(np.amin(matrix/max_intensity))
+                if int_min == 0:
+                    self.log_min = self.minimum_log_intensity
+                else:
+                    self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
+                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
-                matrix = self.intensity[:,:,self.nkz]
-                max_intensity = np.amax(np.amax(matrix))
                 self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'XZ':
+            matrix = self.intensity[:,self.nkz,:]
+            max_intensity = np.amax(np.amax(matrix))
             if self.log_scale:
-                matrix = np.log10(self.intensity[:,self.nkz,:])
-                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T,100,cmap=self.colormap)
+                self.log_max = 1
+                int_min = np.amin(np.amin(matrix/max_intensity))
+                if int_min == 0:
+                    self.log_min = self.minimum_log_intensity
+                else:
+                    self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
+                self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
-                matrix = self.intensity[:,self.nkz,:]
-                max_intensity = np.amax(np.amax(matrix))
                 self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'YZ':
+            matrix = self.intensity[self.nkz,:,:]
+            max_intensity = np.amax(np.amax(matrix))
             if self.log_scale:
-                matrix = np.log10(self.intensity[self.nkz,:,:])
-                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T,100,cmap=self.colormap)
+                self.log_max = 1
+                int_min = np.amin(np.amin(matrix/max_intensity))
+                if int_min == 0:
+                    self.log_min = self.minimum_log_intensity
+                else:
+                    self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
+                self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
-                matrix = self.intensity[self.nkz,:,:]
-                max_intensity = np.amax(np.amax(matrix))
                 self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         self.cbar = self.figure.fig.colorbar(self.cs,format='%.2f')
         self.refresh_FWHM(self.showFWHM)

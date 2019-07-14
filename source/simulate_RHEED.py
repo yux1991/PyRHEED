@@ -300,6 +300,9 @@ class Window(QtWidgets.QWidget):
         self.showFWHMCheck = QtWidgets.QCheckBox()
         self.showFWHMCheck.setChecked(False)
         self.showFWHMCheck.stateChanged.connect(self.update_FWHM_check)
+        self.plot_log_scale_label = QtWidgets.QLabel("Plot in logarithmic scale?")
+        self.plot_log_scale = QtWidgets.QCheckBox()
+        self.plot_log_scale.setChecked(False)
         self.reciprocalMapfontListLabel = QtWidgets.QLabel("Font Name")
         self.reciprocalMapfontList = QtWidgets.QFontComboBox()
         self.reciprocalMapfontList.setCurrentFont(QtGui.QFont("Arial"))
@@ -334,16 +337,18 @@ class Window(QtWidgets.QWidget):
         self.plotOptionsGrid.addWidget(self.KzIndex,2,0,1,3)
         self.plotOptionsGrid.addWidget(self.showFWHMCheckLabel,3,0,1,1)
         self.plotOptionsGrid.addWidget(self.showFWHMCheck,3,1,1,2)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapfontListLabel,4,0,1,1)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapfontList,4,1,1,2)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapfontSizeLabel,5,0,1,1)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapfontSizeSlider,5,1,1,2)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapColormapLabel,6,0,1,1)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapColormapCombo,6,1,1,2)
-        self.plotOptionsGrid.addWidget(self.show_XY_plot_button,7,0,1,1)
-        self.plotOptionsGrid.addWidget(self.show_XZ_plot_button,7,1,1,1)
-        self.plotOptionsGrid.addWidget(self.show_YZ_plot_button,7,2,1,1)
-        self.plotOptionsGrid.addWidget(self.save_Results_button,8,0,1,3)
+        self.plotOptionsGrid.addWidget(self.plot_log_scale_label,4,0,1,1)
+        self.plotOptionsGrid.addWidget(self.plot_log_scale,4,1,1,2)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapfontListLabel,5,0,1,1)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapfontList,5,1,1,2)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapfontSizeLabel,6,0,1,1)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapfontSizeSlider,6,1,1,2)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapColormapLabel,7,0,1,1)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapColormapCombo,7,1,1,2)
+        self.plotOptionsGrid.addWidget(self.show_XY_plot_button,8,0,1,1)
+        self.plotOptionsGrid.addWidget(self.show_XZ_plot_button,8,1,1,1)
+        self.plotOptionsGrid.addWidget(self.show_YZ_plot_button,8,2,1,1)
+        self.plotOptionsGrid.addWidget(self.save_Results_button,9,0,1,3)
 
         self.appearance = QtWidgets.QWidget()
         self.appearanceGrid = QtWidgets.QVBoxLayout(self.appearance)
@@ -707,7 +712,7 @@ class Window(QtWidgets.QWidget):
         for i in range(int(self.KzIndex.values()[0]),int(self.KzIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XY',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i,\
                          self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                         self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
+                         self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
             TwoDimPlot.show_plot()
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
@@ -718,7 +723,7 @@ class Window(QtWidgets.QWidget):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
+                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
             TwoDimPlot.show_plot()
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
@@ -729,7 +734,7 @@ class Window(QtWidgets.QWidget):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'YZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked())
+                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
             self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
@@ -1370,8 +1375,6 @@ class Window(QtWidgets.QWidget):
         window = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(window)
         figure = plt.figure()
-        canvas = FigureCanvas(figure)
-        toolbar = NavigationToolbar(canvas,window)
         figure.clear()
         ax = figure.add_subplot(111)
         ax.set_aspect('equal')
@@ -1430,6 +1433,8 @@ class Window(QtWidgets.QWidget):
                     vor.points[:,0].max() + 0.1*ptp_bound[0])
         ax.set_ylim(vor.points[:,1].min() - 0.1*ptp_bound[1],
                     vor.points[:,1].max() + 0.1*ptp_bound[1])
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas,window)
         canvas.draw()
         layout.addWidget(toolbar)
         layout.addWidget(canvas)

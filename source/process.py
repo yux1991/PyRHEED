@@ -1093,8 +1093,8 @@ class TAPD_Simulation(QtCore.QObject):
                     if self.plot_Voronoi_diagram:
                         self.UPDATE_LOG.emit('Plotting the voronoi diagram ...')
                         QtCore.QCoreApplication.processEvents()
-                        self.VORONOI_PLOT.emit(vor,substrate_list,epilayer_list,{'point_color':'green',\
-                            'point_size':10,'vertex_color':'blue','vertex_size':1,'show_points':True,'show_vertices':False})
+                        self.VORONOI_PLOT.emit(vor,substrate_list,epilayer_list,{'point_color':'blue',\
+                            'point_size':5,'vertex_color':'black','vertex_size':1,'show_points':True,'show_vertices':False})
                     return structure_sub, structure_epi, substrate_sites, epilayer_sites
         else:
             return None, None, None, None
