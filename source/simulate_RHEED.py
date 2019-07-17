@@ -714,6 +714,7 @@ class Window(QtWidgets.QWidget):
                          self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                          self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
             TwoDimPlot.show_plot()
+            TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
             self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
@@ -725,6 +726,7 @@ class Window(QtWidgets.QWidget):
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                                                     self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
             TwoDimPlot.show_plot()
+            TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
             self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
@@ -735,6 +737,7 @@ class Window(QtWidgets.QWidget):
             TwoDimPlot = DynamicalColorMap(self,'YZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
                                                     self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
+            TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
             self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)

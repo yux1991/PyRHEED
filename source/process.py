@@ -1,4 +1,5 @@
 import glob
+import igraph
 import itertools
 import math
 import matplotlib.pyplot as plt
@@ -1247,57 +1248,74 @@ class TAPD_Simulation(QtCore.QObject):
         far_point1 = vertex + t * ptp_bound.max()
         return vertex, list(far_point1)
 
-    def filter_close_pairs(self,vor, epilayer_list, epilayer_sites, r, unit_cell_size, plot_filter = False):
-        close_pair_indices = set()
-        excluded_indices = []
+    def find_largest_independent_set(self, epilayer_list, r):
         tree = cKDTree(epilayer_list)
-        for indices, distance in tree.sparse_distance_matrix(tree,r).items():
-            if not distance == 0:
-                close_pair_indices.add(indices[1])
-        if plot_filter:
-            figure,ax = plt.subplots()
-            ax.set_aspect('equal')
-            voronoi_plot_2d(vor,ax)
-            patches = []
-            for index in close_pair_indices:
-                ax.scatter(epilayer_list[index][0],epilayer_list[index][1],10,'k',alpha=0.2)
-        it = 0
-        for vertex_index, point_index in zip(vor.ridge_vertices,vor.ridge_points):
-            point_1, point_2 = vor.points[point_index[0]], vor.points[point_index[1]]
-            if not -1 in vertex_index:
-                vertex_1, vertex_2 = vor.vertices[vertex_index[0]], vor.vertices[vertex_index[1]]
-            else:
-                vertex_1, vertex_2 = self.get_far_points_for_indices(vor,vertex_index)
-            if random.choice([1,2]) == 1:
-                point = point_1
-                if plot_filter:
-                    polygon = Polygon([vertex_1,point_1,vertex_2])
-            else:
-                point = point_2
-                if plot_filter:
-                    polygon = Polygon([vertex_1,point_2,vertex_2])
-            if plot_filter:
-                patches.append(matPolygon(polygon.exterior.coords))
-            for index in list(close_pair_indices):
-                if self.point_in_triangle(vertex_1,vertex_2,point,epilayer_list[index],r):
-                    if plot_filter:
-                        ax.scatter(epilayer_list[index][0],epilayer_list[index][1],1,'r')
-                    excluded_indices.append(index)
-                    close_pair_indices.remove(index)
-            it+=1
-            if self._abort:
-                break
-            else:
-                self.PROGRESS_ADVANCE.emit(0,100,np.round(it/len(vor.ridge_points)*100,1))
-                QtCore.QCoreApplication.processEvents()
+        edge_list = list(tree.query_pairs(r))
+        print('edge list is:')
+        print(edge_list)
+        graph = igraph.Graph(edge_list)
+        print('graph summary is:')
+        print(igraph.summary(graph))
+        #print(epilayer_list)
+        print('largest independent set is:')
+        vertex_set = graph.largest_independent_vertex_sets()[0]
+        print(vertex_set)
+        return vertex_set
 
-        if plot_filter:
-            colors = 100*np.random.rand(len(patches))
-            patch = PatchCollection(patches, alpha=0.4)
-            patch.set_array(np.array(colors))
-            ax.add_collection(patch)
-            plt.show()
-        self.PROGRESS_END.emit()
+    def filter_close_pairs(self,vor, epilayer_list, epilayer_sites, r, unit_cell_size, plot_filter = False):
+        #close_pair_indices = set()
+        #excluded_indices = []
+        #tree = cKDTree(epilayer_list)
+        #for indices, distance in tree.sparse_distance_matrix(tree,r).items():
+        #    if not distance == 0:
+        #        close_pair_indices.add(indices[1])
+        excluded_indices = set(self.find_largest_independent_set(epilayer_list,r))
+        print('the excluded indices are:')
+        print(excluded_indices)
+        #if plot_filter:
+        #    figure,ax = plt.subplots()
+        #    ax.set_aspect('equal')
+        #    voronoi_plot_2d(vor,ax)
+        #    patches = []
+        #    for index in close_pair_indices:
+        #        ax.scatter(epilayer_list[index][0],epilayer_list[index][1],10,'k',alpha=0.2)
+        #it = 0
+        #for vertex_index, point_index in zip(vor.ridge_vertices,vor.ridge_points):
+        #    point_1, point_2 = vor.points[point_index[0]], vor.points[point_index[1]]
+        #    if not -1 in vertex_index:
+        #        vertex_1, vertex_2 = vor.vertices[vertex_index[0]], vor.vertices[vertex_index[1]]
+        #    else:
+        #        vertex_1, vertex_2 = self.get_far_points_for_indices(vor,vertex_index)
+        #    if random.choice([1,2]) == 1:
+        #        point = point_1
+        #        if plot_filter:
+        #            polygon = Polygon([vertex_1,point_1,vertex_2])
+        #    else:
+        #        point = point_2
+        #        if plot_filter:
+        #            polygon = Polygon([vertex_1,point_2,vertex_2])
+        #    if plot_filter:
+        #        patches.append(matPolygon(polygon.exterior.coords))
+        #    for index in list(close_pair_indices):
+        #        if self.point_in_triangle(vertex_1,vertex_2,point,epilayer_list[index],r):
+        #            if plot_filter:
+        #                ax.scatter(epilayer_list[index][0],epilayer_list[index][1],1,'r')
+        #            excluded_indices.append(index)
+        #            close_pair_indices.remove(index)
+        #    it+=1
+        #    if self._abort:
+        #        break
+        #    else:
+        #        self.PROGRESS_ADVANCE.emit(0,100,np.round(it/len(vor.ridge_points)*100,1))
+        #        QtCore.QCoreApplication.processEvents()
+
+        #if plot_filter:
+        #    colors = 100*np.random.rand(len(patches))
+        #    patch = PatchCollection(patches, alpha=0.4)
+        #    patch.set_array(np.array(colors))
+        #    ax.add_collection(patch)
+        #    plt.show()
+        #self.PROGRESS_END.emit()
         self.UPDATE_LOG.emit('Preparing the result ...')
         QtCore.QCoreApplication.processEvents()
         excluded_site_indices = []

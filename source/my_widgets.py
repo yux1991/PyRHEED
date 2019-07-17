@@ -504,6 +504,9 @@ class MplCanvas(FigureCanvas):
         self.axes = self.fig.add_subplot(111)
 
 class DynamicalColorMap(QtWidgets.QWidget):
+
+    UPDATE_LOG = QtCore.pyqtSignal(str)
+
     def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False, log_scale = True):
         super(DynamicalColorMap,self).__init__(parent)
         self.figure = MplCanvas(self)
@@ -518,6 +521,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.fontname = fontname
         self.fontsize = fontsize
         self.colormap = colormap
+        self.plot_IV = False
         self.minimum_log_intensity = -6
         self.TwoDimMappingWindow = QtWidgets.QWidget()
         self.TwoDimMappingWindow.setWindowTitle('Summary of Broadening Analysis')
@@ -536,35 +540,40 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.fontname = fontname
         self.fontsize = fontsize
         plt.ion()
-        if self.type == 'XY':
-            if self.showFWHM:
-                self.figureText.set_visible(False)
-                self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
-                                                        format(self.FWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
-                self.csHM.set_alpha(1)
-            self.figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
-               format(self.z_linear[self.nkz]),fontsize=self.fontsize,pad=30)
-            self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-            self.figure.axes.set_ylabel(r'$K_{y}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-        elif self.type == 'XZ':
-            self.figure.axes.set_title('Simulated 2D reciprocal space map\nKy = {:5.2f} (\u212B\u207B\u00B9)'. \
-                                       format(self.y_linear[self.nkz]),fontsize=self.fontsize,pad=30)
-            self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-            self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-        elif self.type == 'YZ':
-            self.figure.axes.set_title('Simulated 2D reciprocal space map\nKx = {:5.2f} (\u212B\u207B\u00B9)'. \
-                                       format(self.x_linear[self.nkz]),fontsize=self.fontsize,pad=30)
-            self.figure.axes.set_xlabel(r'$K_{y}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-            self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-        self.figure.axes.set_aspect(1)
-        self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
-        if self.log_scale:
-            self.cbar.ax.set_ylabel("Log Intensity",fontname=self.fontname,fontsize=self.fontsize)
-            self.cbar.set_ticks(np.linspace(self.log_min,self.log_max,self.log_max-self.log_min+1))
-            self.cbar.set_ticklabels(list('$10^{{{}}}$'.format(i) for i in range(self.log_min,self.log_max+1,1)))
+        if not self.plot_IV:
+            if self.type == 'XY':
+                if self.showFWHM:
+                    self.figureText.set_visible(False)
+                    self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
+                                                            format(self.FWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+                    self.csHM.set_alpha(1)
+                self.figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
+                   format(self.z_linear[self.nkz]),fontsize=self.fontsize,pad=30)
+                self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+                self.figure.axes.set_ylabel(r'$K_{y}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+            elif self.type == 'XZ':
+                self.figure.axes.set_title('Simulated 2D reciprocal space map\nKy = {:5.2f} (\u212B\u207B\u00B9)'. \
+                                           format(self.y_linear[self.nkz]),fontsize=self.fontsize,pad=30)
+                self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+                self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+            elif self.type == 'YZ':
+                self.figure.axes.set_title('Simulated 2D reciprocal space map\nKx = {:5.2f} (\u212B\u207B\u00B9)'. \
+                                           format(self.x_linear[self.nkz]),fontsize=self.fontsize,pad=30)
+                self.figure.axes.set_xlabel(r'$K_{y}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+                self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+            self.figure.axes.set_aspect(1)
+            self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
+            if self.log_scale:
+                self.cbar.ax.set_ylabel("Log Intensity",fontname=self.fontname,fontsize=self.fontsize)
+                self.cbar.set_ticks(np.linspace(self.log_min,self.log_max,self.log_max-self.log_min+1))
+                self.cbar.set_ticklabels(list('$10^{{{}}}$'.format(i) for i in range(self.log_min,self.log_max+1,1)))
+            else:
+                self.cbar.ax.set_ylabel("Normalized Intensity",fontname=self.fontname,fontsize=self.fontsize)
+            self.cbar.ax.tick_params(labelsize=self.fontsize)
         else:
-            self.cbar.ax.set_ylabel("Normalized Intensity",fontname=self.fontname,fontsize=self.fontsize)
-        self.cbar.ax.tick_params(labelsize=self.fontsize)
+            self.figure.axes.set_title('Simulated IV curve',fontsize=self.fontsize,pad=30)
+            self.figure.axes.set_ylabel(r'$K_{\perp}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+            self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
         self.figure.draw()
 
     def refresh_FWHM(self,showFWHM):
@@ -574,44 +583,51 @@ class DynamicalColorMap(QtWidgets.QWidget):
             self.showFWHM = showFWHM
         if self.type == 'XY':
             plt.ion()
-            if self.showFWHM:
-                matrix = self.intensity[:,:,self.nkz]
-                max_intensity = np.amax(np.amax(matrix))
-                self.min_x = np.amin(self.x_linear)
-                self.max_y = np.amax(self.y_linear)
-                self.csHM = self.figure.axes.contour(self.x_linear,self.y_linear,matrix.T/max_intensity,levels=[0.5],colors=['black'],linestyles='dashed',linewidths=2)
-                self.FWHM = 1.0
-                self.ratio = 1.0
-                for collection in self.csHM.collections:
-                    path = collection.get_paths()
-                    for item in path:
-                        x0 = item.vertices[:,0]
-                        y0 = item.vertices[:,1]
-                        w = np.sqrt(x0**2+y0**2)
-                        self.ratio = np.amax(w)/np.amin(w)
-                        self.FWHM = np.amax(w)+np.amin(w)
-                self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
-                                      format(self.FWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
-                self.csHM.set_alpha(1)
-            else:
-                try:
-                    self.figureText.set_visible(False)
-                    self.csHM.set_alpha(0)
-                except: pass
+            if not self.plot_IV:
+                if self.showFWHM:
+                    matrix = self.intensity[:,:,self.nkz]
+                    max_intensity = np.amax(np.amax(matrix))
+                    self.min_x = np.amin(self.x_linear)
+                    self.max_y = np.amax(self.y_linear)
+                    self.csHM = self.figure.axes.contour(self.x_linear,self.y_linear,matrix.T/max_intensity,levels=[0.5],colors=['black'],linestyles='dashed',linewidths=2)
+                    self.FWHM = 1.0
+                    self.ratio = 1.0
+                    for collection in self.csHM.collections:
+                        path = collection.get_paths()
+                        for item in path:
+                            x0 = item.vertices[:,0]
+                            y0 = item.vertices[:,1]
+                            w = np.sqrt(x0**2+y0**2)
+                            self.ratio = np.amax(w)/np.amin(w)
+                            self.FWHM = np.amax(w)+np.amin(w)
+                    self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
+                                          format(self.FWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+                    self.csHM.set_alpha(1)
+                else:
+                    try:
+                        self.figureText.set_visible(False)
+                        self.csHM.set_alpha(0)
+                    except: pass
         self.figure.draw()
 
     def replot(self,type,x,y,z,colormap,intensity,nkz):
-        self.x_linear = x
-        self.y_linear = y
+        #self.y_linear = x[190:309]
+        #self.x_linear = y[190:309]
+        self.y_linear = x
+        self.x_linear = y
         self.z_linear = z
         self.colormap = colormap
+        #self.intensity = intensity[190:309,190:309,:]
         self.intensity = intensity
         self.nkz = nkz
         self.type = type
         self.figure.clear()
+        self.IV = None
         if self.type == 'XY':
             matrix = self.intensity[:,:,self.nkz]
             max_intensity = np.amax(np.amax(matrix))
+            if 1 in matrix.shape:
+                self.plot_IV = True
             if self.log_scale:
                 self.log_max = 1
                 int_min = np.amin(np.amin(matrix/max_intensity))
@@ -619,12 +635,20 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.log_min = self.minimum_log_intensity
                 else:
                     self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
-                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
+                if self.plot_IV:
+                    self.UPDATE_LOG.emit('Invalid data. Please use YZ plot or XZ plot')
+                else:
+                    self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
-                self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=self.colormap)
+                if self.plot_IV:
+                    self.UPDATE_LOG.emit('Invalid data. Please use YZ plot or XZ plot')
+                else:
+                    self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'XZ':
             matrix = self.intensity[:,self.nkz,:]
             max_intensity = np.amax(np.amax(matrix))
+            if 1 in matrix.shape:
+                self.plot_IV = True
             if self.log_scale:
                 self.log_max = 1
                 int_min = np.amin(np.amin(matrix/max_intensity))
@@ -632,12 +656,20 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.log_min = self.minimum_log_intensity
                 else:
                     self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
-                self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
+                if self.plot_IV:
+                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=5)
+                else:
+                    self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
-                self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
+                if self.plot_IV:
+                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=5)
+                else:
+                    self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'YZ':
             matrix = self.intensity[self.nkz,:,:]
             max_intensity = np.amax(np.amax(matrix))
+            if 1 in matrix.shape:
+                self.plot_IV = True
             if self.log_scale:
                 self.log_max = 1
                 int_min = np.amin(np.amin(matrix/max_intensity))
@@ -645,12 +677,20 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.log_min = self.minimum_log_intensity
                 else:
                     self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
-                self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
+                if self.plot_IV:
+                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=5)
+                else:
+                    self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
-                self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
-        self.cbar = self.figure.fig.colorbar(self.cs,format='%.2f')
-        self.refresh_FWHM(self.showFWHM)
-        self.refresh_fonts(self.fontname,self.fontsize)
+                if self.plot_IV:
+                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=5)
+                else:
+                    self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
+        if not self.plot_IV:
+            self.cbar = self.figure.fig.colorbar(self.cs,format='%.2f')
+            self.refresh_FWHM(self.showFWHM)
+        if self.IV:
+            self.refresh_fonts(self.fontname,self.fontsize)
 
     def refresh_colormap(self,colormap):
         self.colormap = colormap

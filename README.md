@@ -1,4 +1,4 @@
-# <img src="https://github.com/yux1991/PyRHEED/source/icons/icon.png" width="48"/> PyRHEED
+# <img src="https://github.com/yux1991/PyRHEED/blob/master/source/icons/icon.png" width="48"/> PyRHEED
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/yux1991/PyRHEED/graphs/commit-activity) [![GitHub license](https://img.shields.io/github/license/yux1991/PyRHEED.svg)](https://github.com/yux1991/PyRHEED/blob/master/LICENSE) [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](mailto:yux1991@gmail.com)
 
 ## Table of Content
@@ -26,6 +26,7 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 5. Read the crystal structure from a CIF file and create a customized structure by stacking different crystalline materials together. Calculate the diffraction pattern from this structure based on the kinematic diffraction theory.
 
 ## Requirements
+- igraph 0.7.1
 - lxml 4.2.3
 - matplotlib 2.2.2
 - numpy 1.14.5
@@ -79,11 +80,12 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 - simulate_RHEED: simulate the diffraction pattern from a given atomic structure 
 - statistical_factor: calculate the statistical factor assuming a Markov process 
 - test: the test module
-- translational_antiphase_domain: calculate the 1D and 2D profile from a translational antiphase domain model
+- translational_antiphase_domain: calculate the 1D and 2D profile from a translational antiphase domain (APD) model
 - window: the main window of the application
 
 ## Known Issues
 1. The Voronoi plot created by the `simulate_RHEED` module sometimes crashes because the `matplotlib` is not thread safe.
+2. The program freezes if the translational APD lattice size is too large. This is related to the use of `largest_independent_vertex_sets()` function in the `igraph.Graph` class.
 
 ## Contact
 Please contact Yu Xiang at [yux1991@gmail.com](mailto:yux1991@gmail.com) if you have any questions or suggestions.
