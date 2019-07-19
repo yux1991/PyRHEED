@@ -2,7 +2,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.collections import LineCollection
-from my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
+from my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, LabelSpinBox, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
 from process import Convertor, DiffractionPattern, TAPD_Simulation
 from pymatgen.io.cif import CifParser
 from pymatgen.core import structure as pgStructure
@@ -227,15 +227,16 @@ class Window(QtWidgets.QWidget):
         self.chooseDestination.setStyleSheet('QGroupBox::title {color:blue;}')
         self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
         self.chooseDestinationLabel = QtWidgets.QLabel("The save destination is:\n")
+        self.chooseDestinationLabel.setWordWrap(True)
         self.destinationNameLabel = QtWidgets.QLabel("The file name is:")
         self.destinationNameEdit = QtWidgets.QLineEdit('3D_data')
         self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
         self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseDestinationButton.clicked.connect(self.choose_destination)
-        self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0)
-        self.destinationGrid.addWidget(self.chooseDestinationButton,0,1)
-        self.destinationGrid.addWidget(self.destinationNameLabel,1,0)
-        self.destinationGrid.addWidget(self.destinationNameEdit,1,1)
+        self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0,1,3)
+        self.destinationGrid.addWidget(self.chooseDestinationButton,0,3,1,1)
+        self.destinationGrid.addWidget(self.destinationNameLabel,1,0,1,1)
+        self.destinationGrid.addWidget(self.destinationNameEdit,1,1,1,3)
 
 
         self.sample_tab = QtWidgets.QTabWidget()
@@ -263,9 +264,19 @@ class Window(QtWidgets.QWidget):
         self.number_of_steps_perp.setSingleStep(1)
         self.number_of_steps_perp.setValue(5)
         self.number_of_steps_perp.valueChanged.connect(self.update_number_of_steps_perp)
-        self.Kx_range = LockableDoubleSlider(-1000,1000,10,-10,10,"Kx range","\u212B\u207B\u00B9",True)
-        self.Ky_range = LockableDoubleSlider(-1000,1000,10,-10,10,"Ky range","\u212B\u207B\u00B9",True)
-        self.Kz_range = LockableDoubleSlider(-1000,1000,10,0,10,"Kz range","\u212B\u207B\u00B9",False)
+        self.K_range_lock_label = QtWidgets.QLabel('Symmetric')
+        self.Kx_range_lock = QtWidgets.QCheckBox()
+        self.Kx_range_lock.setChecked(True)
+        self.Kx_range = LockableDoubleSlider(-1000,1000,10,-10,10,"Kx range","\u212B\u207B\u00B9",self.Kx_range_lock.isChecked())
+        self.Kx_range_lock.stateChanged.connect(self.Kx_range.set_locked)
+        self.Ky_range_lock = QtWidgets.QCheckBox()
+        self.Ky_range_lock.setChecked(True)
+        self.Ky_range = LockableDoubleSlider(-1000,1000,10,-10,10,"Ky range","\u212B\u207B\u00B9",self.Ky_range_lock.isChecked())
+        self.Ky_range_lock.stateChanged.connect(self.Ky_range.set_locked)
+        self.Kz_range_lock = QtWidgets.QCheckBox()
+        self.Kz_range_lock.setChecked(False)
+        self.Kz_range = LockableDoubleSlider(-1000,1000,10,0,10,"Kz range","\u212B\u207B\u00B9",self.Kz_range_lock.isChecked())
+        self.Kz_range_lock.stateChanged.connect(self.Kz_range.set_locked)
         self.apply_reciprocal_range = QtWidgets.QPushButton("Start Calculation")
         self.apply_reciprocal_range.clicked.connect(self.update_reciprocal_range)
         self.apply_reciprocal_range.setEnabled(False)
@@ -273,15 +284,19 @@ class Window(QtWidgets.QWidget):
         self.stop_calculation.clicked.connect(self.stop_diffraction_calculation)
         self.stop_calculation.setEnabled(False)
 
-        self.reciprocal_range_grid.addWidget(self.number_of_steps_para_label,0,0,1,1)
-        self.reciprocal_range_grid.addWidget(self.number_of_steps_para,0,1,1,1)
-        self.reciprocal_range_grid.addWidget(self.number_of_steps_perp_label,1,0,1,1)
-        self.reciprocal_range_grid.addWidget(self.number_of_steps_perp,1,1,1,1)
-        self.reciprocal_range_grid.addWidget(self.Kx_range,2,0,1,2)
-        self.reciprocal_range_grid.addWidget(self.Ky_range,3,0,1,2)
-        self.reciprocal_range_grid.addWidget(self.Kz_range,4,0,1,2)
-        self.reciprocal_range_grid.addWidget(self.apply_reciprocal_range,7,0,1,2)
-        self.reciprocal_range_grid.addWidget(self.stop_calculation,8,0,1,2)
+        self.reciprocal_range_grid.addWidget(self.number_of_steps_para_label,0,0,1,4)
+        self.reciprocal_range_grid.addWidget(self.number_of_steps_para,0,4,1,4)
+        self.reciprocal_range_grid.addWidget(self.number_of_steps_perp_label,1,0,1,4)
+        self.reciprocal_range_grid.addWidget(self.number_of_steps_perp,1,4,1,4)
+        self.reciprocal_range_grid.addWidget(self.K_range_lock_label,2,7,1,1)
+        self.reciprocal_range_grid.addWidget(self.Kx_range,3,0,1,7)
+        self.reciprocal_range_grid.addWidget(self.Kx_range_lock,3,7,1,1)
+        self.reciprocal_range_grid.addWidget(self.Ky_range,4,0,1,7)
+        self.reciprocal_range_grid.addWidget(self.Ky_range_lock,4,7,1,1)
+        self.reciprocal_range_grid.addWidget(self.Kz_range,5,0,1,7)
+        self.reciprocal_range_grid.addWidget(self.Kz_range_lock,5,7,1,1)
+        self.reciprocal_range_grid.addWidget(self.apply_reciprocal_range,6,0,1,8)
+        self.reciprocal_range_grid.addWidget(self.stop_calculation,7,0,1,8)
         self.KRange = [self.Kx_range.values(),self.Ky_range.values(),self.Kz_range.values()]
         self.x_linear = np.linspace(self.KRange[0][0],self.KRange[0][1],self.number_of_steps_para.value())
         self.y_linear = np.linspace(self.KRange[1][0],self.KRange[1][1],self.number_of_steps_para.value())
@@ -303,6 +318,11 @@ class Window(QtWidgets.QWidget):
         self.plot_log_scale_label = QtWidgets.QLabel("Plot in logarithmic scale?")
         self.plot_log_scale = QtWidgets.QCheckBox()
         self.plot_log_scale.setChecked(False)
+        self.plot_fft_label = QtWidgets.QLabel("Do FFT for the IV curve?")
+        self.plot_fft = QtWidgets.QCheckBox()
+        self.pos = 111
+        self.plot_fft.setChecked(False)
+        self.plot_fft.stateChanged.connect(self.update_plot_fft)
         self.reciprocalMapfontListLabel = QtWidgets.QLabel("Font Name")
         self.reciprocalMapfontList = QtWidgets.QFontComboBox()
         self.reciprocalMapfontList.setCurrentFont(QtGui.QFont("Arial"))
@@ -339,16 +359,18 @@ class Window(QtWidgets.QWidget):
         self.plotOptionsGrid.addWidget(self.showFWHMCheck,3,1,1,2)
         self.plotOptionsGrid.addWidget(self.plot_log_scale_label,4,0,1,1)
         self.plotOptionsGrid.addWidget(self.plot_log_scale,4,1,1,2)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapfontListLabel,5,0,1,1)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapfontList,5,1,1,2)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapfontSizeLabel,6,0,1,1)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapfontSizeSlider,6,1,1,2)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapColormapLabel,7,0,1,1)
-        self.plotOptionsGrid.addWidget(self.reciprocalMapColormapCombo,7,1,1,2)
-        self.plotOptionsGrid.addWidget(self.show_XY_plot_button,8,0,1,1)
-        self.plotOptionsGrid.addWidget(self.show_XZ_plot_button,8,1,1,1)
-        self.plotOptionsGrid.addWidget(self.show_YZ_plot_button,8,2,1,1)
-        self.plotOptionsGrid.addWidget(self.save_Results_button,9,0,1,3)
+        self.plotOptionsGrid.addWidget(self.plot_fft_label,5,0,1,1)
+        self.plotOptionsGrid.addWidget(self.plot_fft,5,1,1,2)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapfontListLabel,6,0,1,1)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapfontList,6,1,1,2)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapfontSizeLabel,7,0,1,1)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapfontSizeSlider,7,1,1,2)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapColormapLabel,8,0,1,1)
+        self.plotOptionsGrid.addWidget(self.reciprocalMapColormapCombo,8,1,1,2)
+        self.plotOptionsGrid.addWidget(self.show_XY_plot_button,9,0,1,1)
+        self.plotOptionsGrid.addWidget(self.show_XZ_plot_button,9,1,1,1)
+        self.plotOptionsGrid.addWidget(self.show_YZ_plot_button,9,2,1,1)
+        self.plotOptionsGrid.addWidget(self.save_Results_button,10,0,1,3)
 
         self.appearance = QtWidgets.QWidget()
         self.appearanceGrid = QtWidgets.QVBoxLayout(self.appearance)
@@ -707,42 +729,53 @@ class Window(QtWidgets.QWidget):
     def update_z_range(self,min,max,index):
         self.real_space_specification_dict[index]['z_range'] = min,max
 
+    def update_plot_fft(self,state):
+        if state == 2:
+            self.pos = 211
+        elif state == 0:
+            self.pos = 111
 
     def show_XY_plot(self):
         for i in range(int(self.KzIndex.values()[0]),int(self.KzIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XY',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i,\
                          self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                         self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
-            TwoDimPlot.show_plot()
+                         self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),111)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
-            self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
-            self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
-        self.update_log("Simulated diffraction patterns obtained!")
+            if not 1 in self.diffraction_intensity.shape[0:1]:
+                self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
+                self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
+                TwoDimPlot.show_plot()
+        if not 1 in self.diffraction_intensity.shape[0:1]:
+            self.update_log("Simulated diffraction patterns obtained!")
 
     def show_XZ_plot(self):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
-            TwoDimPlot.show_plot()
+                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
-            self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
-            self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
-        self.update_log("Simulated diffraction patterns obtained!")
+            if not 1 in self.diffraction_intensity.shape:
+                self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
+                self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
+            TwoDimPlot.show_plot()
+        if not 1 in self.diffraction_intensity.shape:
+            self.update_log("Simulated diffraction patterns obtained!")
 
     def show_YZ_plot(self):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'YZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked())
+                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
-            self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
-            self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
+            if not 1 in self.diffraction_intensity.shape:
+                self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
+                self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
             TwoDimPlot.show_plot()
-        self.update_log("Simulated diffraction patterns obtained!")
+        if not 1 in self.diffraction_intensity.shape:
+            self.update_log("Simulated diffraction patterns obtained!")
 
     def load_data(self):
         path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The 3D Data",'./',filter="TXT (*.txt);;All Files (*.*)")[0]
@@ -830,17 +863,17 @@ class Window(QtWidgets.QWidget):
         shape.addItem("Hexagon")
         shape.addItem("Circle")
         shape.TEXT_CHANGED.connect(self.update_shape)
-        lateral_size = LabelSlider(1,100,1,1,"Lateral Size",'nm',index=index)
+        lateral_size = LabelSpinBox(1,100,1,1,"Lateral Size",'nm',index=index)
         lateral_size.VALUE_CHANGED.connect(self.update_lateral_size)
-        x_shift = LabelSlider(-1000,1000,0,100,"X Shift",'\u212B',index=index)
+        x_shift = LabelSpinBox(-1000,1000,0,100,"X Shift",'\u212B',index=index)
         x_shift.VALUE_CHANGED.connect(self.update_x_shift)
-        y_shift = LabelSlider(-1000,1000,0,100,"Y Shift",'\u212B',index=index)
+        y_shift = LabelSpinBox(-1000,1000,0,100,"Y Shift",'\u212B',index=index)
         y_shift.VALUE_CHANGED.connect(self.update_y_shift)
-        z_shift = LabelSlider(-5000,5000,0,100,"Z Shift",'\u212B',index=index)
+        z_shift = LabelSpinBox(-5000,5000,0,100,"Z Shift",'\u212B',index=index)
         z_shift.VALUE_CHANGED.connect(self.update_z_shift)
-        rotation = LabelSlider(-1800,1800,0,10,"rotation",'\u00B0',index=index)
+        rotation = LabelSpinBox(-1800,1800,0,10,"rotation",'\u00B0',index=index)
         rotation.VALUE_CHANGED.connect(self.update_rotation)
-        z_range_slider = LockableDoubleSlider(-8000,8000,100,-10,10,"Z range","\u212B",False,index=index)
+        z_range_slider = LockableDoubleSlider(-8000,8000,100,-10,10,"Z range","\u212B",False,type='spinbox', index=index)
         z_range_slider.VALUE_CHANGED.connect(self.update_z_range)
 
         self.real_space_specification_dict[index] = {'h_range':h_range.get_value(),'k_range':k_range.get_value(),'l_range':l_range.get_value(),\

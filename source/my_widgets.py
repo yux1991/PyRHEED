@@ -155,6 +155,81 @@ class ColorPicker(QtWidgets.QWidget):
     def get_color(self):
         return self.color
 
+class LabelSpinBox(QtWidgets.QWidget):
+
+    VALUE_CHANGED = QtCore.pyqtSignal(float,int)
+
+    def __init__(self,min,max,initial,scale,text,unit='',index=-1):
+        super(LabelSpinBox, self).__init__()
+        self.scale = scale
+        self.label_text = text
+        self.min = min
+        self.max = max
+        self.initial = initial
+        self.unit = unit
+        self.index = index
+        if 1/self.scale >= 0.1:
+            self.label = QtWidgets.QLabel(self.label_text+" = {:6.1f} ".format(initial)+self.unit)
+        elif 1/self.scale >= 0.01:
+            self.label = QtWidgets.QLabel(self.label_text+" = {:6.2f} ".format(initial)+self.unit)
+        elif 1/self.scale >= 0.001:
+            self.label = QtWidgets.QLabel(self.label_text+" = {:6.3f} ".format(initial)+self.unit)
+        else:
+            self.label = QtWidgets.QLabel(self.label_text+" = {:6.4f} ".format(initial)+self.unit)
+        self.valueSpinBox = QtWidgets.QSpinBox()
+        self.valueSpinBox.setMinimum(min)
+        self.valueSpinBox.setMaximum(max)
+        self.valueSpinBox.setValue(initial*scale)
+        self.valueSpinBox.setSingleStep(1)
+        self.valueSpinBox.setSuffix(" x 10"+self.to_sup(int(np.log10(1/scale))))
+        self.valueSpinBox.valueChanged.connect(self.value_changed)
+        self.grid = QtWidgets.QGridLayout()
+        self.grid.addWidget(self.label,0,0)
+        self.grid.addWidget(self.valueSpinBox,0,1)
+        self.grid.setContentsMargins(0,0,0,0)
+        self.setLayout(self.grid)
+
+    def to_sup(self,number):
+        s = str(number)
+        return ''.join(dict(zip('-0123456789','\u207b\u2070\xb9\xb2\xb3\u2074\u2075\u2076\u2077\u2078\u2079')).get(c,c) for c in s)
+
+    def set(self,min,max,initial,scale):
+        self.scale = scale
+        self.min = min
+        self.max = max
+        self.valueSpinBox.setMinimum(min)
+        self.valueSpinBox.setMaximum(max)
+        self.valueSpinBox.setValue(initial*scale)
+        self.value_changed(initial*scale)
+
+    def reset(self):
+        self.valueSpinBox.setMinimum(self.min)
+        self.valueSpinBox.setMaximum(self.max)
+        self.valueSpinBox.setValue(self.initial*self.scale)
+        self.value_changed(self.initial*self.scale)
+
+    def value_changed(self,value):
+        if 1/self.scale >= 0.1:
+            self.label.setText(self.label_text+" = {:6.1f} ".format(value/self.scale)+self.unit)
+        elif 1/self.scale >= 0.01:
+            self.label.setText(self.label_text+" = {:6.2f} ".format(value/self.scale)+self.unit)
+        elif 1/self.scale >= 0.001:
+            self.label.setText(self.label_text+" = {:6.3f} ".format(value/self.scale)+self.unit)
+        elif 1/self.scale >= 0.0001:
+            self.label.setText(self.label_text+" = {:6.4f} ".format(value/self.scale)+self.unit)
+        else:
+            self.label.setText(self.label_text+" = {:7.5f} ".format(value/self.scale)+self.unit)
+        self.VALUE_CHANGED.emit(value/self.scale,self.index)
+
+    def get_value(self):
+        return self.valueSpinBox.value()/self.scale
+
+    def set_value(self,value):
+        self.valueSpinBox.setValue(value*self.scale)
+
+    def get_index(self):
+        return self.index
+
 class LabelSlider(QtWidgets.QWidget):
 
     VALUE_CHANGED = QtCore.pyqtSignal(float,int)
@@ -228,7 +303,7 @@ class LabelSlider(QtWidgets.QWidget):
 class LockableDoubleSlider(QtWidgets.QWidget):
     VALUE_CHANGED = QtCore.pyqtSignal(float,float,int)
 
-    def __init__(self,minimum,maximum,scale,head,tail,text,unit='',lock = False,direction='horizontal',index=-1):
+    def __init__(self,minimum,maximum,scale,head,tail,text,unit='',lock = False,type='slider',index=-1):
         super(LockableDoubleSlider,self).__init__()
         self.currentMin, self.currentMax = int(head),int(tail)
         self.head = head
@@ -238,6 +313,9 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         self.unit = unit
         self.lock = lock
         self.index = index
+        self.type = type
+        self._minimum = minimum
+        self._maximum = maximum
         if self.unit == '':
             if 1/self.scale >=1:
                 self.minLabel = QtWidgets.QLabel(self.text+"_min = {:2.0f} ".format(self.currentMin))
@@ -261,12 +339,17 @@ class LockableDoubleSlider(QtWidgets.QWidget):
             elif 1/self.scale >=0.0001:
                 self.minLabel = QtWidgets.QLabel(self.text+"_min = {:6.4f} ".format(self.currentMin)+"("+unit+")")
         self.minLabel.setFixedWidth(180)
-        self.minSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.minSlider.setMinimum(minimum)
+        if self.type == 'slider':
+            self.minSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        elif self.type == 'spinbox':
+            self.minSlider = QtWidgets.QSpinBox()
+            self.minSlider.setSingleStep(1)
+            self.minSlider.setSuffix(" x 10"+self.to_sup(int(np.log10(1/scale))))
+        self.minSlider.setMinimum(self._minimum)
         if self.lock:
             self.minSlider.setMaximum(0)
         else:
-            self.minSlider.setMaximum(maximum)
+            self.minSlider.setMaximum(self._maximum)
         self.minSlider.setValue(self.currentMin*self.scale)
         self.minSlider.valueChanged.connect(self.min_changed)
 
@@ -293,7 +376,12 @@ class LockableDoubleSlider(QtWidgets.QWidget):
             elif 1/self.scale >=0.0001:
                 self.maxLabel = QtWidgets.QLabel(self.text+"_max = {:6.4f} ".format(self.currentMax)+"("+unit+")")
         self.maxLabel.setFixedWidth(180)
-        self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        if self.type == 'slider':
+            self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        elif self.type == 'spinbox':
+            self.maxSlider = QtWidgets.QSpinBox()
+            self.maxSlider.setSingleStep(1)
+            self.maxSlider.setSuffix(" x 10"+self.to_sup(int(np.log10(1/scale))))
         if self.lock:
             self.maxSlider.setMinimum(0)
         else:
@@ -309,6 +397,10 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         self.UIgrid.addWidget(self.maxSlider,1,1)
         self.UIgrid.setContentsMargins(0,0,0,0)
         self.setLayout(self.UIgrid)
+
+    def to_sup(self,number):
+        s = str(number)
+        return ''.join(dict(zip('-0123456789','\u207b\u2070\xb9\xb2\xb3\u2074\u2075\u2076\u2077\u2078\u2079')).get(c,c) for c in s)
 
     def reset(self):
         self.minSlider.setValue(self.head*self.scale)
@@ -337,6 +429,7 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         if self.lock:
             if self.currentMin > self.currentMax:
                 self.maxSlider.setValue(0)
+                self.minSlider.setValue(0)
             else:
                 self.maxSlider.setValue(-self.currentMin*self.scale)
         elif self.currentMin > self.currentMax:
@@ -370,6 +463,7 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         self.currentMax = self.maxSlider.value()/self.scale
         if self.lock:
             if self.currentMin > self.currentMax:
+                self.maxSlider.setValue(0)
                 self.minSlider.setValue(0)
             else:
                 self.minSlider.setValue(-self.currentMax*self.scale)
@@ -403,6 +497,21 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         """This is an overload function"""
         self.minSlider.setEnabled(enable)
         self.maxSlider.setEnabled(enable)
+
+    def set_locked(self,state):
+        if state == 2:
+            self.lock = True
+        elif state == 0:
+            self.lock = False
+        if self.lock:
+            value = abs(self.currentMax) + abs(self.currentMin)
+            self.maxSlider.setValue(value*self.scale/2)
+            self.minSlider.setValue(-value*self.scale/2)
+            self.minSlider.setMaximum(0)
+            self.maxSlider.setMinimum(0)
+        else:
+            self.maxSlider.setMinimum(self._minimum)
+            self.minSlider.setMaximum(self._maximum)
 
 class IndexedColorPicker(QtWidgets.QWidget):
 
@@ -491,9 +600,10 @@ class InfoBoard(QtWidgets.QGroupBox):
 
 class MplCanvas(FigureCanvas):
 
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        self.fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = self.fig.add_subplot(111)
+    def __init__(self, parent=None, width=5, height=4, dpi=100, pos=111):
+        self.fig = Figure(figsize=(width, height), dpi=dpi, tight_layout=True)
+        self.pos = pos
+        self.axes = self.fig.add_subplot(self.pos)
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
@@ -501,15 +611,16 @@ class MplCanvas(FigureCanvas):
 
     def clear(self):
         self.fig.clear()
-        self.axes = self.fig.add_subplot(111)
+        self.axes = self.fig.add_subplot(self.pos)
 
 class DynamicalColorMap(QtWidgets.QWidget):
 
     UPDATE_LOG = QtCore.pyqtSignal(str)
 
-    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False, log_scale = True):
+    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False, log_scale = True, pos=111):
         super(DynamicalColorMap,self).__init__(parent)
-        self.figure = MplCanvas(self)
+        self.pos = pos
+        self.figure = MplCanvas(self,pos=self.pos)
         self.x_linear = x
         self.y_linear = y
         self.z_linear = z
@@ -524,7 +635,12 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.plot_IV = False
         self.minimum_log_intensity = -6
         self.TwoDimMappingWindow = QtWidgets.QWidget()
-        self.TwoDimMappingWindow.setWindowTitle('Summary of Broadening Analysis')
+        if 1 in self.intensity.shape[0:1]:
+            self.plot_IV = True
+            self.TwoDimMappingWindow.setWindowTitle('Simulated IV curve')
+        else:
+            self.plot_IV = False
+            self.TwoDimMappingWindow.setWindowTitle('Simulated 2D reciprocal space map')
         self.TwoDimMappingWindowLayout = QtWidgets.QGridLayout(self.TwoDimMappingWindow)
         self.toolbar = NavigationToolbar(self.figure,self.TwoDimMappingWindow)
         self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0)
@@ -539,6 +655,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
     def refresh_fonts(self,fontname,fontsize):
         self.fontname = fontname
         self.fontsize = fontsize
+        font_dict = {'fontname':self.fontname, 'fontsize':self.fontsize}
         plt.ion()
         if not self.plot_IV:
             if self.type == 'XY':
@@ -549,31 +666,38 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.csHM.set_alpha(1)
                 self.figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
                    format(self.z_linear[self.nkz]),fontsize=self.fontsize,pad=30)
-                self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-                self.figure.axes.set_ylabel(r'$K_{y}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+                self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',font_dict)
+                self.figure.axes.set_ylabel(r'$K_{y}$ $(\AA^{-1})$',font_dict)
             elif self.type == 'XZ':
                 self.figure.axes.set_title('Simulated 2D reciprocal space map\nKy = {:5.2f} (\u212B\u207B\u00B9)'. \
-                                           format(self.y_linear[self.nkz]),fontsize=self.fontsize,pad=30)
-                self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-                self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+                                           format(self.y_linear[self.nkz]),fontsize = self.fontsize,pad=30)
+                self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',font_dict)
+                self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',font_dict)
             elif self.type == 'YZ':
                 self.figure.axes.set_title('Simulated 2D reciprocal space map\nKx = {:5.2f} (\u212B\u207B\u00B9)'. \
                                            format(self.x_linear[self.nkz]),fontsize=self.fontsize,pad=30)
-                self.figure.axes.set_xlabel(r'$K_{y}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
-                self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+                self.figure.axes.set_xlabel(r'$K_{y}$ $(\AA^{-1})$',font_dict)
+                self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',font_dict)
             self.figure.axes.set_aspect(1)
             self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
             if self.log_scale:
-                self.cbar.ax.set_ylabel("Log Intensity",fontname=self.fontname,fontsize=self.fontsize)
+                self.cbar.ax.set_ylabel("Log Intensity",font_dict)
                 self.cbar.set_ticks(np.linspace(self.log_min,self.log_max,self.log_max-self.log_min+1))
                 self.cbar.set_ticklabels(list('$10^{{{}}}$'.format(i) for i in range(self.log_min,self.log_max+1,1)))
             else:
-                self.cbar.ax.set_ylabel("Normalized Intensity",fontname=self.fontname,fontsize=self.fontsize)
+                self.cbar.ax.set_ylabel("Normalized Intensity",font_dict)
             self.cbar.ax.tick_params(labelsize=self.fontsize)
         else:
-            self.figure.axes.set_title('Simulated IV curve',fontsize=self.fontsize,pad=30)
-            self.figure.axes.set_ylabel(r'$K_{\perp}$ $(\AA^{-1})$',fontname=self.fontname,fontsize=self.fontsize)
+            self.figure.axes.set_xlabel(r'$K_{\perp}$ $(\AA^{-1})$',font_dict)
+            if self.log_scale:
+                self.figure.axes.set_ylabel('Log Intensity\n(arb. units)',font_dict)
+            else:
+                self.figure.axes.set_ylabel('Intensity\n(arb. units)',font_dict)
             self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
+            if self.pos == 211:
+                self.fft_axes.set_xlabel(r'$R_{\perp}$ $(\AA)$',font_dict)
+                self.fft_axes.set_ylabel('FFT Intensity\n(arb. units)',font_dict)
+                self.fft_axes.tick_params(which='both', labelsize=self.fontsize)
         self.figure.draw()
 
     def refresh_FWHM(self,showFWHM):
@@ -626,8 +750,6 @@ class DynamicalColorMap(QtWidgets.QWidget):
         if self.type == 'XY':
             matrix = self.intensity[:,:,self.nkz]
             max_intensity = np.amax(np.amax(matrix))
-            if 1 in matrix.shape:
-                self.plot_IV = True
             if self.log_scale:
                 self.log_max = 1
                 int_min = np.amin(np.amin(matrix/max_intensity))
@@ -636,19 +758,19 @@ class DynamicalColorMap(QtWidgets.QWidget):
                 else:
                     self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
                 if self.plot_IV:
-                    self.UPDATE_LOG.emit('Invalid data. Please use YZ plot or XZ plot')
+                    self.UPDATE_LOG.emit('Invalid data. Please use YZ plot or XZ plot!')
+                    QtCore.QCoreApplication.processEvents()
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
                 if self.plot_IV:
-                    self.UPDATE_LOG.emit('Invalid data. Please use YZ plot or XZ plot')
+                    self.UPDATE_LOG.emit('Invalid data. Please use YZ plot or XZ plot!')
+                    QtCore.QCoreApplication.processEvents()
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'XZ':
             matrix = self.intensity[:,self.nkz,:]
             max_intensity = np.amax(np.amax(matrix))
-            if 1 in matrix.shape:
-                self.plot_IV = True
             if self.log_scale:
                 self.log_max = 1
                 int_min = np.amin(np.amin(matrix/max_intensity))
@@ -657,19 +779,27 @@ class DynamicalColorMap(QtWidgets.QWidget):
                 else:
                     self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
                 if self.plot_IV:
-                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=5)
+                    self.UPDATE_LOG.emit('Plotting IV ...')
+                    QtCore.QCoreApplication.processEvents()
+                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=3)
+                    if self.pos == 211:
+                        self.fft_axes = self.figure.fig.add_subplot(212)
+                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=3)
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
                 if self.plot_IV:
-                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=5)
+                    self.UPDATE_LOG.emit('Plotting IV ...')
+                    QtCore.QCoreApplication.processEvents()
+                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=3)
+                    if self.pos == 211:
+                        self.fft_axes = self.figure.fig.add_subplot(212)
+                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=3)
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'YZ':
             matrix = self.intensity[self.nkz,:,:]
             max_intensity = np.amax(np.amax(matrix))
-            if 1 in matrix.shape:
-                self.plot_IV = True
             if self.log_scale:
                 self.log_max = 1
                 int_min = np.amin(np.amin(matrix/max_intensity))
@@ -678,17 +808,28 @@ class DynamicalColorMap(QtWidgets.QWidget):
                 else:
                     self.log_min = max(int(np.log10(int_min)),self.minimum_log_intensity)
                 if self.plot_IV:
-                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=5)
+                    self.UPDATE_LOG.emit('Plotting IV ...')
+                    QtCore.QCoreApplication.processEvents()
+                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=3)
+                    if self.pos == 211:
+                        self.fft_axes = self.figure.fig.add_subplot(212)
+                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=3)
                 else:
                     self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
                 if self.plot_IV:
-                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=5)
+                    self.UPDATE_LOG.emit('Plotting IV ...')
+                    QtCore.QCoreApplication.processEvents()
+                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=3)
+                    if self.pos == 211:
+                        self.fft_axes = self.figure.fig.add_subplot(212)
+                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=3)
                 else:
                     self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         if not self.plot_IV:
             self.cbar = self.figure.fig.colorbar(self.cs,format='%.2f')
             self.refresh_FWHM(self.showFWHM)
+            self.refresh_fonts(self.fontname,self.fontsize)
         if self.IV:
             self.refresh_fonts(self.fontname,self.fontsize)
 
