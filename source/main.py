@@ -1,6 +1,6 @@
 #This sets up the entire application, which reads the default configuration and initialize the UI
 #Last updated on 04/15/2019 by Y. Xiang
-#This code is written in Python 3.6.3
+#This code is written in Python 3.6.6 64-bit
 from PyQt5 import QtGui, QtWidgets
 import broadening
 import configparser

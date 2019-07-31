@@ -35,7 +35,7 @@ class Window(QtCore.QObject):
         self.unit = 'S'
 
         self.fit_worker = FitFunctions()
-        #self.plot_IS()
+        self.plot_IS()
         #self.plot_contour()
         self.plot_2D()
         #self.plot_FWHM()
@@ -62,6 +62,10 @@ class Window(QtCore.QObject):
         self.ax_FWHM.set_xlabel(r'$\gamma$',fontsize=30)
         self.ax_FWHM.set_ylabel('HWHM (\u212B\u207B\u00B9)',fontsize=30)
         self.ax_FWHM.tick_params(labelsize=30)
+        self.output = open('FWHM_vs_gamma.txt',mode='w')
+        for gamma,FWHM in zip(self.gamma,self.width):
+            self.output.write(str(gamma)+'\t'+str(FWHM)+'\n')
+        self.output.close()
 
     def plot_contour(self):
         x = np.linspace(-4,4,1001)
@@ -90,10 +94,10 @@ class Window(QtCore.QObject):
         self.gamma_c = 0.1
         self.h_index_grid, self.k_index_grid = np.meshgrid(h,k)
         self.i_index_grid = -(self.h_index_grid+self.k_index_grid)
-        #self.Int_2D = self.fit_worker.translational_antiphase_domain_model_intensity_2D_four_indices\
-        #    (self.h_index_grid, self.k_index_grid, self.i_index_grid, self.gamma_a, self.gamma_b, self.gamma_c)
-        self.Int_2D = self.fit_worker.translational_antiphase_domain_model_intensity_2D\
-            (self.h_index_grid, self.k_index_grid, self.gamma_a, self.gamma_b)
+        self.Int_2D = self.fit_worker.translational_antiphase_domain_model_intensity_2D_four_indices\
+            (self.h_index_grid, self.k_index_grid, self.i_index_grid, self.gamma_a, self.gamma_b, self.gamma_c)
+        #self.Int_2D = self.fit_worker.translational_antiphase_domain_model_intensity_2D\
+        #    (self.h_index_grid, self.k_index_grid, self.gamma_a, self.gamma_b)
         int_max = np.amax(self.Int_2D)
         log_max = int(np.log10(int_max)+1)
         int_min = np.amin(self.Int_2D)

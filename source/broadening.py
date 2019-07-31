@@ -340,6 +340,8 @@ class Window(QtCore.QObject):
             if self.BGCheck.checkState():
                 index.append('BG')
             information = self.status
+            information['StartImageIndex'] = startIndex
+            information['EndImageIndex'] = endIndex
             information['AnalysisRange'] = analysisRange
             information['NumberOfPeaks'] = int(self.numberOfPeaksCombo.currentData())
             information['BGCheck'] = self.BGCheck.checkState()

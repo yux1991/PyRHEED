@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import re
+from shapely.geometry import LineString
+from shapely.geometry import Point
+from shapely.geometry import Polygon
 import sys
 
 class Window(QtWidgets.QWidget):
@@ -134,12 +137,9 @@ class Window(QtWidgets.QWidget):
         self.TAPD_epilayer_orientation.addItem('(010)')
         self.TAPD_epilayer_orientation.addItem('(100)')
         self.TAPD_epilayer_orientation.addItem('(111)')
-        self.TAPD_plot_Voronoi_label = QtWidgets.QLabel('Plot Voronoi diagram?')
-        self.TAPD_plot_Voronoi = QtWidgets.QCheckBox()
-        self.TAPD_plot_Voronoi.setChecked(False)
         self.TAPD_add_atoms_label = QtWidgets.QLabel('Add atoms to the canvas?')
         self.TAPD_add_atoms = QtWidgets.QCheckBox()
-        self.TAPD_add_atoms.setChecked(True)
+        self.TAPD_add_atoms.setChecked(False)
         self.TAPD_add_substrate_label = QtWidgets.QLabel('Add substrate?')
         self.TAPD_add_substrate = QtWidgets.QCheckBox()
         self.TAPD_add_substrate.setChecked(False)
@@ -153,7 +153,7 @@ class Window(QtWidgets.QWidget):
         self.TAPD_latticeOrAtoms.setExclusive(True)
         self.TAPD_latticeOrAtoms.addButton(self.TAPD_lattice)
         self.TAPD_latticeOrAtoms.addButton(self.TAPD_atoms)
-        self.TAPD_atoms.setChecked(True)
+        self.TAPD_lattice.setChecked(True)
 
         self.TAPD_distribution_function_label = QtWidgets.QLabel('Choose the distribution function')
         self.TAPD_distribution_function = QtWidgets.QComboBox()
@@ -172,9 +172,17 @@ class Window(QtWidgets.QWidget):
         self.distribution_parameters_grid.addWidget(self.TAPD_geometric_gamma_label)
         self.distribution_parameters_grid.addWidget(self.TAPD_geometric_gamma)
 
-        self.load_TAPD_structure_button = QtWidgets.QPushButton("Load Structure")
+        self.plot_size_distribution_button = QtWidgets.QPushButton("Plot Size Distribution")
+        self.plot_voronoi_button = QtWidgets.QPushButton("Plot Voronoi Diagram")
+        self.plot_size_distribution_button.setEnabled(False)
+        self.plot_voronoi_button.setEnabled(False)
+        self.reload_TAPD_structure_button = QtWidgets.QPushButton("Reload Structure")
+        self.load_TAPD_structure_button = QtWidgets.QPushButton("Add Structure")
         self.stop_TAPD_structure_button = QtWidgets.QPushButton("Stop")
         self.reset_TAPD_structure_button = QtWidgets.QPushButton("Reset Structure")
+        self.plot_size_distribution_button.clicked.connect(self.plot_distribution)
+        self.plot_voronoi_button.clicked.connect(self.plot_voronoi)
+        self.reload_TAPD_structure_button.clicked.connect(self.reload_TAPD)
         self.load_TAPD_structure_button.clicked.connect(self.load_TAPD)
         self.stop_TAPD_structure_button.clicked.connect(self.stop_TAPD)
         self.reset_TAPD_structure_button.clicked.connect(self.reset_TAPD)
@@ -201,8 +209,6 @@ class Window(QtWidgets.QWidget):
         self.TAPD_model_grid.addWidget(self.TAPD_Shift_Y,17,0,1,4)
         self.TAPD_model_grid.addWidget(self.TAPD_Shift_Z_label,18,0,1,4)
         self.TAPD_model_grid.addWidget(self.TAPD_Shift_Z,19,0,1,4)
-        self.TAPD_model_grid.addWidget(self.TAPD_plot_Voronoi_label,20,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_plot_Voronoi,20,2,1,2)
         self.TAPD_model_grid.addWidget(self.TAPD_add_atoms_label,21,0,1,2)
         self.TAPD_model_grid.addWidget(self.TAPD_add_atoms,21,2,1,2)
         self.TAPD_model_grid.addWidget(self.TAPD_add_substrate_label,22,0,1,2)
@@ -215,9 +221,12 @@ class Window(QtWidgets.QWidget):
         self.TAPD_model_grid.addWidget(self.TAPD_distribution_function_label,25,0,1,4)
         self.TAPD_model_grid.addWidget(self.TAPD_distribution_function,26,0,1,4)
         self.TAPD_model_grid.addWidget(self.distribution_parameters,27,0,1,4)
-        self.TAPD_model_grid.addWidget(self.load_TAPD_structure_button,28,0,1,1)
-        self.TAPD_model_grid.addWidget(self.stop_TAPD_structure_button,28,1,1,1)
-        self.TAPD_model_grid.addWidget(self.reset_TAPD_structure_button,28,2,1,1)
+        self.TAPD_model_grid.addWidget(self.reload_TAPD_structure_button,28,0,1,1)
+        self.TAPD_model_grid.addWidget(self.load_TAPD_structure_button,28,1,1,1)
+        self.TAPD_model_grid.addWidget(self.stop_TAPD_structure_button,28,2,1,1)
+        self.TAPD_model_grid.addWidget(self.reset_TAPD_structure_button,28,3,1,1)
+        self.TAPD_model_grid.addWidget(self.plot_size_distribution_button,29,0,1,4)
+        self.TAPD_model_grid.addWidget(self.plot_voronoi_button,30,0,1,4)
 
         self.CIF_tab = QtWidgets.QTabWidget()
         self.CIF_tab.addTab(self.chooseCif,'CIF')
@@ -1158,14 +1167,13 @@ class Window(QtWidgets.QWidget):
             parameters['n'] = float(self.TAPD_binomial_n.text())
             parameters['p'] = float(self.TAPD_binomial_p.text())
 
-        self.TAPD_worker = TAPD_Simulation(int(self.TAPD_X_max.text()),\
-                                          int(self.TAPD_Y_max.text()), \
+        self.TAPD_worker = TAPD_Simulation(float(self.TAPD_X_max.text()),\
+                                          float(self.TAPD_Y_max.text()), \
                                           float(self.TAPD_Z_min.text()), \
                                           float(self.TAPD_Z_max.text()),\
                                           [float(self.TAPD_Shift_X.text()), float(self.TAPD_Shift_Y.text()), float(self.TAPD_Shift_Z.text())],\
                                           self.substrate_path, self.epilayer_path, \
                                            self.TAPD_distribution_function.currentText(),\
-                                           self.TAPD_plot_Voronoi.isChecked(),\
                                           self.TAPD_substrate_orientation.currentText(),\
                                           self.TAPD_epilayer_orientation.currentText(),\
                                            self.TAPD_atoms.isChecked(), **parameters)
@@ -1176,19 +1184,25 @@ class Window(QtWidgets.QWidget):
         self.TAPD_worker.FINISHED.connect(self.thread.quit)
         self.TAPD_worker.UPDATE_LOG.connect(self.update_log)
         self.TAPD_worker.SEND_RESULTS.connect(self.get_TAPD_results)
-        self.TAPD_worker.VORONOI_PLOT.connect(self.plot_voronoi)
         self.thread.started.connect(self.TAPD_worker.run)
         self.STOP_TAPD_WORKER.connect(self.TAPD_worker.stop)
 
-    def get_TAPD_results(self, structure_sub, structure_epi, substrate_sites, epilayer_sites):
-        self.structure_sub = structure_sub
-        self.structure_epi = structure_epi
-        self.substrate_sites = substrate_sites
-        self.epilayer_sites = epilayer_sites
+    def get_TAPD_results(self, model):
+        self.vor = model.vor
+        self.structure_sub = model.substrate_structure 
+        self.structure_epi = model.epilayer_structure
+        self.substrate_sites = model.substrate_sites
+        self.substrate_list = model.substrate_list
+        self.epilayer_sites = model.epilayer_sites
+        self.epilayer_list = model.epilayer_list
+        self.epilayer_domain_area_list = model.epilayer_domain_area_list
+        self.epilayer_domain = model.epilayer_domain
         if self.TAPD_add_substrate.isChecked():
             self.add_TAPD('substrate')
         if self.TAPD_add_epilayer.isChecked():
             self.add_TAPD('epilayer')
+        self.plot_size_distribution_button.setEnabled(True)
+        self.plot_voronoi_button.setEnabled(True)
 
     def add_TAPD(self,label='substrate'):
         next_available_index = 0
@@ -1336,6 +1350,18 @@ class Window(QtWidgets.QWidget):
         QtCore.QCoreApplication.processEvents()
         self.apply_reciprocal_range.setEnabled(True)
 
+    def reload_TAPD(self):
+        for index in sorted(list(self.sample_index_set), reverse = True):
+            self.delete_structure(index)
+        if self.substrate_path:
+            if self.epilayer_path:
+                self.prepare_TAPD()
+                self.thread.start()
+            else:
+                self.raise_error('Please specify the epilayer!')
+        else:
+            self.raise_error('Please specify the substrate!')
+
     def load_TAPD(self):
         if self.substrate_path:
             if self.epilayer_path:
@@ -1407,68 +1433,116 @@ class Window(QtWidgets.QWidget):
             self.distribution_parameters_grid.addWidget(self.TAPD_delta_radius_label)
             self.distribution_parameters_grid.addWidget(self.TAPD_delta_radius)
 
-    def plot_voronoi(self, vor, substrate, epilayer, kw):
+    def plot_distribution(self):
+        window = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(window)
+        data = np.array(list(np.sqrt(x*2)/10 for x in self.epilayer_domain_area_list))
+        if self.currentDestination:
+            output = open(self.currentDestination+'/'+'distribution'+".txt",mode='w')
+            output.write("\n".join(str(area) for area in data))
+            output.close()
+        figure = plt.figure()
+        ax = figure.add_subplot(111)
+        ax.hist(data,color = 'red', edgecolor='black', density=True, bins=100)
+        ax.axvline(data.mean(), linestyle='dashed',linewidth=2,color='k')
+        ax.set_xlabel('Domain diameter (nm)',fontsize=20)
+        ax.set_ylabel('Probability Density',fontsize=20)
+        ax.tick_params(labelsize=20)
+        x_min,x_max = plt.xlim()
+        y_min,y_max = plt.ylim()
+        ax.set_title('Domain size distribution\n(Mean: {:.2f} nm, Std. Deviation: {:.2f} nm)'.format(data.mean(), data.std()),fontsize=20)
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas,window)
+        canvas.draw()
+        layout.addWidget(toolbar)
+        layout.addWidget(canvas)
+        window.setWindowTitle("Domain size distribution")
+        window.show()
+
+    def plot_voronoi(self, **kwargs):
+        x_max = kwargs.get('X_max',float(self.TAPD_X_max.text()))
+        y_max = kwargs.get('Y_max',float(self.TAPD_Y_max.text()))
+        rectangle = Polygon([(-x_max,-y_max),(-x_max,y_max),(x_max,y_max),(x_max,-y_max)])
         window = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(window)
         figure = plt.figure()
-        figure.clear()
         ax = figure.add_subplot(111)
         ax.set_aspect('equal')
-        ax.scatter(np.array(substrate)[:,0],np.array(substrate)[:,1],5,'black')
-        ax.scatter(np.array(epilayer)[:,0],np.array(epilayer)[:,1],5,'red')
+        ax.scatter(np.array(self.substrate_list)[:,0],np.array(self.substrate_list)[:,1],7,'black')
+        ax.scatter(np.array(self.epilayer_list)[:,0],np.array(self.epilayer_list)[:,1],7,'red')
         ax.set_xlabel('x (\u212B)' ,fontsize=20)
         ax.set_ylabel('y (\u212B)',fontsize=20)
         ax.set_title('2D translational antiphase boundary model\nMoS2/sapphire',fontsize=20)
         ax.tick_params(labelsize=20)
-        point_color = kw.get('point_color', 'green')
-        point_size = kw.get('point_size', 1.0)
-        vertex_color = kw.get('vertex_color', 'green')
-        vertex_size  = kw.get('vertex_size', 1.0)
+        point_color = kwargs.get('point_color', 'blue')
+        point_size = kwargs.get('point_size', 10)
+        vertex_color = kwargs.get('vertex_color', 'green')
+        vertex_size  = kwargs.get('vertex_size', 3)
+        plot_domains = kwargs.get('plot_domains', False)
 
-        if kw.get('show_points', True):
-            ax.plot(vor.points[:,0], vor.points[:,1], '.', markersize=point_size, markerfacecolor=point_color)
-        if kw.get('show_vertices', True):
-            ax.plot(vor.vertices[:,0], vor.vertices[:,1], 'o', markersize=vertex_size, markerfacecolor=vertex_color)
+        if kwargs.get('show_points', True):
+            ax.plot(self.vor.points[:,0], self.vor.points[:,1], '.', markersize=point_size, markerfacecolor=point_color)
+        if kwargs.get('show_vertices', False):
+            ax.plot(self.vor.vertices[:,0], self.vor.vertices[:,1], 'o', markersize=vertex_size, markerfacecolor=vertex_color)
 
-        line_colors = kw.get('line_colors', 'k')
-        line_width = kw.get('line_width', 1.0)
-        line_alpha = kw.get('line_alpha', 1.0)
+        line_colors = kwargs.get('line_colors', 'k')
+        line_width = kwargs.get('line_width', 1.0)
+        line_alpha = kwargs.get('line_alpha', 1.0)
 
         line_segments = []
-        for simplex in vor.ridge_vertices:
+        for simplex in self.vor.ridge_vertices:
             simplex = np.asarray(simplex)
             if np.all(simplex >= 0):
-                line_segments.append([(x, y) for x, y in vor.vertices[simplex]])
+                intersection = rectangle.intersection(LineString(self.vor.vertices[simplex]))
+                if intersection:
+                    line_segments.append(list(intersection.coords))
 
         lc = LineCollection(line_segments,colors=line_colors,lw=line_width,linestyle='solid')
         lc.set_alpha(line_alpha)
         ax.add_collection(lc)
-        ptp_bound = vor.points.ptp(axis=0)
+        ptp_bound = self.vor.points.ptp(axis=0)
 
         line_segments = []
-        center = vor.points.mean(axis=0)
-        for pointidx, simplex in zip(vor.ridge_points, vor.ridge_vertices):
+        center = self.vor.points.mean(axis=0)
+        for pointidx, simplex in zip(self.vor.ridge_points, self.vor.ridge_vertices):
             simplex = np.asarray(simplex)
             if np.any(simplex < 0):
                 i = simplex[simplex >= 0][0]
-                t = vor.points[pointidx[1]] - vor.points[pointidx[0]]
+                t = self.vor.points[pointidx[1]] - self.vor.points[pointidx[0]]
                 t /= np.linalg.norm(t)
                 n = np.array([-t[1], t[0]])
-                midpoint = vor.points[pointidx].mean(axis=0)
+                midpoint = self.vor.points[pointidx].mean(axis=0)
                 direction = np.sign(np.dot(midpoint - center, n)) * n
-                far_point = vor.vertices[i] + direction * ptp_bound.max()
+                far_point = self.vor.vertices[i] + direction * ptp_bound.max()
+                intersection = rectangle.intersection(LineString([(self.vor.vertices[i, 0], self.vor.vertices[i, 1]),(far_point[0], far_point[1])]))
+                if intersection:
+                    line_segments.append(list(intersection.coords))
 
-                line_segments.append([(vor.vertices[i, 0], vor.vertices[i, 1]),
-                                      (far_point[0], far_point[1])])
-
-        lc = LineCollection(line_segments,colors=line_colors,lw=line_width,linestyle='dashed')
+        lc = LineCollection(line_segments,colors=line_colors,lw=line_width,linestyle='solid')
         lc.set_alpha(line_alpha)
         ax.add_collection(lc)
-        ptp_bound = vor.points.ptp(axis=0)
-        ax.set_xlim(vor.points[:,0].min() - 0.1*ptp_bound[0],
-                    vor.points[:,0].max() + 0.1*ptp_bound[0])
-        ax.set_ylim(vor.points[:,1].min() - 0.1*ptp_bound[1],
-                    vor.points[:,1].max() + 0.1*ptp_bound[1])
+
+        if plot_domains:
+            for polygon in list(self.epilayer_domain):
+                x1=[]
+                y1=[]
+                try:
+                    for cx,cy in polygon.exterior.coords:
+                        x1.append(cx)
+                        y1.append(cy)
+                    ax.plot(x1,y1,color=np.random.rand(3,), marker=',', linestyle='-')
+                except:
+                    for subpolygon in polygon:
+                        x1=[]
+                        y1=[]
+                        for cx,cy in subpolygon.exterior.coords:
+                            x1.append(cx)
+                            y1.append(cy)
+                        ax.plot(x1,y1,color=np.random.rand(3,), marker=',', linestyle='-')
+
+        ptp_bound = self.vor.points.ptp(axis=0)
+        ax.set_xlim(-x_max,x_max)
+        ax.set_ylim(-y_max,y_max)
         canvas = FigureCanvas(figure)
         toolbar = NavigationToolbar(canvas,window)
         canvas.draw()

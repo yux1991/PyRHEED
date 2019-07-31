@@ -14,7 +14,7 @@ class Window(QtCore.QObject):
     FIT_SATISFIED = QtCore.pyqtSignal(list)
     COLOR = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
 
-    def __init__(self,fontname='Arial',fontsize=30,function='gaussian'):
+    def __init__(self,fontname='Arial',fontsize=20,function='gaussian'):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
         self.config.read('./configuration.ini')

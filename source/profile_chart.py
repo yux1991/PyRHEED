@@ -83,7 +83,7 @@ class ProfileChart(QtChart.QChartView):
             self.axisX = QtChart.QValueAxis()
             self.axisX.setTickCount(10)
             self.axisY = QtChart.QValueAxis()
-            self.axisX.setTitleText("K_para (\u212B\u207B\u00B9)")
+            self.axisX.setTitleText("K_\u2225 (\u212B\u207B\u00B9)")
             self.axisY.setTitleText("Intensity (arb. units)")
             self.axisY.setTickCount(10)
         elif type == "arc":

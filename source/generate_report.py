@@ -510,6 +510,8 @@ class Window(QtCore.QObject):
         self.AZmax = self.Angles.shape[0]-1
         self.AzimuthStart = self.Angles[0]
         self.AzimuthEnd = self.Angles[-1]
+        self.startIndex = self.header.get('StartImageIndex',int(self.AzimuthStart/1.8))
+        self.endIndex = self.header.get('EndImageIndex',int(self.AzimuthEnd/1.8))
         self.RangeStart = self.Kperps[0]
         self.RangeEnd = self.Kperps[-1]
         self.KperpSliderScale = self.KPmax/(self.RangeEnd-self.RangeStart)
@@ -523,20 +525,20 @@ class Window(QtCore.QObject):
             if len(self.Kperps) > 1:
                 self.ReportInformation.setText("Date of the report: "+self.date+\
                 'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
-                .format(self.NumberOfPeaks,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+                .format(self.NumberOfPeaks,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
             else:
                 self.ReportInformation.setText("Date of the report: "+self.date+ \
                 'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)' \
-                .format(self.NumberOfPeaks,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,0))
+                .format(self.NumberOfPeaks,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,0))
         else:
             if len(self.Kperps) > 1:
                 self.ReportInformation.setText("Date of the report: "+self.date+ \
                 'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
-                 .format(self.NumberOfPeaks+1,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+                 .format(self.NumberOfPeaks+1,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
             else:
                 self.ReportInformation.setText("Date of the report: "+self.date+ \
                 'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)' \
-                .format(self.NumberOfPeaks+1,int(self.AzimuthStart/1.8),int(self.AzimuthEnd/1.8),self.RangeStart,self.RangeEnd,0))
+                .format(self.NumberOfPeaks+1,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,0))
         self.peak.clear()
         peaks = ['L5','L4','L3','L2','L1','Center','R1','R2','R3','R4','R5','BG']
         if self.BGCheck:

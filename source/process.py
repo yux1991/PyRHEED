@@ -8,6 +8,7 @@ import os
 import PIL.Image as pilImage
 import rawpy
 import random
+from descartes.patch import PolygonPatch
 from lxml import etree as ET
 from math import pi as Pi
 from matplotlib.patches import Polygon as matPolygon
@@ -21,8 +22,11 @@ from scipy.optimize import least_squares
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import cKDTree
+from shapely.geometry import LineString
+from shapely.geometry import MultiPoint 
 from shapely.geometry import Point
 from shapely.geometry import Polygon
+from shapely.ops import unary_union
 
 class Image(object):
 
@@ -985,7 +989,11 @@ class FitBroadening(QtCore.QObject):
                 self.UPDATE_RESULTS.emit(list(results.x))
                 if i == 1:
                     self.initialparameters = list(results.x)
-                fitresults =str(nimg*1.8).ljust(12)+'\t'+str(np.round(Kperp,3)).ljust(12)+'\t'+'\t'.join(str(np.round(e[0],3)).ljust(12)+'\t'+str(np.round(e[1],3)).ljust(12) for e in value_variance.T)+'\n'
+                if nimg<=100:
+                    angle = nimg*1.8
+                else:
+                    angle = nimg*1.8 - 180
+                fitresults =str(angle).ljust(12)+'\t'+str(np.round(Kperp,3)).ljust(12)+'\t'+'\t'.join(str(np.round(e[0],3)).ljust(12)+'\t'+str(np.round(e[1],3)).ljust(12) for e in value_variance.T)+'\n'
                 if self.saveResult == 2:
                     self.WRITE_OUTPUT.emit(fitresults)
                 self.UPDATE_LOG.emit("MESSAGE:"+results.message)
@@ -1017,17 +1025,129 @@ class FitBroadening(QtCore.QObject):
 
     def stop(self):
         self._abort = True
+    
+class TAPD_model(object):
+    def __init__(self,index=0):
+        self.index = index
+        self._vor = None
+        self._substrate_structure = None
+        self._substrate_sites = None
+        self._substrate_list = None
+        self._epilayer_structure = None
+        self._epilayer_sites = None
+        self._epilayer_list = None
+        self._epilayer_domain_area_list = None
+        self._epilayer_domain = None
+
+    @property
+    def vor(self):
+        return self._vor
+
+    @vor.setter
+    def vor(self,vor):
+        self._vor = vor
+    @vor.deleter
+    def vor(self):
+        del self._vor
+
+    @property
+    def epilayer_structure(self):
+        return self._epilayer_structure
+
+    @epilayer_structure.setter
+    def epilayer_structure(self,epilayer_structure):
+        self._epilayer_structure = epilayer_structure
+    @epilayer_structure.deleter
+    def epilayer_structure(self):
+        del self._epilayer_structure
+
+    @property
+    def epilayer_sites(self):
+        return self._epilayer_sites
+
+    @epilayer_sites.setter
+    def epilayer_sites(self,epilayer_sites):
+        self._epilayer_sites = epilayer_sites
+    @epilayer_sites.deleter
+    def epilayer_sites(self):
+        del self._epilayer_sites
+
+    @property
+    def epilayer_list(self):
+        return self._epilayer_list
+
+    @epilayer_list.setter
+    def epilayer_list(self,epilayer_list):
+        self._epilayer_list = epilayer_list
+    @epilayer_list.deleter
+    def epilayer_list(self):
+        del self._epilayer_list
+
+    @property
+    def epilayer_domain_area_list(self):
+        return self._epilayer_domain_area_list
+
+    @epilayer_domain_area_list.setter
+    def epilayer_domain_area_list(self,epilayer_domain_area_list):
+        self._epilayer_domain_area_list = epilayer_domain_area_list
+    @epilayer_domain_area_list.deleter
+    def epilayer_domain_area_list(self):
+        del self._epilayer_domain_area_list
+
+    @property
+    def epilayer_domain(self):
+        return self._epilayer_domain
+
+    @epilayer_domain.setter
+    def epilayer_domain(self,epilayer_domain):
+        self._epilayer_domain = epilayer_domain
+    @epilayer_domain.deleter
+    def epilayer_domain(self):
+        del self._epilayer_domain
+
+
+    @property
+    def substrate_structure(self):
+        return self._substrate_structure
+
+    @substrate_structure.setter
+    def substrate_structure(self,substrate_structure):
+        self._substrate_structure = substrate_structure
+    @substrate_structure.deleter
+    def substrate_structure(self):
+        del self._substrate_structure
+
+    @property
+    def substrate_sites(self):
+        return self._substrate_sites
+
+    @substrate_sites.setter
+    def substrate_sites(self,substrate_sites):
+        self._substrate_sites = substrate_sites
+    @substrate_sites.deleter
+    def substrate_sites(self):
+        del self._substrate_sites
+
+    @property
+    def substrate_list(self):
+        return self._substrate_list
+    
+    @substrate_list.setter
+    def substrate_list(self,substrate_list):
+        self._substrate_list = substrate_list
+    @substrate_list.deleter
+    def substrate_list(self):
+        del self._substrate_list
 
 class TAPD_Simulation(QtCore.QObject):
     PROGRESS_ADVANCE = QtCore.pyqtSignal(int,int,int)
     PROGRESS_END = QtCore.pyqtSignal()
     ERROR = QtCore.pyqtSignal(str)
     FINISHED = QtCore.pyqtSignal()
-    SEND_RESULTS = QtCore.pyqtSignal(pgStructure.Structure, pgStructure.Structure, list, list)
+    SEND_RESULTS = QtCore.pyqtSignal(TAPD_model)
     UPDATE_LOG = QtCore.pyqtSignal(str)
-    VORONOI_PLOT = QtCore.pyqtSignal(Voronoi, list, list, dict)
 
-    def __init__(self,X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, distribution, plot_Voronoi = False, sub_orientation='(001)', epi_orientation='(001)', use_atoms = True, **kwargs):
+    def __init__(self,X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, distribution, sub_orientation='(001)', epi_orientation='(001)', use_atoms = True, **kwargs):
         super(TAPD_Simulation,self).__init__()
         self.X_max = X_max
         self.Y_max = Y_max
@@ -1036,7 +1156,6 @@ class TAPD_Simulation(QtCore.QObject):
         self.offset = offset
         self.substrate_CIF_path = substrate_CIF_path
         self.epilayer_CIF_path = epilayer_CIF_path
-        self.plot_Voronoi_diagram = plot_Voronoi
         self.sub_orientation = sub_orientation
         self.epi_orientation = epi_orientation
         self.distribution = distribution
@@ -1047,12 +1166,12 @@ class TAPD_Simulation(QtCore.QObject):
     def run(self):
         self.UPDATE_LOG.emit('Preparing the translational antiphase domain sites ...')
         QtCore.QCoreApplication.processEvents()
-        structure_sub, structure_epi, substrate_sites, epilayer_sites = self.get_TAPD_sites(self.X_max,self.Y_max, self.Z_min, self.Z_max,\
+        model = self.get_TAPD_sites(self.X_max,self.Y_max, self.Z_min, self.Z_max,\
                                             self.offset, self.substrate_CIF_path, self.epilayer_CIF_path,self.sub_orientation,self.epi_orientation, self.use_atoms)
         QtCore.QCoreApplication.processEvents()
         if not self._abort:
             self.UPDATE_LOG.emit('Translational antiphase domain sites are created!')
-            self.SEND_RESULTS.emit(structure_sub, structure_epi, substrate_sites,epilayer_sites)
+            self.SEND_RESULTS.emit(model)
         else:
             self.UPDATE_LOG.emit('Process aborted!')
             self._abort = False
@@ -1062,43 +1181,32 @@ class TAPD_Simulation(QtCore.QObject):
         self._abort = True
 
     def get_TAPD_sites(self, X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, sub_orientation='(001)', epi_orientation='(001)',use_atoms = True):
-        structure_sub = CifParser(substrate_CIF_path).get_structures(primitive=False)[0]
-        structure_epi = CifParser(epilayer_CIF_path).get_structures(primitive=False)[0]
+        model = TAPD_model()
+        model.substrate_structure = CifParser(substrate_CIF_path).get_structures(primitive=False)[0]
+        model.epilayer_structure = CifParser(epilayer_CIF_path).get_structures(primitive=False)[0]
         self.UPDATE_LOG.emit('Preparing the substrate ...')
         QtCore.QCoreApplication.processEvents()
-        substrate_set, substrate_list, substrate_sites = self.get_substrate(structure_sub, sub_orientation, X_max, Y_max, Z_min, Z_max, use_atoms)
+        substrate_set, model.substrate_list, model.substrate_sites = self.get_substrate(model.substrate_structure, sub_orientation, X_max, Y_max, Z_min, Z_max, use_atoms)
         if not substrate_set is None:
             self.UPDATE_LOG.emit('Substrate created!')
             self.UPDATE_LOG.emit('Creating nucleation ...')
             QtCore.QCoreApplication.processEvents()
             generators = self.generator_2D(substrate_set, self.distribution, **self.parameters)
-            if not generators.any():
-                return None, None
-            else:
+            if generators.any():
                 self.UPDATE_LOG.emit('Nucleation created!')
                 self.UPDATE_LOG.emit('Creating Voronoi ...')
                 QtCore.QCoreApplication.processEvents()
                 vor = Voronoi(generators)
+                model.vor = vor
                 self.UPDATE_LOG.emit('Voronoi is created!')
                 self.UPDATE_LOG.emit('Epilayer is growing ...')
                 QtCore.QCoreApplication.processEvents()
-                epilayer_list, epilayer_sites = self.get_epilayer(vor, structure_epi, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
-                if not epilayer_list:
-                    self.UPDATE_LOG.emit('Epilayer is empty!')
-                    QtCore.QCoreApplication.processEvents()
-                    return None, None, None, None
-                else:
+                model.epilayer_list, model.epilayer_sites, model.epilayer_domain_area_list, model.epilayer_domain = self.get_epilayer(vor, model.epilayer_structure, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
+                if model.epilayer_list:
                     self.UPDATE_LOG.emit('Atoms are filtered!')
                     QtCore.QCoreApplication.processEvents()
                     self.UPDATE_LOG.emit('Epilayer growth is done!')
-                    if self.plot_Voronoi_diagram:
-                        self.UPDATE_LOG.emit('Plotting the voronoi diagram ...')
-                        QtCore.QCoreApplication.processEvents()
-                        self.VORONOI_PLOT.emit(vor,substrate_list,epilayer_list,{'point_color':'blue',\
-                            'point_size':5,'vertex_color':'black','vertex_size':1,'show_points':True,'show_vertices':False})
-                    return structure_sub, structure_epi, substrate_sites, epilayer_sites
-        else:
-            return None, None, None, None
+        return model
 
     def generator_2D(self, total, distribution, **kwargs):
         total_length = len(total)
@@ -1165,7 +1273,11 @@ class TAPD_Simulation(QtCore.QObject):
             a = structure.lattice.a
             b = structure.lattice.b
             angle = structure.lattice.gamma
-        xa, yb = int(X_max/a), int(Y_max/b/np.cos(angle))
+        elif orientation == '(111)':
+            a = structure.lattice.a/np.sqrt(2)
+            b = structure.lattice.a/np.sqrt(2)
+            angle = 120
+        xa, yb = int(X_max/a), int(Y_max/b/np.sin(angle/180*np.pi))
         for i,j in itertools.product(range(-xa, xa+1), range(-yb, yb+1)):
             offset = int(j*b*np.cos(angle/180*np.pi)/a)
             x = (i-offset)*a+j*b*np.cos(angle/180*np.pi)
@@ -1190,6 +1302,12 @@ class TAPD_Simulation(QtCore.QObject):
     def get_epilayer(self,vor,structure,orientation,X_max,Y_max, Z_min, Z_max, offset, use_atoms):
         epilayer_list = []
         epilayer_sites = []
+        epilayer_domain_area_list = []
+        epilayer_domain_list = []
+        gap_add = {}
+        gap_subtract = {}
+        rectangle = Polygon([(-X_max,-Y_max),(-X_max,Y_max),(X_max,Y_max),(X_max,-Y_max)])
+        region_vertices_dict = self.get_region_vertices_dict(vor,X_max,Y_max)
         if use_atoms:
             unit_cell_sites_epi = [pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+offset[0],site.y+offset[1],site.z+offset[2]]) \
                                    for site in structure.sites if (site.z>=Z_min*structure.lattice.c and site.z<Z_max*structure.lattice.c)]
@@ -1201,52 +1319,66 @@ class TAPD_Simulation(QtCore.QObject):
             a = structure.lattice.a
             b = structure.lattice.b
             angle = structure.lattice.gamma
+        elif orientation == '(111)':
+            a = structure.lattice.a/np.sqrt(2)
+            b = structure.lattice.a/np.sqrt(2)
+            angle = 120
         for point_index, region_index in enumerate(vor.point_region):
             self.PROGRESS_ADVANCE.emit(0,100,np.round(point_index/len(vor.point_region)*100,1))
             QtCore.QCoreApplication.processEvents()
             point = vor.points[point_index]
-            if not -1 in vor.regions[region_index]:
-                vertices = [list(vor.vertices[vertex_index]) for vertex_index in vor.regions[region_index]]
-            else:
-                vertices = [list(vor.vertices[vertex_index]) for vertex_index in vor.regions[region_index] if vertex_index >=0]
-                for vertex in self.get_far_points(vor,vertices):
-                    vertices.append(vertex)
-            epilayer_domain, epilayer_domain_sites = self.get_domain(a, b, angle, point, vertices, X_max, Y_max,unit_cell_sites_epi)
-            epilayer_list += epilayer_domain
-            epilayer_sites += epilayer_domain_sites
+            vertices = region_vertices_dict[tuple(point)]
+            if len(vertices)>=3:
+                original_polygon = Polygon(self.sortpts_clockwise(np.array(vertices)))
+                if original_polygon.is_valid:
+                    polygon = original_polygon.intersection(rectangle)
+                    if polygon:
+                        epilayer_domain, epilayer_domain_sites, epilayer_domain_area, gap_add_out, gap_subtract_out, domain = self.get_domain(a, b, angle, point, polygon, gap_add, gap_subtract, X_max, Y_max,unit_cell_sites_epi)
+                        if epilayer_domain:
+                            epilayer_list += epilayer_domain
+                            epilayer_sites += epilayer_domain_sites
+                            epilayer_domain_list.append(domain)
+                            gap_add.update(gap_add_out)
+                            gap_subtract.update(gap_subtract_out)
+                            if not -1 in vor.regions[region_index]:
+                                epilayer_domain_area_list.append(epilayer_domain_area)
             if self._abort:
                 break
         self.PROGRESS_END.emit()
         QtCore.QCoreApplication.processEvents()
         if not self._abort:
             self.UPDATE_LOG.emit('Filtering atoms that are too close ...')
-            return epilayer_list, epilayer_sites
-            #return self.filter_close_pairs(vor, epilayer_list,epilayer_sites, min(a,b)-0.01, len(unit_cell_sites_epi))
+            return epilayer_list, epilayer_sites, epilayer_domain_area_list, epilayer_domain_list
         else:
-            return None, None
+            return None, None, None, None
 
-    def get_far_points(self,vor,vertices):
+    def get_region_vertices_dict(self,vor,x_max,y_max):
+        region_vertices_dict = {}
+        oversize_factor = 3
+        rectangle = Polygon([(-oversize_factor*x_max,-oversize_factor*y_max),(-oversize_factor*x_max,oversize_factor*y_max),(oversize_factor*x_max,oversize_factor*y_max),(oversize_factor*x_max,-oversize_factor*y_max)])
         ptp_bound = vor.points.ptp(axis=0)
         center = vor.points.mean(axis=0)
-        sorted_vertices = self.sortpts_clockwise(np.array(vertices))
-        t1 = sorted_vertices[0] - center
-        t1 /= np.linalg.norm(t1)
-        t2 = sorted_vertices[-1] - center
-        t2 /= np.linalg.norm(t2)
-        far_point1 = sorted_vertices[0] + t1 * ptp_bound.max()
-        far_point2 = sorted_vertices[-1] + t2 * ptp_bound.max()
-        return list(far_point1), list(far_point2)
-
-    def get_far_points_for_indices(self,vor,vertex_indices):
-        ptp_bound = vor.points.ptp(axis=0)
-        center = vor.points.mean(axis=0)
-        for index in vertex_indices:
-            if index >=0:
-                vertex = vor.vertices[index]
-        t = vertex - center
-        t /= np.linalg.norm(t)
-        far_point1 = vertex + t * ptp_bound.max()
-        return vertex, list(far_point1)
+        for point in vor.points:
+            region_vertices_dict[tuple(point)] = []
+        for pointidx, simplex in zip(vor.ridge_points, vor.ridge_vertices):
+            simplex = np.asarray(simplex)
+            if np.all(simplex >= 0):
+                intersection = rectangle.intersection(LineString(vor.vertices[simplex]))
+            if np.any(simplex < 0):
+                i = simplex[simplex >= 0][0]
+                t = vor.points[pointidx[1]] - vor.points[pointidx[0]]
+                t /= np.linalg.norm(t)
+                n = np.array([-t[1], t[0]])
+                midpoint = vor.points[pointidx].mean(axis=0)
+                direction = np.sign(np.dot(midpoint - center, n)) * n
+                far_point = vor.vertices[i] + direction * ptp_bound.max()
+                intersection = rectangle.intersection(LineString([(vor.vertices[i, 0], vor.vertices[i, 1]),(far_point[0], far_point[1])]))
+            if intersection:
+                region_vertices_dict[tuple(vor.points[pointidx[0]])].append(list(intersection.coords[0]))
+                region_vertices_dict[tuple(vor.points[pointidx[0]])].append(list(intersection.coords[1]))
+                region_vertices_dict[tuple(vor.points[pointidx[1]])].append(list(intersection.coords[0]))
+                region_vertices_dict[tuple(vor.points[pointidx[1]])].append(list(intersection.coords[1]))
+        return region_vertices_dict
 
     def find_largest_independent_set(self, epilayer_list, r):
         tree = cKDTree(epilayer_list)
@@ -1262,70 +1394,6 @@ class TAPD_Simulation(QtCore.QObject):
         print(vertex_set)
         return vertex_set
 
-    def filter_close_pairs(self,vor, epilayer_list, epilayer_sites, r, unit_cell_size, plot_filter = False):
-        close_pair_indices = set()
-        excluded_indices = []
-        tree = cKDTree(epilayer_list)
-        for indices, distance in tree.sparse_distance_matrix(tree,r).items():
-            if not distance == 0:
-                close_pair_indices.add(indices[1])
-        #excluded_indices = set(self.find_largest_independent_set(epilayer_list,r))
-        #print('the excluded indices are:')
-        #print(excluded_indices)
-        if plot_filter:
-            figure,ax = plt.subplots()
-            ax.set_aspect('equal')
-            voronoi_plot_2d(vor,ax)
-            patches = []
-            for index in close_pair_indices:
-                ax.scatter(epilayer_list[index][0],epilayer_list[index][1],10,'k',alpha=0.2)
-        it = 0
-        for vertex_index, point_index in zip(vor.ridge_vertices,vor.ridge_points):
-            point_1, point_2 = vor.points[point_index[0]], vor.points[point_index[1]]
-            if not -1 in vertex_index:
-                vertex_1, vertex_2 = vor.vertices[vertex_index[0]], vor.vertices[vertex_index[1]]
-            else:
-                vertex_1, vertex_2 = self.get_far_points_for_indices(vor,vertex_index)
-            if random.choice([1,2]) == 1:
-                point = point_1
-                if plot_filter:
-                    polygon = Polygon([vertex_1,point_1,vertex_2])
-            else:
-                point = point_2
-                if plot_filter:
-                    polygon = Polygon([vertex_1,point_2,vertex_2])
-            if plot_filter:
-                patches.append(matPolygon(polygon.exterior.coords))
-            for index in list(close_pair_indices):
-                if self.point_in_triangle(vertex_1,vertex_2,point,epilayer_list[index],r):
-                    if plot_filter:
-                        ax.scatter(epilayer_list[index][0],epilayer_list[index][1],1,'r')
-                    excluded_indices.append(index)
-                    close_pair_indices.remove(index)
-            it+=1
-            if self._abort:
-                break
-            else:
-                self.PROGRESS_ADVANCE.emit(0,100,np.round(it/len(vor.ridge_points)*100,1))
-                QtCore.QCoreApplication.processEvents()
-
-        if plot_filter:
-            colors = 100*np.random.rand(len(patches))
-            patch = PatchCollection(patches, alpha=0.4)
-            patch.set_array(np.array(colors))
-            ax.add_collection(patch)
-            plt.show()
-        self.PROGRESS_END.emit()
-        self.UPDATE_LOG.emit('Preparing the result ...')
-        QtCore.QCoreApplication.processEvents()
-        excluded_site_indices = []
-        for index in excluded_indices:
-            for i in range(unit_cell_size):
-                excluded_site_indices.append(index*unit_cell_size+i)
-        new_epilayer_list = list(epilayer_list[index] for index in range(len(epilayer_list)) if not index in excluded_indices)
-        new_epilayer_sites = list(epilayer_sites[index] for index in range(len(epilayer_sites)) if not index in excluded_site_indices)
-        return new_epilayer_list, new_epilayer_sites
-
     def point_in_triangle(self,v1,v2,v3,p,r):
         d1 = self.left_or_right(p,v1,v2)
         d2 = self.left_or_right(p,v2,v3)
@@ -1340,80 +1408,63 @@ class TAPD_Simulation(QtCore.QObject):
     def within_vertex(self,v,p,r):
         return (v[0]-p[0])**2+(v[1]-p[1])**2 < (r/2)**2
 
-    def get_rectangle_position(self,start,end,width,side):
-        xc1, yc1, xc2, yc2 = start[0], start[1], end[0], end[1]
-        if end[1] == start[1]:
-            x0 = start[0]
-            y0 = start[1]-width
-            x1 = start[0]
-            y1 = start[1]+width
-            x2 = end[0]
-            y2 = end[1]+width
-            x3 = end[0]
-            y3 = end[1]-width
-        elif end[0] ==start[0]:
-            x0 = start[0]+width
-            y0 = start[1]
-            x1 = start[0]-width
-            y1 = start[1]
-            x2 = end[0]-width
-            y2 = end[1]
-            x3 = end[0]+width
-            y3 = end[1]
+    def get_domain(self, a, b, angle, point, polygon, gap_add_in, gap_subtract_in, X_max, Y_max, unit_cell_sites_epi):
+        vertices = list(polygon.exterior.coords)
+        extended_polygon = [polygon]
+        exclusion = []
+        for first, second in zip(vertices, vertices[1:]):
+            add_gap = gap_add_in.get((first,second), None)
+            subtract_gap = gap_subtract_in.get((first,second), None)
+            if add_gap:
+                extended_polygon.append(add_gap)
+            if subtract_gap:
+                exclusion.append(subtract_gap)
+        domain_include = unary_union(extended_polygon)
+        domain_exclude = unary_union(exclusion)
+        if (domain_include.is_valid) or (np.all(subdomain.is_valid for subdomain in domain_include)):
+            epilayer_domain = []
+            epilayer_domain_sites = []
+            bounding_box = list(polygon.bounds)
+            bounding_box[0] -= point[0]
+            bounding_box[1] -= point[1]
+            bounding_box[2] -= point[0]
+            bounding_box[3] -= point[1]
+        
+            for i,j in itertools.product(range(int(bounding_box[0]/a)-5,int(bounding_box[2]/a)+6), \
+                                        range(int(bounding_box[1]/b/np.sin(angle/180*np.pi))-5,int(bounding_box[3]/b/np.sin(angle/180*np.pi))+6)):
+                offset = int(j*b*np.cos(angle/180*np.pi)/a)
+                x = (i-offset)*a+j*b*np.cos(angle/180*np.pi) + point[0]
+                y = j*b*np.sin(angle/180*np.pi) + point[1]
+                try:
+                    condition1 = domain_include.contains(Point(x,y))
+                except:
+                    condition1 = (np.any(subdomain.contains(Point(x,y)) for subdomain in domain_include))
+                try:
+                    condition2 = not domain_exclude.contains(Point(x,y))
+                except:
+                    condition2 = not np.any(subdomain.contains(Point(x,y)) for subdomain in domain_exclude)
+                if condition1 and condition2 :
+                    epilayer_domain.append([x,y])
+                    for site in unit_cell_sites_epi:
+                        epilayer_domain_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
+            hull = MultiPoint(epilayer_domain)   
+            gap_add_out = {}
+            gap_subtract_out = {}
+            if hull.is_valid:
+                for first, second in zip(vertices, vertices[1:]):
+                    gap_add = Polygon([first, second, point]).difference(hull.buffer(max(a,b)))
+                    gap_subtract = hull.buffer(max(a,b)).difference(Polygon([first, second, point]))
+                    if not gap_add.is_empty:
+                        if not (first, second) in gap_add_in:
+                            gap_add_out[(first,second)] = gap_add
+                            gap_add_out[(second,first)] = gap_add
+                    if not gap_subtract.is_empty:
+                        if not (first, second) in gap_subtract_in:
+                            gap_subtract_out[(first,second)] = gap_subtract
+                            gap_subtract_out[(second,first)] = gap_subtract
+            return epilayer_domain, epilayer_domain_sites, polygon.area, gap_add_out, gap_subtract_out, domain_include
         else:
-            slope0 =(start[0]-end[0])/(end[1]-start[1])
-            if abs(slope0) > 1:
-                x0 = start[0]+1/slope0*width
-                y0 = start[1]+width
-                x1 = start[0]-1/slope0*width
-                y1 = start[1]-width
-                x2 = end[0]-1/slope0*width
-                y2 = end[1]-width
-                x3 = end[0]+1/slope0*width
-                y3 = end[1]+width
-            else:
-                x0 = start[0]-width
-                y0 = start[1]-slope0*width
-                x1 = start[0]+width
-                y1 = start[1]+slope0*width
-                x2 = end[0]+width
-                y2 = end[1]+slope0*width
-                x3 = end[0]-width
-                y3 = end[1]-slope0*width
-        if side == 0:
-            return [x0,y0], [xc1,yc1], [xc2,yc2], [x3,y3]
-        elif side == 1:
-            return [x1,y1], [xc1,yc1], [xc2,yc2], [x2,y2]
-        elif side == 2:
-            return [x0,y0], [x1,y1], [x2,y2], [x3,y3]
-
-    def get_domain(self, a, b, angle, point, vertices, X_max, Y_max, unit_cell_sites_epi):
-        epilayer_domain = []
-        epilayer_domain_sites = []
-        polygon = Polygon(self.sortpts_clockwise(np.array(vertices)))
-        bounding_box = list(polygon.bounds)
-        bounding_box[0] -= point[0]
-        if bounding_box[0] < -X_max:
-            bounding_box[0] = -X_max
-        bounding_box[1] -= point[1]
-        if bounding_box[1] < -Y_max:
-            bounding_box[1] = -Y_max
-        bounding_box[2] -= point[0]
-        if bounding_box[2] > X_max:
-            bounding_box[2] = X_max
-        bounding_box[3] -= point[1]
-        if bounding_box[3] > Y_max:
-            bounding_box[3] = Y_max
-        for i,j in itertools.product(range(int(bounding_box[0]/a),int(bounding_box[2]/a)+1), \
-                                     range(int(bounding_box[1]/b/np.cos(angle)),int(bounding_box[3]/b/np.cos(angle))+1)):
-            offset = int(j*b*np.cos(angle/180*np.pi)/a)
-            x = (i-offset)*a+j*b*np.cos(angle/180*np.pi) + point[0]
-            y = j*b*np.sin(angle/180*np.pi) + point[1]
-            if x >= -X_max and x <= X_max and y >= -Y_max and y <= Y_max and polygon.contains(Point(x,y)):
-                epilayer_domain.append([x,y])
-                for site in unit_cell_sites_epi:
-                    epilayer_domain_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
-        return epilayer_domain, epilayer_domain_sites
+            return None,None,None,None,None,None
 
     def sortpts_clockwise(self,points):
         self.origin = np.mean(points,axis=0)
@@ -1431,3 +1482,4 @@ class TAPD_Simulation(QtCore.QObject):
         if angle < 0:
             return 2*math.pi+angle, lenvector
         return angle, lenvector
+

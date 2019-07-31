@@ -661,8 +661,8 @@ class DynamicalColorMap(QtWidgets.QWidget):
             if self.type == 'XY':
                 if self.showFWHM:
                     self.figureText.set_visible(False)
-                    self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
-                                                            format(self.FWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+                    self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average HWHM = {:5.4f} \u212B\u207B\u00B9\nHWHM Asymmetric Ratio = {:5.3f}". \
+                                                            format(self.HWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
                     self.csHM.set_alpha(1)
                 self.figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
                    format(self.z_linear[self.nkz]),fontsize=self.fontsize,pad=30)
@@ -721,11 +721,12 @@ class DynamicalColorMap(QtWidgets.QWidget):
                         for item in path:
                             x0 = item.vertices[:,0]
                             y0 = item.vertices[:,1]
-                            w = np.sqrt(x0**2+y0**2)
+                            w = np.sqrt((x0-2.27)**2+y0**2)
                             self.ratio = np.amax(w)/np.amin(w)
-                            self.FWHM = np.amax(w)+np.amin(w)
-                    self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nFWHM Asymmetric Ratio = {:5.3f}". \
-                                          format(self.FWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+                            #self.FWHM = np.amax(w)+np.amin(w)
+                            self.HWHM = np.amax(w)
+                    self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average HWHM = {:5.4f} \u212B\u207B\u00B9\nHWHM Asymmetric Ratio = {:5.3f}". \
+                                          format(self.HWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
                     self.csHM.set_alpha(1)
                 else:
                     try:
@@ -736,12 +737,12 @@ class DynamicalColorMap(QtWidgets.QWidget):
 
     def replot(self,type,x,y,z,colormap,intensity,nkz):
         #self.y_linear = x[190:309]
-        #self.x_linear = y[190:309]
+        #self.x_linear = y[380:499]
         self.y_linear = x
         self.x_linear = y
         self.z_linear = z
         self.colormap = colormap
-        #self.intensity = intensity[190:309,190:309,:]
+        #self.intensity = intensity[380:499,190:309,:]
         self.intensity = intensity
         self.nkz = nkz
         self.type = type
