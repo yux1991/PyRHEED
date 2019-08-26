@@ -10,10 +10,15 @@ from pymatgen.core.operations import SymmOp
 from pymatgen.core.lattice import Lattice
 import browser
 import itertools
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
+import os
 import re
+from scipy.spatial import cKDTree
+from scipy.spatial import voronoi_plot_2d
 from shapely.geometry import LineString
 from shapely.geometry import Point
 from shapely.geometry import Polygon
@@ -48,7 +53,7 @@ class Window(QtWidgets.QWidget):
         self.data_index_set = set()
         self.sample_index_set = set()
         self.sample_tab_index = []
-        self.deleted_tab_index = []
+        self.deleted_tab_index = set()
         self.real_space_specification_dict = {}
         self.colorSheet = {}
         self.molecule_dict = {}
@@ -139,7 +144,7 @@ class Window(QtWidgets.QWidget):
         self.TAPD_epilayer_orientation.addItem('(111)')
         self.TAPD_add_atoms_label = QtWidgets.QLabel('Add atoms to the canvas?')
         self.TAPD_add_atoms = QtWidgets.QCheckBox()
-        self.TAPD_add_atoms.setChecked(False)
+        self.TAPD_add_atoms.setChecked(True)
         self.TAPD_add_substrate_label = QtWidgets.QLabel('Add substrate?')
         self.TAPD_add_substrate = QtWidgets.QCheckBox()
         self.TAPD_add_substrate.setChecked(False)
@@ -173,15 +178,24 @@ class Window(QtWidgets.QWidget):
         self.distribution_parameters_grid.addWidget(self.TAPD_geometric_gamma)
 
         self.plot_size_distribution_button = QtWidgets.QPushButton("Plot Size Distribution")
+        self.plot_boundary_statistics_button = QtWidgets.QPushButton("Plot Boundary Statistics")
+        self.plot_boundary_button = QtWidgets.QPushButton("Plot Boundary")
         self.plot_voronoi_button = QtWidgets.QPushButton("Plot Voronoi Diagram")
+        self.save_scene_button = QtWidgets.QPushButton("Save Scene")
         self.plot_size_distribution_button.setEnabled(False)
+        self.plot_boundary_statistics_button.setEnabled(False)
+        self.plot_boundary_button.setEnabled(False)
         self.plot_voronoi_button.setEnabled(False)
+        self.save_scene_button.setEnabled(False)
         self.reload_TAPD_structure_button = QtWidgets.QPushButton("Reload Structure")
         self.load_TAPD_structure_button = QtWidgets.QPushButton("Add Structure")
         self.stop_TAPD_structure_button = QtWidgets.QPushButton("Stop")
         self.reset_TAPD_structure_button = QtWidgets.QPushButton("Reset Structure")
         self.plot_size_distribution_button.clicked.connect(self.plot_distribution)
+        self.plot_boundary_statistics_button.clicked.connect(self.plot_boundary_statistics)
+        self.plot_boundary_button.clicked.connect(self.plot_boundary)
         self.plot_voronoi_button.clicked.connect(self.plot_voronoi)
+        self.save_scene_button.clicked.connect(self.graph.save_scene)
         self.reload_TAPD_structure_button.clicked.connect(self.reload_TAPD)
         self.load_TAPD_structure_button.clicked.connect(self.load_TAPD)
         self.stop_TAPD_structure_button.clicked.connect(self.stop_TAPD)
@@ -226,7 +240,10 @@ class Window(QtWidgets.QWidget):
         self.TAPD_model_grid.addWidget(self.stop_TAPD_structure_button,28,2,1,1)
         self.TAPD_model_grid.addWidget(self.reset_TAPD_structure_button,28,3,1,1)
         self.TAPD_model_grid.addWidget(self.plot_size_distribution_button,29,0,1,4)
-        self.TAPD_model_grid.addWidget(self.plot_voronoi_button,30,0,1,4)
+        self.TAPD_model_grid.addWidget(self.plot_boundary_statistics_button,30,0,1,4)
+        self.TAPD_model_grid.addWidget(self.plot_boundary_button,31,0,1,4)
+        self.TAPD_model_grid.addWidget(self.plot_voronoi_button,32,0,1,4)
+        self.TAPD_model_grid.addWidget(self.save_scene_button,33,0,1,4)
 
         self.CIF_tab = QtWidgets.QTabWidget()
         self.CIF_tab.addTab(self.chooseCif,'CIF')
@@ -386,11 +403,12 @@ class Window(QtWidgets.QWidget):
         self.appearanceGrid.setContentsMargins(5,5,5,5)
         self.appearanceGrid.setAlignment(QtCore.Qt.AlignTop)
 
+        self.graph.update_coordinates(0)
         self.showCoordinatesWidget = QtWidgets.QWidget()
         self.showCoordinatesGrid = QtWidgets.QGridLayout(self.showCoordinatesWidget)
         self.showCoordinatesLabel = QtWidgets.QLabel('Show Coordinate System?')
         self.showCoordinates = QtWidgets.QCheckBox()
-        self.showCoordinates.setChecked(True)
+        self.showCoordinates.setChecked(False)
         self.showCoordinates.stateChanged.connect(self.update_coordinates)
         self.showCoordinatesGrid.addWidget(self.showCoordinatesLabel,0,0)
         self.showCoordinatesGrid.addWidget(self.showCoordinates,0,1)
@@ -480,6 +498,7 @@ class Window(QtWidgets.QWidget):
         self.viewGrid.setAlignment(QtCore.Qt.AlignTop)
         viewLabel = QtWidgets.QLabel("Set View Direction")
         viewLabel.setStyleSheet("QLabel {color:blue;}")
+        self.graph.update_view_direction(16)
         self.viewDirection = QtWidgets.QWidget()
         self.viewDirectionGrid = QtWidgets.QGridLayout(self.viewDirection)
         self.viewDirectionButtonGroup = QtWidgets.QButtonGroup()
@@ -523,7 +542,7 @@ class Window(QtWidgets.QWidget):
         self.controlPanelScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
 
         self.themeList.currentTextChanged.connect(self.graph.change_theme)
-        self.themeList.setCurrentIndex(3)
+        self.themeList.setCurrentIndex(0)
         self.graph.LOG_MESSAGE.connect(self.update_log)
         self.graph.PROGRESS_ADVANCE.connect(self.progress)
         self.graph.PROGRESS_END.connect(self.progress_reset)
@@ -558,7 +577,7 @@ class Window(QtWidgets.QWidget):
             self.sample_tab.setVisible(False)
         self.colorTab.widget(index).destroy()
         self.colorTab.removeTab(index)
-        self.deleted_tab_index.append(index)
+        self.deleted_tab_index.add(index)
         del self.real_space_specification_dict[self.sample_tab_index[index]]
         del self.colorSheet[self.sample_tab_index[index]]
         try:
@@ -914,6 +933,8 @@ class Window(QtWidgets.QWidget):
         range_grid.addWidget(apply_range,12,0)
         range_grid.addWidget(replace_structure,13,0)
         range_grid.addWidget(reset_structure,14,0)
+        if index in self.deleted_tab_index:
+            self.deleted_tab_index.remove(index)
         self.sample_tab.insertTab(index,range_structure,"Sample "+str(index+1))
         self.sample_tab.setCurrentIndex(index)
         self.sample_tab.setVisible(True)
@@ -1196,13 +1217,17 @@ class Window(QtWidgets.QWidget):
         self.epilayer_sites = model.epilayer_sites
         self.epilayer_list = model.epilayer_list
         self.epilayer_domain_area_list = model.epilayer_domain_area_list
+        self.epilayer_domain_boundary_list = model.epilayer_domain_boundary_list
         self.epilayer_domain = model.epilayer_domain
         if self.TAPD_add_substrate.isChecked():
             self.add_TAPD('substrate')
         if self.TAPD_add_epilayer.isChecked():
             self.add_TAPD('epilayer')
         self.plot_size_distribution_button.setEnabled(True)
+        self.plot_boundary_statistics_button.setEnabled(True)
+        self.plot_boundary_button.setEnabled(True)
         self.plot_voronoi_button.setEnabled(True)
+        self.save_scene_button.setEnabled(True)
 
     def add_TAPD(self,label='substrate'):
         next_available_index = 0
@@ -1249,6 +1274,8 @@ class Window(QtWidgets.QWidget):
         range_grid.addWidget(lateral_size,3,0)
         range_grid.addWidget(apply_range,4,0)
         range_grid.addWidget(reset_structure,5,0)
+        if index in self.deleted_tab_index:
+            self.deleted_tab_index.remove(index)
         self.sample_tab.insertTab(index,range_structure,label+" "+str(index+1))
         self.sample_tab.setCurrentIndex(index)
         self.sample_tab.setVisible(True)
@@ -1458,6 +1485,110 @@ class Window(QtWidgets.QWidget):
         layout.addWidget(canvas)
         window.setWindowTitle("Domain size distribution")
         window.show()
+    
+    def plot_boundary(self):
+        fontsize = 20
+        point_color = 'red'
+        point_size = 5
+        x_list = []
+        y_list = []
+        for boundary in self.epilayer_domain_boundary_list:
+            try:
+                for vertex_index in boundary.vertices:
+                    x_list.append(boundary.points[vertex_index][0])
+                    y_list.append(boundary.points[vertex_index][1])
+                for vertex_index in boundary.coplanar:
+                    if not (boundary.points[vertex_index[0]][0] in x_list and boundary.points[vertex_index[0]][1] in y_list):
+                        x_list.append(boundary.points[vertex_index[0]][0])
+                        y_list.append(boundary.points[vertex_index[0]][1])
+
+            except AttributeError:
+                for point in boundary:
+                    x_list.append(point[0])
+                    y_list.append(point[1])
+
+        figure = plt.figure()
+        ax = figure.add_subplot(111)
+        ax.set_aspect('equal')
+        voronoi_plot_2d(self.vor,ax,show_points=False, show_vertices=False)
+        ax.plot(x_list, y_list, '.', markersize=point_size, markerfacecolor=point_color, markeredgecolor=point_color)
+        ax.set_xlabel('x (\u212B)',fontsize=fontsize)
+        ax.set_ylabel('y (\u212B)',fontsize=fontsize)
+        ax.tick_params(labelsize=fontsize)
+
+        window = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(window)
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas,window)
+        canvas.draw()
+        layout.addWidget(toolbar)
+        layout.addWidget(canvas)
+        window.setWindowTitle("Domain boundary")
+        window.show()
+
+    def plot_boundary_statistics(self):
+        fontsize = 30
+        fontname = 'Arial'
+        x_list, y_list, xy_list = [], [], []
+
+        for boundary in self.epilayer_domain_boundary_list:
+            try:
+                for vertex_index in boundary.vertices:
+                    x_list.append(boundary.points[vertex_index][0])
+                    y_list.append(boundary.points[vertex_index][1])
+                    xy_list.append(boundary.points[vertex_index])
+                for vertex_index in boundary.coplanar:
+                    if not (boundary.points[vertex_index[0]][0] in x_list and boundary.points[vertex_index[0]][1] in y_list):
+                        x_list.append(boundary.points[vertex_index[0]][0])
+                        y_list.append(boundary.points[vertex_index[0]][1])
+                        xy_list.append(boundary.points[vertex_index[0]])
+
+            except AttributeError:
+                for point in boundary:
+                    x_list.append(point[0])
+                    y_list.append(point[1])
+                    xy_list.append(point)
+
+        xy_tree= cKDTree(np.array(xy_list))
+        lattice_constant = max(self.structure_epi.lattice.a,self.structure_epi.lattice.b)
+        dict_xy = xy_tree.sparse_distance_matrix(xy_tree,lattice_constant*0.9999*2,output_type='dict')
+        xy_distance = []
+        for key,value in dict_xy.items():
+            if value > lattice_constant*1.0001:
+                r = value/lattice_constant
+                x = (xy_list[key[0]][0] - xy_list[key[1]][0])/lattice_constant
+                y = (xy_list[key[0]][1] - xy_list[key[1]][1])/lattice_constant
+                angle = np.arcsin(np.abs(y/r)) + np.where(x>0,np.where(y>0,0,270),np.where(y>0,90,180))
+                xy_distance.append([x, y, r, angle])
+        if self.currentDestination:
+            output = open(self.currentDestination+'/'+'boundary_statistics'+".txt",mode='w')
+            output.write("\n".join(str(distance) for distance in np.array(xy_distance)))
+            output.close()
+        figure = plt.figure()
+        ax = figure.add_subplot(111)
+        x_min, x_max = np.amin(np.array(xy_distance)[:,0]), np.amax(np.array(xy_distance)[:,0])
+        y_min, y_max = np.amin(np.array(xy_distance)[:,1]), np.amax(np.array(xy_distance)[:,1])
+        H, x_edges, y_edges = np.histogram2d(np.array(xy_distance)[:,0],np.array(xy_distance)[:,1],bins=500)
+        H[H == 0] = 0.1
+        ax.imshow(H,cmap='hot',aspect='equal', origin = 'low', interpolation='gaussian',\
+            norm=mcolors.LogNorm(0.1,np.amax(np.amax(H))), extent=[x_min, x_max, y_min, y_max])
+        ax.set_xlabel('\u0394x/a',fontsize=fontsize, fontname=fontname)
+        ax.set_ylabel('\u0394y/a',fontsize=fontsize, fontname=fontname)
+        ax.set_xticks([-1.5,-1,-0.5,0,0.5,1,1.5])
+        ax.set_yticks([-1.5,-1,-0.5,0,0.5,1,1.5])
+        ax.set_frame_on(False)
+        ax.set_xticklabels(ax.get_xticks(),fontsize=fontsize, fontname=fontname)
+        ax.set_yticklabels(ax.get_yticks(),fontsize=fontsize, fontname=fontname)
+
+        window = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(window)
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas,window)
+        canvas.draw()
+        layout.addWidget(toolbar)
+        layout.addWidget(canvas)
+        window.setWindowTitle("Domain boundary statistics")
+        window.show()
 
     def plot_voronoi(self, **kwargs):
         x_max = kwargs.get('X_max',float(self.TAPD_X_max.text()))
@@ -1478,7 +1609,7 @@ class Window(QtWidgets.QWidget):
         point_size = kwargs.get('point_size', 10)
         vertex_color = kwargs.get('vertex_color', 'green')
         vertex_size  = kwargs.get('vertex_size', 3)
-        plot_domains = kwargs.get('plot_domains', False)
+        plot_domains = kwargs.get('plot_domains', True)
 
         if kwargs.get('show_points', True):
             ax.plot(self.vor.points[:,0], self.vor.points[:,1], '.', markersize=point_size, markerfacecolor=point_color)
@@ -1532,13 +1663,15 @@ class Window(QtWidgets.QWidget):
                         y1.append(cy)
                     ax.plot(x1,y1,color=np.random.rand(3,), marker=',', linestyle='-')
                 except:
-                    for subpolygon in polygon:
-                        x1=[]
-                        y1=[]
-                        for cx,cy in subpolygon.exterior.coords:
-                            x1.append(cx)
-                            y1.append(cy)
-                        ax.plot(x1,y1,color=np.random.rand(3,), marker=',', linestyle='-')
+                    try:
+                        for subpolygon in polygon:
+                            x1=[]
+                            y1=[]
+                            for cx,cy in subpolygon.exterior.coords:
+                                x1.append(cx)
+                                y1.append(cy)
+                            ax.plot(x1,y1,color=np.random.rand(3,), marker=',', linestyle='-')
+                    except: pass
 
         ptp_bound = self.vor.points.ptp(axis=0)
         ax.set_xlim(-x_max,x_max)
@@ -1853,6 +1986,12 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
 
     def change_shadow_quality(self,quality):
         self.setShadowQuality(quality)
+
+    def save_scene(self):
+        imageFileName = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./pattern.bmp",\
+                                                                   "BMP (*.bmp);;JPEG (*.jpeg);;PNG(*.png)")
+        capture = self.renderToImage(0,QtCore.QSize(2000,2000))
+        capture.save(imageFileName[0], quality=100)
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()

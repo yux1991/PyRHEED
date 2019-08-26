@@ -8,17 +8,21 @@ import os
 import PIL.Image as pilImage
 import rawpy
 import random
+import sys
 from descartes.patch import PolygonPatch
+from io import StringIO
 from lxml import etree as ET
 from math import pi as Pi
 from matplotlib.patches import Polygon as matPolygon
 from matplotlib.collections import PatchCollection
+from process_monitor import Monitor
 from pymatgen.io.cif import CifParser
 from pymatgen.core import sites as pgSites
 from pymatgen.core import structure as pgStructure
 from pymatgen.core import periodic_table
 from PyQt5 import QtGui,QtCore, QtWidgets
 from scipy.optimize import least_squares
+from scipy.spatial import ConvexHull
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import cKDTree
@@ -27,6 +31,7 @@ from shapely.geometry import MultiPoint
 from shapely.geometry import Point
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
+from sys import getsizeof
 
 class Image(object):
 
@@ -192,7 +197,7 @@ class FitFunctions(object):
                         np.exp(1j*(it1*2*np.pi*h+it2*2*np.pi*k))))
         return np.absolute(result)
 
-    def FWHM_of_translational_antiphase_domain_model(self,h,gamma,a):
+    def HWHM_of_translational_antiphase_domain_model(self,h,gamma,a):
         alpha = (4*self.boundary_structure_factor_using_h(h,gamma) - np.multiply(self.boundary_structure_factor_using_h(h,gamma),\
                     self.boundary_structure_factor_using_h(h,gamma))-1)/(2*self.boundary_structure_factor_using_h(h,gamma))
         return 1/2/a*np.arccos(alpha)
@@ -356,9 +361,20 @@ class FitFunctions(object):
             elif numberOfPeaks == 11:
                 self.fitFunction = self.eleven_gaussians_bg
         self.cost_values=[]
-        optim = least_squares(fun=self.errfunc,x0=guess,\
-                bounds=bounds,method=method,loss=loss, ftol=FTol,xtol=XTol,gtol=GTol,args=(x,y),verbose=0)
-        return optim, self.cost_values
+        with Capture() as output:
+            optim = least_squares(fun=self.errfunc,x0=guess,\
+                    bounds=bounds,method=method,loss=loss, ftol=FTol,xtol=XTol,gtol=GTol,args=(x,y),verbose=2)
+        return optim, self.cost_values, str(output)
+
+class Capture(list):
+    def __enter__(self):
+        self._stdout = sys.stdout
+        sys.stdout = self._stringio = StringIO()
+        return self
+    def __exit__(self, *args):
+        self.extend(self._stringio.getvalue().splitlines())
+        del self._stringio
+        sys.stdout = self._stdout
 
 class Convertor(object):
     def __init__(self):
@@ -935,7 +951,7 @@ class FitBroadening(QtCore.QObject):
         self.fit_worker = FitFunctions()
         self._abort = False
         self._periodic = False
-
+    
     def run(self):
         for filename in glob.glob(self.path):
             self.image_list.append(filename)
@@ -970,12 +986,10 @@ class FitBroadening(QtCore.QObject):
                     newEnd.setX(int(x1+i*step*np.sin(angle)))
                     newEnd.setY(int(y1+i*step*np.cos(angle)))
                 if self.width == 0.0:
-                    #self.DRAW_LINE_REQUESTED.emit(newStart,newEnd,False)
                     RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,self.scale_factor)
                 else:
-                    #self.DRAW_RECT_REQUESTED.emit(newStart,newEnd,self.width,False)
                     RC,I = self.image_worker.get_integral(newStart,newEnd,self.width,img,self.scale_factor)
-                results, cost = self.fit_worker.get_gaussian_fit(RC,I,self.numberOfPeaks,self.BGCheck,self.guess,(self.bound_low,self.bound_high),self.ftol,\
+                results, cost, output = self.fit_worker.get_gaussian_fit(RC,I,self.numberOfPeaks,self.BGCheck,self.guess,(self.bound_low,self.bound_high),self.ftol,\
                                                                 self.xtol,self.gtol,self.method,self.loss)
                 Kperp = (np.abs((newEnd.y()-newStart.y())*self.origin.x()-(newEnd.x()-newStart.x())*self.origin.y()+newEnd.x()*newStart.y()-newEnd.y()*newStart.x())/\
                         np.sqrt((newEnd.y()-newStart.y())**2+(newEnd.x()-newStart.x())**2))/self.scale_factor
@@ -987,6 +1001,7 @@ class FitBroadening(QtCore.QObject):
                 value_variance = np.reshape(np.concatenate((np.array(results.x),np.array(var)),axis=0),(2,len(var)))
                 self.ADD_COST_FUNCTION.emit(iteration,cost,'cost_function')
                 self.UPDATE_RESULTS.emit(list(results.x))
+                self.UPDATE_LOG.emit(output)
                 if i == 1:
                     self.initialparameters = list(results.x)
                 if nimg<=100:
@@ -1037,6 +1052,7 @@ class TAPD_model(object):
         self._epilayer_sites = None
         self._epilayer_list = None
         self._epilayer_domain_area_list = None
+        self._epilayer_domain_boundary_list = None
         self._epilayer_domain = None
 
     @property
@@ -1093,6 +1109,17 @@ class TAPD_model(object):
     @epilayer_domain_area_list.deleter
     def epilayer_domain_area_list(self):
         del self._epilayer_domain_area_list
+
+    @property
+    def epilayer_domain_boundary_list(self):
+        return self._epilayer_domain_boundary_list
+
+    @epilayer_domain_boundary_list.setter
+    def epilayer_domain_boundary_list(self,epilayer_domain_boundary_list):
+        self._epilayer_domain_boundary_list = epilayer_domain_boundary_list
+    @epilayer_domain_boundary_list.deleter
+    def epilayer_domain_boundary_list(self):
+        del self._epilayer_domain_boundary_list
 
     @property
     def epilayer_domain(self):
@@ -1201,7 +1228,7 @@ class TAPD_Simulation(QtCore.QObject):
                 self.UPDATE_LOG.emit('Voronoi is created!')
                 self.UPDATE_LOG.emit('Epilayer is growing ...')
                 QtCore.QCoreApplication.processEvents()
-                model.epilayer_list, model.epilayer_sites, model.epilayer_domain_area_list, model.epilayer_domain = self.get_epilayer(vor, model.epilayer_structure, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
+                model.epilayer_list, model.epilayer_sites, model.epilayer_domain_area_list, model.epilayer_domain_boundary_list, model.epilayer_domain = self.get_epilayer(vor, model.epilayer_structure, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
                 if model.epilayer_list:
                     self.UPDATE_LOG.emit('Atoms are filtered!')
                     QtCore.QCoreApplication.processEvents()
@@ -1303,6 +1330,7 @@ class TAPD_Simulation(QtCore.QObject):
         epilayer_list = []
         epilayer_sites = []
         epilayer_domain_area_list = []
+        epilayer_domain_boundary_list = []
         epilayer_domain_list = []
         gap_add = {}
         gap_subtract = {}
@@ -1333,7 +1361,7 @@ class TAPD_Simulation(QtCore.QObject):
                 if original_polygon.is_valid:
                     polygon = original_polygon.intersection(rectangle)
                     if polygon:
-                        epilayer_domain, epilayer_domain_sites, epilayer_domain_area, gap_add_out, gap_subtract_out, domain = self.get_domain(a, b, angle, point, polygon, gap_add, gap_subtract, X_max, Y_max,unit_cell_sites_epi)
+                        epilayer_domain, epilayer_domain_sites, epilayer_domain_area, epilayer_domain_boundary, gap_add_out, gap_subtract_out, domain = self.get_domain(a, b, angle, point, polygon, gap_add, gap_subtract, X_max, Y_max,unit_cell_sites_epi)
                         if epilayer_domain:
                             epilayer_list += epilayer_domain
                             epilayer_sites += epilayer_domain_sites
@@ -1342,15 +1370,16 @@ class TAPD_Simulation(QtCore.QObject):
                             gap_subtract.update(gap_subtract_out)
                             if not -1 in vor.regions[region_index]:
                                 epilayer_domain_area_list.append(epilayer_domain_area)
+                                epilayer_domain_boundary_list.append(epilayer_domain_boundary)
             if self._abort:
                 break
         self.PROGRESS_END.emit()
         QtCore.QCoreApplication.processEvents()
         if not self._abort:
             self.UPDATE_LOG.emit('Filtering atoms that are too close ...')
-            return epilayer_list, epilayer_sites, epilayer_domain_area_list, epilayer_domain_list
+            return epilayer_list, epilayer_sites, epilayer_domain_area_list, epilayer_domain_boundary_list, epilayer_domain_list
         else:
-            return None, None, None, None
+            return None, None, None, None, None
 
     def get_region_vertices_dict(self,vor,x_max,y_max):
         region_vertices_dict = {}
@@ -1436,9 +1465,9 @@ class TAPD_Simulation(QtCore.QObject):
                 x = (i-offset)*a+j*b*np.cos(angle/180*np.pi) + point[0]
                 y = j*b*np.sin(angle/180*np.pi) + point[1]
                 try:
-                    condition1 = domain_include.contains(Point(x,y))
+                    condition1 = domain_include.buffer(max(a,b)*0.001).intersects(Point(x,y))
                 except:
-                    condition1 = (np.any(subdomain.contains(Point(x,y)) for subdomain in domain_include))
+                    condition1 = (np.any(subdomain.buffer(max(a,b)*0.001).intersects(Point(x,y)) for subdomain in domain_include))
                 try:
                     condition2 = not domain_exclude.contains(Point(x,y))
                 except:
@@ -1447,13 +1476,17 @@ class TAPD_Simulation(QtCore.QObject):
                     epilayer_domain.append([x,y])
                     for site in unit_cell_sites_epi:
                         epilayer_domain_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
-            hull = MultiPoint(epilayer_domain)   
+            point_cloud = MultiPoint(epilayer_domain)   
+            try:
+                hull = ConvexHull(epilayer_domain, qhull_options='Qc')
+            except:
+                hull = epilayer_domain
             gap_add_out = {}
             gap_subtract_out = {}
-            if hull.is_valid:
+            if point_cloud.is_valid:
                 for first, second in zip(vertices, vertices[1:]):
-                    gap_add = Polygon([first, second, point]).difference(hull.buffer(max(a,b)))
-                    gap_subtract = hull.buffer(max(a,b)).difference(Polygon([first, second, point]))
+                    gap_add = Polygon([first, second, point]).difference(point_cloud.buffer(max(a,b)*0.999,resolution=64))
+                    gap_subtract = point_cloud.buffer(max(a,b)*0.999,resolution=64).difference(Polygon([first, second, point]))
                     if not gap_add.is_empty:
                         if not (first, second) in gap_add_in:
                             gap_add_out[(first,second)] = gap_add
@@ -1462,9 +1495,9 @@ class TAPD_Simulation(QtCore.QObject):
                         if not (first, second) in gap_subtract_in:
                             gap_subtract_out[(first,second)] = gap_subtract
                             gap_subtract_out[(second,first)] = gap_subtract
-            return epilayer_domain, epilayer_domain_sites, polygon.area, gap_add_out, gap_subtract_out, domain_include
+            return epilayer_domain, epilayer_domain_sites, polygon.area, hull, gap_add_out, gap_subtract_out, domain_include
         else:
-            return None,None,None,None,None,None
+            return None,None,None,None,None,None, None
 
     def sortpts_clockwise(self,points):
         self.origin = np.mean(points,axis=0)

@@ -26,7 +26,6 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 5. Read the crystal structure from a CIF file and create a customized structure by stacking different crystalline materials together. Calculate the diffraction pattern from this structure based on the kinematic diffraction theory.
 
 ## Requirements
-- igraph 0.7.1
 - lxml 4.2.3
 - matplotlib 2.2.2
 - numpy 1.14.5
@@ -74,18 +73,19 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 - plot_chart: a customized widget based on QChart, for visualization of the fitting results
 - preference: modify default settings
 - process: the backend processes
+- process_monitor: monitor the consumption of memory (not complete)
 - profile_chart: a customized widget based on QChart, for visualization of the line scan profiles
 - properties: control the dynamic parameters of the program
 - reciprocal_space_mapping: construct the 2D/3D reciprocal space map and the pole figure
-- simulate_RHEED: simulate the diffraction pattern from a given atomic structure 
+- simulate_RHEED: simulate the diffraction pattern from a given atomic structure. This module is also capable of generating structures containing translational antiphase domain (APD) model and calculating the corresponding diffraction pattern. 
 - statistical_factor: calculate the statistical factor assuming a Markov process 
 - test: the test module
-- translational_antiphase_domain: calculate the 1D and 2D profile from a translational antiphase domain (APD) model
+- translational_antiphase_domain: calculate the 1D and 2D profile from a translational APD model
 - window: the main window of the application
 
 ## Known Issues
 1. The Voronoi plot created by the `simulate_RHEED` module sometimes crashes because the `matplotlib` is not thread safe.
-2. The program freezes if the translational APD lattice size is too large. This is related to the use of `largest_independent_vertex_sets()` function in the `igraph.Graph` class.
+2. The program crashes when fitting with "1+BG" mode when using the `broadening` module
 
 ## Contact
 Please contact Yu Xiang at [yux1991@gmail.com](mailto:yux1991@gmail.com) if you have any questions or suggestions.

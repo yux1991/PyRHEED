@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
+from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from PyQt5 import QtCore, QtWidgets, QtGui
 import numpy as np
 
 class DoubleSlider(QtWidgets.QWidget):
@@ -664,21 +664,22 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average HWHM = {:5.4f} \u212B\u207B\u00B9\nHWHM Asymmetric Ratio = {:5.3f}". \
                                                             format(self.HWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
                     self.csHM.set_alpha(1)
-                self.figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
-                   format(self.z_linear[self.nkz]),fontsize=self.fontsize,pad=30)
-                self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',font_dict)
-                self.figure.axes.set_ylabel(r'$K_{y}$ $(\AA^{-1})$',font_dict)
+                #self.figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
+                #   format(self.z_linear[self.nkz]),fontsize=self.fontsize,pad=30)
+                self.figure.axes.set_xlabel(r'${\bf k}_{x}$ $(\AA^{-1})$',font_dict)
+                self.figure.axes.set_ylabel(r'${\bf k}_{y}$ $(\AA^{-1})$',font_dict)
             elif self.type == 'XZ':
                 self.figure.axes.set_title('Simulated 2D reciprocal space map\nKy = {:5.2f} (\u212B\u207B\u00B9)'. \
                                            format(self.y_linear[self.nkz]),fontsize = self.fontsize,pad=30)
-                self.figure.axes.set_xlabel(r'$K_{x}$ $(\AA^{-1})$',font_dict)
-                self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',font_dict)
+                self.figure.axes.set_xlabel(r'${\bf k}_{x}$ $(\AA^{-1})$',font_dict)
+                self.figure.axes.set_ylabel(r'${\bf k}_{z}$ $(\AA^{-1})$',font_dict)
             elif self.type == 'YZ':
                 self.figure.axes.set_title('Simulated 2D reciprocal space map\nKx = {:5.2f} (\u212B\u207B\u00B9)'. \
                                            format(self.x_linear[self.nkz]),fontsize=self.fontsize,pad=30)
-                self.figure.axes.set_xlabel(r'$K_{y}$ $(\AA^{-1})$',font_dict)
-                self.figure.axes.set_ylabel(r'$K_{z}$ $(\AA^{-1})$',font_dict)
+                self.figure.axes.set_xlabel(r'${\bf k}_{y}$ $(\AA^{-1})$',font_dict)
+                self.figure.axes.set_ylabel(r'${\bf k}_{z}$ $(\AA^{-1})$',font_dict)
             self.figure.axes.set_aspect(1)
+            self.figure.axes.set_frame_on(False)
             self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
             if self.log_scale:
                 self.cbar.ax.set_ylabel("Log Intensity",font_dict)
@@ -687,6 +688,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
             else:
                 self.cbar.ax.set_ylabel("Normalized Intensity",font_dict)
             self.cbar.ax.tick_params(labelsize=self.fontsize)
+            self.cbar.ax.set_frame_on(False)
         else:
             self.figure.axes.set_xlabel(r'$K_{\perp}$ $(\AA^{-1})$',font_dict)
             if self.log_scale:

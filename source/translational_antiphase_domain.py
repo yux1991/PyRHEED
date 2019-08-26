@@ -35,10 +35,10 @@ class Window(QtCore.QObject):
         self.unit = 'S'
 
         self.fit_worker = FitFunctions()
-        self.plot_IS()
-        #self.plot_contour()
-        self.plot_2D()
-        #self.plot_FWHM()
+        #self.plot_IS()
+        self.plot_contour()
+        #self.plot_2D()
+        #self.plot_HWHM()
         plt.show()
 
     def plot_IS(self):
@@ -54,35 +54,38 @@ class Window(QtCore.QObject):
             self.REFRESH_PLOT.emit(self.S,self.I,'general','Arial',25,'red',False,{'title':'Intensity Profile From 1D Translational-antiphase Domain Model\n(gamma={:5.3f})'.format(self.gamma_slider.get_value()), \
                                                                                    'x_label':'S', 'x_unit':'\u212B\u207B\u00B9','y_label':'Intensity','y_unit':'arb. units'})
 
-    def plot_FWHM(self):
+    def plot_HWHM(self):
         self.gamma = np.linspace(0.001,1,400)
-        self.width = self.fit_worker.FWHM_of_translational_antiphase_domain_model(1,self.gamma,self.lattice_constant)
-        self.figure_FWHM, self.ax_FWHM = plt.subplots()
-        self.ax_FWHM.plot(self.gamma,self.width,'ro')
-        self.ax_FWHM.set_xlabel(r'$\gamma$',fontsize=30)
-        self.ax_FWHM.set_ylabel('HWHM (\u212B\u207B\u00B9)',fontsize=30)
-        self.ax_FWHM.tick_params(labelsize=30)
-        self.output = open('FWHM_vs_gamma.txt',mode='w')
-        for gamma,FWHM in zip(self.gamma,self.width):
-            self.output.write(str(gamma)+'\t'+str(FWHM)+'\n')
+        self.width = self.fit_worker.HWHM_of_translational_antiphase_domain_model(1,self.gamma,self.lattice_constant)
+        self.figure_HWHM, self.ax_HWHM = plt.subplots()
+        self.ax_HWHM.plot(self.gamma,self.width,'ro')
+        self.ax_HWHM.set_xlabel(r'$\gamma$',fontsize=30)
+        self.ax_HWHM.set_ylabel('HWHM (\u212B\u207B\u00B9)',fontsize=30)
+        self.ax_HWHM.tick_params(labelsize=30)
+        self.output = open('HWHM_vs_gamma.txt',mode='w')
+        for gamma,HWHM in zip(self.gamma,self.width):
+            self.output.write(str(gamma)+'\t'+str(HWHM)+'\n')
         self.output.close()
 
     def plot_contour(self):
-        x = np.linspace(-4,4,1001)
+        x = np.linspace(-3,3,1000)
         y = np.linspace(0.001,0.25,1000)
+        fontsize = 26
         self.h_index,self.gamma = np.meshgrid(x,y)
-        self.Int = self.fit_worker.translational_antiphase_domain_model_intensity(self.h_index,self.gamma)
+        self.Int = self.fit_worker.translational_antiphase_domain_model_intensity_using_S(self.h_index,self.lattice_constant, self.gamma)
         self.figure, self.ax = plt.subplots()
-        self.cs = self.ax.contourf(self.h_index,self.gamma,np.log(self.Int),200,cmap='jet')
-        self.ax.set_xlabel('h' ,fontsize=30)
-        self.ax.set_ylabel(r'$\gamma$',fontsize=30)
+        self.cs = self.ax.contourf(self.h_index,self.gamma,np.clip(np.log(self.Int),-7,4),200,cmap='jet')
+        self.ax.set_xlabel(r'${\bf k}_{x}$ $(\AA^{-1})$',fontsize=fontsize)
+        self.ax.set_ylabel(r'$\gamma$',fontsize=fontsize)
         #self.ax.set_title('Intensity contour',fontsize=30)
-        self.ax.tick_params(labelsize=30)
+        self.ax.tick_params(labelsize=fontsize)
+        self.ax.set_frame_on(False)
         cbar = self.figure.colorbar(self.cs)
-        cbar.set_ticks(np.linspace(-8,7,16))
-        cbar.set_ticklabels(list('$10^{{{}}}$'.format(i) for i in range(-8,8,1)))
-        cbar.set_label('Intensity',fontsize=30)
-        cbar.ax.tick_params(labelsize=30)
+        cbar.set_ticks(np.linspace(-7,4,6))
+        cbar.set_ticklabels(list('$10^{{{}}}$'.format(i) for i in range(-7,5,2)))
+        cbar.set_label('Log Intensity',fontsize=fontsize)
+        cbar.ax.tick_params(labelsize=fontsize)
+        plt.tight_layout()
 
     def plot_2D(self):
         hk_range = 3

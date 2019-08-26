@@ -111,7 +111,7 @@ class Window(QtCore.QObject):
                 if self.function == 'gaussian':
                     if self.BG and i==self.nop:
                         if name == 'W':
-                            slider = VerticalLabelSlider(minimum,self.RC[-1],100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
+                            slider = VerticalLabelSlider(minimum,2*self.RC[-1],100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
                         elif name == 'H':
                             slider = VerticalLabelSlider(minimum,10,100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
                         elif name =='C':

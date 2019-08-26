@@ -1,6 +1,8 @@
 from my_widgets import LabelSlider
 from process import Image, FitFunctions, FitBroadening
+from process_monitor import Monitor
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+from sys import getsizeof
 import configparser
 import generate_report
 import glob
@@ -331,6 +333,7 @@ class Window(QtCore.QObject):
             self.initialparameters = self.initial_parameters()
             self.reportPath = self.currentDestination+"/"+saveFileName+fileType
             if self.saveResult.checkState() == 2:
+                self.fitting_results = []
                 self.output = open(self.reportPath,mode='w')
                 self.output.write(QtCore.QDateTime.currentDateTime().toString("MMMM d, yyyy  hh:mm:ss ap")+"\n")
                 self.output.write("The source directory is: "+self.currentSource+"\n")
@@ -426,9 +429,10 @@ class Window(QtCore.QObject):
         self.file_has_been_created = False
 
     def write_results(self,results):
-        self.output.write(results)
+        self.fitting_results.append(results)
 
     def close_results(self):
+        self.output.write(self.fitting_results)
         self.output.close()
         self.GenerateReportButton.setEnabled(True)
 
@@ -482,6 +486,20 @@ class Window(QtCore.QObject):
                 self.table.setItem(i,j+2,item3)
                 index+=1
         self.offset.set_value(results[-1])
+        #if cls:
+            #self.monitor.update(cls[0],self.thread)
+            #total_size = 0
+            #for att in dir(self.broadening_worker):
+            #    size = getsizeof(getattr(self.broadening_worker,att))
+            #    print('\t'+str(att) + ': {}'.format(size))
+            #    total_size+=size
+            #print('total size of the broadening worker is:{}\n'.format(total_size))
+            #total_size = 0
+            #for att in dir(self.thread):
+            #    size = getsizeof(getattr(self.thread,att))
+            #    print('\t'+str(att) + ': {}'.format(size))
+            #    total_size+=size
+            #print('total size of the thread is:{}\n'.format(total_size))
 
     def plot_cost_function(self,iteration,cost,text):
         self.costChart.add_chart(iteration,cost,text)
