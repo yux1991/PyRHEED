@@ -77,11 +77,13 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 - profile_chart: a customized widget based on QChart, for visualization of the line scan profiles
 - properties: control the dynamic parameters of the program
 - reciprocal_space_mapping: construct the 2D/3D reciprocal space map and the pole figure
+- scenario: select or customize a scenario, then run the scenario
 - simulate_RHEED: simulate the diffraction pattern from a given atomic structure. This module is also capable of generating structures containing translational antiphase domain (APD) model and calculating the corresponding diffraction pattern. 
 - statistical_factor: calculate the statistical factor assuming a Markov process 
 - test: the test module
 - translational_antiphase_domain: calculate the 1D and 2D profile from a translational APD model
 - window: the main window of the application
+- write_scenario: write the default scenario
 
 ## Known Issues
 1. The Voronoi plot created by the `simulate_RHEED` module sometimes crashes because the `matplotlib` is not thread safe.

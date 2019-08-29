@@ -67,6 +67,30 @@ class DoubleSlider(QtWidgets.QWidget):
         self.minSlider.setEnabled(enable)
         self.maxSlider.setEnabled(enable)
 
+class StartEndStep(QtWidgets.QWidget):
+
+    def __init__(self,start,end,step):
+        super(StartEndStep,self).__init__()
+        self._start=start
+        self._end = end
+        self._step = step
+        self.start_entry = QtWidgets.QLineEdit(str(self._start))
+        self.end_entry = QtWidgets.QLineEdit(str(self._end))
+        self.step_entry = QtWidgets.QLineEdit(str(self._step))
+        self.grid = QtWidgets.QGridLayout(self)
+        self.grid.addWidget(self.start_entry,0,0)
+        self.grid.addWidget(self.end_entry,0,1)
+        self.grid.addWidget(self.step_entry,0,2)
+
+    def start(self):
+        return float(self.start_entry.text())
+
+    def end(self):
+        return float(self.end_entry.text())
+
+    def step(self):
+        return float(self.step_entry.text())
+
 class VerticalLabelSlider(QtWidgets.QWidget):
     VALUE_CHANGED = QtCore.pyqtSignal()
     def __init__(self,minimum,maximum,scale,value,name,index,BG=False,direction='vertical',color='black'):
@@ -582,6 +606,19 @@ class IndexedPushButton(QtWidgets.QPushButton):
     def emit_signal(self):
         self.BUTTON_CLICKED.emit(self.index)
 
+class IndexedPushButtonWithTag(QtWidgets.QPushButton):
+    BUTTON_CLICKED = QtCore.pyqtSignal(int,str)
+
+    def __init__(self,text,index,tag):
+        super(IndexedPushButtonWithTag,self).__init__(text)
+        self.index = index
+        self.tag = tag
+        self.clicked.connect(self.emit_signal)
+
+    def emit_signal(self):
+        self.BUTTON_CLICKED.emit(self.index, self.tag)
+
+
 class InfoBoard(QtWidgets.QGroupBox):
     def __init__(self,title,index):
         super(InfoBoard,self).__init__(title)
@@ -600,7 +637,7 @@ class InfoBoard(QtWidgets.QGroupBox):
 
 class MplCanvas(FigureCanvas):
 
-    def __init__(self, parent=None, width=5, height=4, dpi=100, pos=111):
+    def __init__(self, parent=None, width=15, height=12, dpi=400, pos=111):
         self.fig = Figure(figsize=(width, height), dpi=dpi, tight_layout=True)
         self.pos = pos
         self.axes = self.fig.add_subplot(self.pos)
@@ -613,11 +650,14 @@ class MplCanvas(FigureCanvas):
         self.fig.clear()
         self.axes = self.fig.add_subplot(self.pos)
 
+    def save_as_file(self,directory, name):
+        self.fig.savefig(directory+name)
+
 class DynamicalColorMap(QtWidgets.QWidget):
 
     UPDATE_LOG = QtCore.pyqtSignal(str)
 
-    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False, log_scale = True, pos=111):
+    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False, log_scale = True, pos=111, kwargs={}):
         super(DynamicalColorMap,self).__init__(parent)
         self.pos = pos
         self.figure = MplCanvas(self,pos=self.pos)
@@ -635,6 +675,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.plot_IV = False
         self.minimum_log_intensity = -6
         self.TwoDimMappingWindow = QtWidgets.QWidget()
+        self.kwargs = kwargs
         if 1 in self.intensity.shape[0:1]:
             self.plot_IV = True
             self.TwoDimMappingWindow.setWindowTitle('Simulated IV curve')
@@ -646,11 +687,14 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0)
         self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0)
         self.TwoDimMappingWindow.setWindowModality(QtCore.Qt.WindowModal)
-        self.TwoDimMappingWindow.setMinimumSize(1000,800)
-        self.TwoDimMappingWindow.show()
+        self.TwoDimMappingWindow.setMinimumSize(1200,1000)
+        if not self.kwargs.get('save_as_file', False):
+            self.TwoDimMappingWindow.show()
 
     def show_plot(self):
         self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)
+        if self.kwargs.get('save_as_file', False):
+            self.figure.save_as_file(self.kwargs['directory'], self.kwargs['name'])
 
     def refresh_fonts(self,fontname,fontsize):
         self.fontname = fontname
@@ -879,7 +923,7 @@ class LabelLineEdit(QtWidgets.QWidget):
     def value(self):
         return float(self.line.text())
 
-    def text(self):
+    def get_text(self):
         return self.line.text()
 
 class LabelMultipleLineEdit(QtWidgets.QWidget):

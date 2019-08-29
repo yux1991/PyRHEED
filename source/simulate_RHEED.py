@@ -3,7 +3,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.collections import LineCollection
 from my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, LabelSpinBox, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
-from process import Convertor, DiffractionPattern, TAPD_Simulation
+from process import Convertor, DiffractionPattern, TAPD_Simulation, TAPD_model
 from pymatgen.io.cif import CifParser
 from pymatgen.core import structure as pgStructure
 from pymatgen.core.operations import SymmOp
@@ -39,6 +39,10 @@ class Window(QtWidgets.QWidget):
     UPDATE_CAMERA_POSITION = QtCore.pyqtSignal(float,float,float)
     STOP_CALCULATION = QtCore.pyqtSignal()
     STOP_TAPD_WORKER = QtCore.pyqtSignal()
+    TAPD_FINISHED = QtCore.pyqtSignal()
+    TAPD_RESULTS = QtCore.pyqtSignal(TAPD_model,str)
+    CLOSE = QtCore.pyqtSignal()
+    RESULTS_IS_READY = QtCore.pyqtSignal()
 
     def __init__(self):
         super(Window,self).__init__()
@@ -358,7 +362,7 @@ class Window(QtWidgets.QWidget):
         self.reciprocalMapfontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.reciprocalMapfontSizeSlider.setMinimum(1)
         self.reciprocalMapfontSizeSlider.setMaximum(100)
-        self.reciprocalMapfontSizeSlider.setValue(30)
+        self.reciprocalMapfontSizeSlider.setValue(50)
         self.reciprocalMapfontSizeSlider.valueChanged.connect(self.update_reciprocal_map_font_size)
         self.reciprocalMapColormapLabel = QtWidgets.QLabel("Colormap")
         self.reciprocalMapColormapCombo = QtWidgets.QComboBox()
@@ -707,6 +711,7 @@ class Window(QtWidgets.QWidget):
         self.save_Results_button.setEnabled(True)
         self.apply_reciprocal_range.setEnabled(True)
         self.stop_calculation.setEnabled(False)
+        self.RESULTS_IS_READY.emit()
 
     def abort_calculation(self):
         self.apply_reciprocal_range.setEnabled(True)
@@ -763,11 +768,11 @@ class Window(QtWidgets.QWidget):
         elif state == 0:
             self.pos = 111
 
-    def show_XY_plot(self):
+    def show_XY_plot(self, **kwargs):
         for i in range(int(self.KzIndex.values()[0]),int(self.KzIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XY',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i,\
                          self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                         self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),111)
+                         self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),111,kwargs)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             if not 1 in self.diffraction_intensity.shape[0:1]:
@@ -1105,13 +1110,19 @@ class Window(QtWidgets.QWidget):
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
         self.update_log("Sample "+str(index+1)+" successfully reset!")
 
-    def save_results(self):
-        if not self.currentDestination == '':
-            self.PROGRESS_HOLD.emit()
-            QtCore.QCoreApplication.processEvents()
-            self.convertor_worker.mtx2vtp(self.currentDestination,self.destinationNameEdit.text(),self.diffraction_intensity,self.KRange,\
-                         self.number_of_steps_para.value(),self.number_of_steps_perp.value(),\
-                         self.real_space_specification_dict,self.element_species)
+    def save_results(self, **kwargs):
+        self.PROGRESS_HOLD.emit()
+        QtCore.QCoreApplication.processEvents()
+        if kwargs.get('save_as_file',False):
+            directory = kwargs['directory']
+            name = kwargs['name']
+        else:
+            directory = self.currentDestination
+            name = self.destinationNameEdit.text()
+        if not directory == '':
+            self.convertor_worker.mtx2vtp(directory,name,self.diffraction_intensity,self.KRange,\
+                        self.number_of_steps_para.value(),self.number_of_steps_perp.value(),\
+                        self.real_space_specification_dict,self.element_species)
             self.PROGRESS_END.emit()
         else:
             self.raise_error("Save destination is empty!")
@@ -1173,6 +1184,76 @@ class Window(QtWidgets.QWidget):
             ax.scatter(x,y,1)
         plt.show()
 
+    def closeEvent(self,event):
+        try:
+            self.stop_TAPD()
+        except:
+            pass
+        self.CLOSE.emit()
+        QtCore.QCoreApplication.processEvents()
+        event.accept()
+
+    def load_scenario(self,scenario):
+        self.scenario = scenario
+        self.CIF_tab.setCurrentWidget(self.TAPD_model)
+        self.TAPD_distribution_function.setCurrentText(scenario['distribution'])
+        if self.TAPD_distribution_function.currentText() == 'completely random':
+            self.TAPD_completely_random.setText(scenario['density'])
+        elif self.TAPD_distribution_function.currentText() == 'geometric':
+            self.TAPD_geometric_gamma.text().setText(scenario['gamma'])
+        elif self.TAPD_distribution_function.currentText() == 'delta':
+            self.TAPD_delta_radius.text().setText(scenario['radius'])
+        elif self.TAPD_distribution_function.currentText() == 'uniform':
+            self.TAPD_uniform_low.text().setText(scenario['low'])
+            self.TAPD_uniform_high.text().setText(scenario['high'])
+        elif self.TAPD_distribution_function.currentText() == 'binomial':
+            self.TAPD_binomial_n.text().setText(scenario['n'])
+            self.TAPD_binomial_p.text().setText(scenario['p'])
+        self.TAPD_X_max.setText(scenario['x_max'])
+        self.TAPD_Y_max.setText(scenario['y_max'])
+        self.TAPD_Z_max.setText(scenario['z_min'])
+        self.TAPD_Z_max.setText(scenario['z_max'])
+        self.TAPD_Shift_X.setText(scenario['x_shift'])
+        self.TAPD_Shift_Y.setText(scenario['y_shift'])
+        self.TAPD_Shift_Z.setText(scenario['z_shift'])
+        self.Kx_range.set_locked(False)
+        self.Ky_range.set_locked(False)
+        self.Kx_range.set_head(float(scenario['Kx_range_min']))
+        self.Kx_range.set_tail(float(scenario['Kx_range_max']))
+        self.Ky_range.set_head(float(scenario['Ky_range_min']))
+        self.Ky_range.set_tail(float(scenario['Ky_range_max']))
+        self.Kz_range.set_head(float(scenario['Kz_range_min']))
+        self.Kz_range.set_tail(float(scenario['Kz_range_max']))
+        self.number_of_steps_para.setValue(int(scenario['number_of_K_para_steps']))
+        self.number_of_steps_perp.setValue(int(scenario['number_of_K_perp_steps']))
+        self.substrate_path = scenario['sub_cif_path']
+        self.epilayer_path = scenario['epi_cif_path']
+        self.currentDestination = scenario['destination'] 
+        self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
+        if scenario['lattice_or_atoms'] == 'lattice':
+            self.TAPD_atoms.setChecked(False)
+        elif scenario['lattice_or_atoms'] == 'atoms':
+            self.TAPD_atoms.setChecked(True)
+        if scenario['add_substrate'] == 'True':
+            self.TAPD_add_substrate.setChecked(True)
+        elif scenario['add_substrate'] == 'False':
+            self.TAPD_add_substrate.setChecked(False)
+        if scenario['add_epilayer'] == 'True':
+            self.TAPD_add_epilayer.setChecked(True)
+        elif scenario['add_epilayer'] == 'False':
+            self.TAPD_add_epilayer.setChecked(False)
+        if scenario['add_atoms'] == 'True':
+            self.TAPD_add_atoms.setChecked(True)
+        elif scenario['add_atoms'] == 'False':
+            self.TAPD_add_atoms.setChecked(False)
+        if scenario['plot_log_scale'] == 'True':
+            self.plot_log_scale.setChecked(True)
+        elif scenario['plot_log_scale'] == 'False':
+            self.plot_log_scale.setChecked(False)
+        self.reciprocalMapColormapCombo.setCurrentText(scenario['colormap'])
+        self.UPDATE_CAMERA_POSITION.emit(float(scenario['camera_horizontal_rotation']),\
+            float(scenario['camera_vertical_rotation']),float(scenario['camera_zoom_level']))
+
     def prepare_TAPD(self):
         parameters = {}
         if self.TAPD_distribution_function.currentText() == 'completely random':
@@ -1203,6 +1284,7 @@ class Window(QtWidgets.QWidget):
         self.TAPD_worker.PROGRESS_ADVANCE.connect(self.progress)
         self.TAPD_worker.PROGRESS_END.connect(self.progress_reset)
         self.TAPD_worker.FINISHED.connect(self.thread.quit)
+        self.TAPD_worker.FINISHED.connect(self.TAPD_FINISHED)
         self.TAPD_worker.UPDATE_LOG.connect(self.update_log)
         self.TAPD_worker.SEND_RESULTS.connect(self.get_TAPD_results)
         self.thread.started.connect(self.TAPD_worker.run)
@@ -1228,6 +1310,7 @@ class Window(QtWidgets.QWidget):
         self.plot_boundary_button.setEnabled(True)
         self.plot_voronoi_button.setEnabled(True)
         self.save_scene_button.setEnabled(True)
+        self.TAPD_RESULTS.emit(model, self.TAPD_completely_random.text())
 
     def add_TAPD(self,label='substrate'):
         next_available_index = 0
@@ -1377,7 +1460,11 @@ class Window(QtWidgets.QWidget):
         QtCore.QCoreApplication.processEvents()
         self.apply_reciprocal_range.setEnabled(True)
 
-    def reload_TAPD(self):
+    def reload_TAPD(self, **kwargs):
+        self.UPDATE_CAMERA_POSITION.emit(float(self.scenario['camera_horizontal_rotation']),\
+            float(self.scenario['camera_vertical_rotation']),float(self.scenario['camera_zoom_level']))
+        if kwargs['density']:
+            self.TAPD_completely_random.setText(kwargs['density'])
         for index in sorted(list(self.sample_index_set), reverse = True):
             self.delete_structure(index)
         if self.substrate_path:
@@ -1460,12 +1547,13 @@ class Window(QtWidgets.QWidget):
             self.distribution_parameters_grid.addWidget(self.TAPD_delta_radius_label)
             self.distribution_parameters_grid.addWidget(self.TAPD_delta_radius)
 
-    def plot_distribution(self):
-        window = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(window)
+    def plot_distribution(self,**kwargs):
         data = np.array(list(np.sqrt(x*2)/10 for x in self.epilayer_domain_area_list))
         if self.currentDestination:
-            output = open(self.currentDestination+'/'+'distribution'+".txt",mode='w')
+            if kwargs.get('save_as_file',False):
+                output = open(kwargs['destination']+'distribution'+".txt",mode='w')
+            else:
+                output = open(self.currentDestination+'/'+'distribution'+".txt",mode='w')
             output.write("\n".join(str(area) for area in data))
             output.close()
         figure = plt.figure()
@@ -1478,15 +1566,22 @@ class Window(QtWidgets.QWidget):
         x_min,x_max = plt.xlim()
         y_min,y_max = plt.ylim()
         ax.set_title('Domain size distribution\n(Mean: {:.2f} nm, Std. Deviation: {:.2f} nm)'.format(data.mean(), data.std()),fontsize=20)
-        canvas = FigureCanvas(figure)
-        toolbar = NavigationToolbar(canvas,window)
-        canvas.draw()
-        layout.addWidget(toolbar)
-        layout.addWidget(canvas)
-        window.setWindowTitle("Domain size distribution")
-        window.show()
+        plt.tight_layout()
+        if kwargs.get('save_as_file',False):
+            figure.savefig(kwargs['destination']+'distribution.tif')
+            figure.savefig(kwargs['destination']+'distribution.svg')
+        else:
+            window = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(window)
+            canvas = FigureCanvas(figure)
+            toolbar = NavigationToolbar(canvas,window)
+            canvas.draw()
+            layout.addWidget(toolbar)
+            layout.addWidget(canvas)
+            window.setWindowTitle("Domain size distribution")
+            window.show()
     
-    def plot_boundary(self):
+    def plot_boundary(self,**kwargs):
         fontsize = 20
         point_color = 'red'
         point_size = 5
@@ -1515,19 +1610,23 @@ class Window(QtWidgets.QWidget):
         ax.set_xlabel('x (\u212B)',fontsize=fontsize)
         ax.set_ylabel('y (\u212B)',fontsize=fontsize)
         ax.tick_params(labelsize=fontsize)
+        plt.tight_layout()
+        if kwargs.get('save_as_file',False):
+            figure.savefig(kwargs['destination']+'boundary.tif')
+            figure.savefig(kwargs['destination']+'boundary.svg')
+        else:
+            window = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(window)
+            canvas = FigureCanvas(figure)
+            toolbar = NavigationToolbar(canvas,window)
+            canvas.draw()
+            layout.addWidget(toolbar)
+            layout.addWidget(canvas)
+            window.setWindowTitle("Domain boundary")
+            window.show()
 
-        window = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(window)
-        canvas = FigureCanvas(figure)
-        toolbar = NavigationToolbar(canvas,window)
-        canvas.draw()
-        layout.addWidget(toolbar)
-        layout.addWidget(canvas)
-        window.setWindowTitle("Domain boundary")
-        window.show()
-
-    def plot_boundary_statistics(self):
-        fontsize = 30
+    def plot_boundary_statistics(self, **kwargs):
+        fontsize = 20
         fontname = 'Arial'
         x_list, y_list, xy_list = [], [], []
 
@@ -1561,7 +1660,10 @@ class Window(QtWidgets.QWidget):
                 angle = np.arcsin(np.abs(y/r)) + np.where(x>0,np.where(y>0,0,270),np.where(y>0,90,180))
                 xy_distance.append([x, y, r, angle])
         if self.currentDestination:
-            output = open(self.currentDestination+'/'+'boundary_statistics'+".txt",mode='w')
+            if kwargs.get('save_as_file',False):
+                output = open(kwargs['destination']+'boundary_statistics'+".txt",mode='w')
+            else:
+                output = open(self.currentDestination+'/'+'boundary_statistics'+".txt",mode='w')
             output.write("\n".join(str(distance) for distance in np.array(xy_distance)))
             output.close()
         figure = plt.figure()
@@ -1579,23 +1681,25 @@ class Window(QtWidgets.QWidget):
         ax.set_frame_on(False)
         ax.set_xticklabels(ax.get_xticks(),fontsize=fontsize, fontname=fontname)
         ax.set_yticklabels(ax.get_yticks(),fontsize=fontsize, fontname=fontname)
-
-        window = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(window)
-        canvas = FigureCanvas(figure)
-        toolbar = NavigationToolbar(canvas,window)
-        canvas.draw()
-        layout.addWidget(toolbar)
-        layout.addWidget(canvas)
-        window.setWindowTitle("Domain boundary statistics")
-        window.show()
+        plt.tight_layout()
+        if kwargs.get('save_as_file',False):
+            figure.savefig(kwargs['destination']+'boundary_statistics.tif')
+            figure.savefig(kwargs['destination']+'boundary_statistics.svg')
+        else:
+            window = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(window)
+            canvas = FigureCanvas(figure)
+            toolbar = NavigationToolbar(canvas,window)
+            canvas.draw()
+            layout.addWidget(toolbar)
+            layout.addWidget(canvas)
+            window.setWindowTitle("Domain boundary statistics")
+            window.show()
 
     def plot_voronoi(self, **kwargs):
         x_max = kwargs.get('X_max',float(self.TAPD_X_max.text()))
         y_max = kwargs.get('Y_max',float(self.TAPD_Y_max.text()))
         rectangle = Polygon([(-x_max,-y_max),(-x_max,y_max),(x_max,y_max),(x_max,-y_max)])
-        window = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(window)
         figure = plt.figure()
         ax = figure.add_subplot(111)
         ax.set_aspect('equal')
@@ -1676,13 +1780,20 @@ class Window(QtWidgets.QWidget):
         ptp_bound = self.vor.points.ptp(axis=0)
         ax.set_xlim(-x_max,x_max)
         ax.set_ylim(-y_max,y_max)
-        canvas = FigureCanvas(figure)
-        toolbar = NavigationToolbar(canvas,window)
-        canvas.draw()
-        layout.addWidget(toolbar)
-        layout.addWidget(canvas)
-        window.setWindowTitle("2D Contour")
-        window.show()
+        plt.tight_layout()
+        if kwargs.get('save_as_file',False):
+            figure.savefig(kwargs['destination']+'voronoi.tif')
+            figure.savefig(kwargs['destination']+'voronoi.svg')
+        else:
+            window = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(window)
+            canvas = FigureCanvas(figure)
+            toolbar = NavigationToolbar(canvas,window)
+            canvas.draw()
+            layout.addWidget(toolbar)
+            layout.addWidget(canvas)
+            window.setWindowTitle("2D Contour")
+            window.show()
 
     def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
@@ -1753,6 +1864,7 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         self.scene().activeCamera().xRotationChanged.connect(self.camera_position_changed)
         self.scene().activeCamera().yRotationChanged.connect(self.camera_position_changed)
         self.scene().activeCamera().zoomLevelChanged.connect(self.camera_position_changed)
+        self.scene().activeCamera().setMaxZoomLevel(10000)
 
     def add_data(self,index,data,colorSheet,range,z_range,shape,offset,rotation,AR,add_series=True):
         self.colors_dict = colorSheet
@@ -1987,11 +2099,21 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
     def change_shadow_quality(self,quality):
         self.setShadowQuality(quality)
 
-    def save_scene(self):
-        imageFileName = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./pattern.bmp",\
-                                                                   "BMP (*.bmp);;JPEG (*.jpeg);;PNG(*.png)")
-        capture = self.renderToImage(0,QtCore.QSize(2000,2000))
-        capture.save(imageFileName[0], quality=100)
+    def save_scene(self, **kwargs):
+        if kwargs.get('save_as_file',False):
+            imageFileName1 = [kwargs['destination'] + 'lattice.bmp']
+            imageFileName2 = [kwargs['destination'] + 'lattice_5x5_zoomed.bmp']
+        else:
+            imageFileName1 = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./lattice.bmp",\
+                                                                    "BMP (*.bmp);;JPEG (*.jpeg);;PNG(*.png)")
+            imageFileName2 = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./lattice_5x5_zoomed.bmp",\
+                                                                    "BMP (*.bmp);;JPEG (*.jpeg);;PNG(*.png)")
+        capture = self.renderToImage(0,QtCore.QSize(3000,3000))
+        capture.save(imageFileName1[0], quality=100)
+        self.scene().activeCamera().setCameraPosition(self.scene().activeCamera().xRotation(),\
+            self.scene().activeCamera().yRotation(),self.scene().activeCamera().zoomLevel()*5)
+        capture = self.renderToImage(0,QtCore.QSize(3000,3000))
+        capture.save(imageFileName2[0], quality=100)
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()

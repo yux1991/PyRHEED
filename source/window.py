@@ -34,6 +34,7 @@ class Window(QtWidgets.QMainWindow):
     CANVAS_REFRESH = QtCore.pyqtSignal(configparser.ConfigParser)
     CHART_REFRESH = QtCore.pyqtSignal(configparser.ConfigParser)
     RETURN_STATUS = QtCore.pyqtSignal(dict)
+    SCENARIO_REQUESTED = QtCore.pyqtSignal()
 
     def __init__(self,config):
 
@@ -72,6 +73,7 @@ class Window(QtWidgets.QMainWindow):
         self.menu2DMap = self.menu.addMenu("Mapping")
         self.menuFit = self.menu.addMenu("Fit")
         self.menuSimulation = self.menu.addMenu("Simulation")
+        self.menuRun = self.menu.addMenu("Run")
         self.menuHelp = self.menu.addMenu("Help")
         self.setMenuBar(self.menu)
 
@@ -103,6 +105,9 @@ class Window(QtWidgets.QMainWindow):
         self.Statistical_Factor = self.menuSimulation.addAction("Statistical Factor",self.menu_actions_statistical_factor)
         self.Diffraction_pattern = self.menuSimulation.addAction("Diffraction Pattern",self.menu_actions_diffraction_pattern)
         self.Kikuchi_pattern = self.menuSimulation.addAction("Kikuchi Pattern",self.menu_actions_kikuchi_pattern)
+
+        #Run Menu
+        self.run_scenario = self.menuRun.addAction("Run Scenario", self.menu_action_run_scenario)
 
         #Help Menu
         self.about = self.menuHelp.addAction("About",self.menu_actions_about)
@@ -326,6 +331,9 @@ class Window(QtWidgets.QMainWindow):
 
     def menu_actions_kikuchi_pattern(self):
         self.KIKUCHI_PATTERN_REQUESTED.emit()
+
+    def menu_action_run_scenario(self):
+        self.SCENARIO_REQUESTED.emit()
 
     def menu_actions_save_as_text(self):
         self.profile.save_profile_as_text()

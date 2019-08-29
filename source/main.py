@@ -12,6 +12,7 @@ import preference
 import reciprocal_space_mapping
 import simulate_RHEED
 import statistical_factor
+import scenario
 import sys
 import window
 
@@ -36,12 +37,16 @@ class Window():
         self.window.DIFFRACTION_PATTERN_REQUESTED.connect(self.run_simulate_RHEED)
         self.window.KIKUCHI_PATTERN_REQUESTED.connect(self.run_kikuchi)
         self.window.THREE_DIMENSIONAL_GRAPH_REQUESTED.connect(self.run_3D_graph)
+        self.window.SCENARIO_REQUESTED.connect(self.run_scenario)
         self.preference = preference.Window()
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.window.refresh)
         sys.exit(app.exec_())
 
     def run_preference(self):
         self.preference.main()
+
+    def run_scenario(self):
+        self.scenario_window = scenario.Window()
 
     def run_reciprocal_space_mapping(self,path):
         self.reciprocal_space_mapping = reciprocal_space_mapping.Window()
