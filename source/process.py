@@ -9,6 +9,8 @@ import PIL.Image as pilImage
 import rawpy
 import random
 import sys
+import time
+from astropy.modeling.models import Voigt1D
 from descartes.patch import PolygonPatch
 from io import StringIO
 from lxml import etree as ET
@@ -221,145 +223,48 @@ class FitFunctions(object):
             FWHM = 0.001
         return height/(FWHM*math.sqrt(math.pi/(4*math.log(2))))*np.exp(-4*math.log(2)*(x - center)**2/(FWHM**2))+offset
 
-    def gaussian_bg(self,x,H1,Hbg,C1,Cbg,W1,Wbg,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+    def voigt(self,x,center,amplitude,fwhm_L,fwhm_G,offset=0):
+        v1 = Voigt1D(center,amplitude,fwhm_L,fwhm_G)
+        return v1(x)+offset
+    
+    def get_multiple_gaussians(self,n):
+        def gaussian(x,height, center,FWHM):
+            if FWHM == 0:
+                FWHM = 0.001
+            return height/(FWHM*math.sqrt(math.pi/(4*math.log(2))))*np.exp(-4*math.log(2)*(x - center)**2/(FWHM**2))
 
-    def three_gaussians(self,x,H1,H2,H3,C1,C2,C3,W1,W2,W3,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+offset)
+        def multi_gaussians(x,*args):
+            nonlocal n
+            offset = args[3*n]
+            for i in range(n):
+                offset+=gaussian(x,args[i],args[i+n],args[i+2*n])
+            return offset
+        return multi_gaussians
 
-    def three_gaussians_bg(self,x,H1,H2,H3,Hbg,C1,C2,C3,Cbg,W1,W2,W3,Wbg,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
-
-    def five_gaussians(self,x,H1,H2,H3,H4,H5,C1,C2,C3,C4,C5,W1,W2,W3,W4,W5,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,H4,C4,W4,offset=0)+
-                self.gaussian(x,H5,C5,W5,offset=0)+offset)
-
-    def five_gaussians_bg(self,x,H1,H2,H3,H4,H5,Hbg,C1,C2,C3,C4,C5,Cbg,\
-                          W1,W2,W3,W4,W5,Wbg,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,H4,C4,W4,offset=0)+
-                self.gaussian(x,H5,C5,W5,offset=0)+
-                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
-
-    def seven_gaussians(self,x,H1,H2,H3,H4,H5,H6,H7,C1,C2,C3,C4,C5,C6,C7,\
-                        W1,W2,W3,W4,W5,W6,W7,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,H4,C4,W4,offset=0)+
-                self.gaussian(x,H5,C5,W5,offset=0)+
-                self.gaussian(x,H6,C6,W6,offset=0)+
-                self.gaussian(x,H7,C7,W7,offset=0)+offset)
-
-    def seven_gaussians_bg(self,x,H1,H2,H3,H4,H5,H6,H7,Hbg,C1,C2,C3,C4,C5,C6,C7,Cbg, \
-                        W1,W2,W3,W4,W5,W6,W7,Wbg,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,H4,C4,W4,offset=0)+
-                self.gaussian(x,H5,C5,W5,offset=0)+
-                self.gaussian(x,H6,C6,W6,offset=0)+
-                self.gaussian(x,H7,C7,W7,offset=0)+
-                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
-
-    def nine_gaussians(self,x,H1,H2,H3,H4,H5,H6,H7,H8,H9,C1,C2,C3,C4,C5,C6,C7,\
-                       C8,C9,W1,W2,W3,W4,W5,W6,W7,W8,W9,offset=0):
-
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,H4,C4,W4,offset=0)+
-                self.gaussian(x,H5,C5,W5,offset=0)+
-                self.gaussian(x,H6,C6,W6,offset=0)+
-                self.gaussian(x,H7,C7,W7,offset=0)+
-                self.gaussian(x,H8,C8,W8,offset=0)+
-                self.gaussian(x,H9,C9,W9,offset=0)+offset)
-
-    def nine_gaussians_bg(self,x,H1,H2,H3,H4,H5,H6,H7,H8,H9,Hbg,C1,C2,C3,C4,C5,C6,C7,\
-                          C8,C9,Cbg,W1,W2,W3,W4,W5,W6,W7,W8,W9,Wbg,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,H4,C4,W4,offset=0)+
-                self.gaussian(x,H5,C5,W5,offset=0)+
-                self.gaussian(x,H6,C6,W6,offset=0)+
-                self.gaussian(x,H7,C7,W7,offset=0)+
-                self.gaussian(x,H8,C8,W8,offset=0)+
-                self.gaussian(x,H9,C9,W9,offset=0)+
-                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
-
-    def eleven_gaussians(self,x,H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,H11,C1,C2,\
-        C3,C4,C5,C6,C7,C8,C9,C10,C11,W1,W2,W3,W4,W5,W6,W7,W8,W9,W10, W11,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,H4,C4,W4,offset=0)+
-                self.gaussian(x,H5,C5,W5,offset=0)+
-                self.gaussian(x,H6,C6,W6,offset=0)+
-                self.gaussian(x,H7,C7,W7,offset=0)+
-                self.gaussian(x,H8,C8,W8,offset=0)+
-                self.gaussian(x,H9,C9,W9,offset=0)+
-                self.gaussian(x,H10,C10,W10,offset=0)+
-                self.gaussian(x,H11,C11,W11,offset=0)+offset)
-
-    def eleven_gaussians_bg(self,x,H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,H11,Hbg,C1,C2, \
-        C3,C4,C5,C6,C7,C8,C9,C10,C11,Cbg,W1,W2,W3,W4,W5,W6,W7,W8,W9,W10,W11,Wbg,offset=0):
-        return (self.gaussian(x,H1,C1,W1,offset=0)+
-                self.gaussian(x,H2,C2,W2,offset=0)+
-                self.gaussian(x,H3,C3,W3,offset=0)+
-                self.gaussian(x,H4,C4,W4,offset=0)+
-                self.gaussian(x,H5,C5,W5,offset=0)+
-                self.gaussian(x,H6,C6,W6,offset=0)+
-                self.gaussian(x,H7,C7,W7,offset=0)+
-                self.gaussian(x,H8,C8,W8,offset=0)+
-                self.gaussian(x,H9,C9,W9,offset=0)+
-                self.gaussian(x,H10,C10,W10,offset=0)+
-                self.gaussian(x,H11,C11,W11,offset=0)+
-                self.gaussian(x,Hbg,Cbg,Wbg,offset=0)+offset)
+    def get_multiple_voigts(self,n):
+        def voigt(x,center,amplitude,fwhm_L,fwhm_G):
+            v1 = Voigt1D(center,amplitude,fwhm_L,fwhm_G)
+            return v1(x)
+        def multiple_voigts(x,*args):
+            nonlocal n
+            offset = args[4*n]
+            for i in range(n):
+                offset+=voigt(x,args[i],args[i+n],args[i+2*n],args[i+3*n])
+            return offset
+        return multiple_voigts
 
     def errfunc(self,p,x0,y0):
         cost = self.fitFunction(x0,*p)-y0
         self.cost_values.append(sum(map(lambda x:np.abs(x),cost)))
         return cost
 
-    def get_gaussian_fit(self,x,y,numberOfPeaks,includeBackground,guess,bounds,FTol,XTol,GTol,method,loss):
-        if includeBackground == 0:
-            if numberOfPeaks == 1:
-                self.fitFunction = self.gaussian
-            elif numberOfPeaks == 3:
-                self.fitFunction = self.three_gaussians
-            elif numberOfPeaks == 5:
-                self.fitFunction = self.five_gaussians
-            elif numberOfPeaks == 7:
-                self.fitFunction = self.seven_gaussians
-            elif numberOfPeaks == 9:
-                self.fitFunction = self.nine_gaussians
-            elif numberOfPeaks == 11:
-                self.fitFunction = self.eleven_gaussians
-        elif includeBackground == 2:
-            if numberOfPeaks == 1:
-                self.fitFunction = self.gaussian_bg
-            elif numberOfPeaks == 3:
-                self.fitFunction = self.three_gaussians_bg
-            elif numberOfPeaks == 5:
-                self.fitFunction = self.five_gaussians_bg
-            elif numberOfPeaks == 7:
-                self.fitFunction = self.seven_gaussians_bg
-            elif numberOfPeaks == 9:
-                self.fitFunction = self.nine_gaussians_bg
-            elif numberOfPeaks == 11:
-                self.fitFunction = self.eleven_gaussians_bg
+    def get_fit(self,x,y,numberOfPeaks,includeBackground,function,guess,bounds,FTol,XTol,GTol,method,loss):
+        if includeBackground == 2:
+            numberOfPeaks+=1
+        if function == 'Gaussian':
+            self.fitFunction = self.get_multiple_gaussians(numberOfPeaks)
+        elif function == 'Voigt':
+            self.fitFunction = self.get_multiple_voigts(numberOfPeaks)
         self.cost_values=[]
         with Capture() as output:
             optim = least_squares(fun=self.errfunc,x0=guess,\
@@ -844,7 +749,7 @@ class DiffractionPattern(QtCore.QObject):
     ABORTED = QtCore.pyqtSignal()
     FINISHED = QtCore.pyqtSignal()
 
-    def __init__(self,Kx,Ky,Kz,AFF,atoms):
+    def __init__(self,Kx,Ky,Kz,AFF,atoms, constant_atomic_structure_factor=False):
         super(DiffractionPattern,self).__init__()
         self.Psi = np.multiply(Kx,0).astype('complex128')
         self.species_dict = set(AFF.index.tolist())
@@ -853,6 +758,7 @@ class DiffractionPattern(QtCore.QObject):
         self.Ky = Ky
         self.Kz = Kz
         self.AFF = AFF
+        self.constant_atomic_structure_factor = constant_atomic_structure_factor
         self._abort = False
 
     def run(self):
@@ -885,11 +791,14 @@ class DiffractionPattern(QtCore.QObject):
             if self._abort:
                 break
             else:
-                af = af_row.at['c']+af_row.at['a1']*np.exp(-af_row.at['b1']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
-                                   +af_row.at['a2']*np.exp(-af_row.at['b2']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
-                                   +af_row.at['a3']*np.exp(-af_row.at['b3']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
-                                   +af_row.at['a4']*np.exp(-af_row.at['b4']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)
-                self.Psi += np.multiply(af,np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2])))
+                if self.constant_atomic_structure_factor:
+                    self.Psi += np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2]))
+                else:
+                    af = af_row.at['c']+af_row.at['a1']*np.exp(-af_row.at['b1']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
+                                    +af_row.at['a2']*np.exp(-af_row.at['b2']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
+                                    +af_row.at['a3']*np.exp(-af_row.at['b3']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
+                                    +af_row.at['a4']*np.exp(-af_row.at['b4']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)
+                    self.Psi += np.multiply(af,np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2])))
                 itr+=1
                 self.PROGRESS_ADVANCE.emit(0,100,itr/number_of_atoms*100)
                 QtCore.QCoreApplication.processEvents()
@@ -920,7 +829,7 @@ class FitBroadening(QtCore.QObject):
     WRITE_OUTPUT = QtCore.pyqtSignal(str)
 
     def __init__(self,path,initialparameters,startIndex,endIndex,origin,start,end,width,analysisRange,scale_factor,autoWB,brightness,blackLevel,image_crop,\
-                 numberOfPeaks,BGCheck,saveResult,guess,bounds,ftol,xtol,gtol,method,loss):
+                 numberOfPeaks,BGCheck,remove_linear_BGCheck, saveResult,function,guess,bounds,ftol,xtol,gtol,method,loss):
         super(FitBroadening,self).__init__()
         self.path = path
         self.initialparameters = initialparameters
@@ -938,7 +847,9 @@ class FitBroadening(QtCore.QObject):
         self.image_crop = image_crop
         self.numberOfPeaks = numberOfPeaks
         self.BGCheck = BGCheck
+        self.remove_linear_BGCheck = remove_linear_BGCheck
         self.saveResult = saveResult
+        self.function = function
         self.guess=guess
         self.bound_low,self.bound_high = bounds[0],bounds[1]
         self.ftol = ftol
@@ -951,6 +862,10 @@ class FitBroadening(QtCore.QObject):
         self.fit_worker = FitFunctions()
         self._abort = False
         self._periodic = False
+
+    def update_fitting_parameters(self,guess,bounds):
+        self.guess = guess
+        self.bound_low,self.bound_high = bounds[0],bounds[1]
     
     def run(self):
         for filename in glob.glob(self.path):
@@ -963,6 +878,7 @@ class FitBroadening(QtCore.QObject):
                 nimg = nimg%101
             self.UPDATE_RESULTS.emit(self.initialparameters)
             self.UPDATE_LOG.emit("The file being processed right now is: "+self.image_list[nimg])
+            QtCore.QCoreApplication.processEvents()
             qImg, img = self.image_worker.get_image(16,self.image_list[nimg],self.autoWB,self.brightness,self.blackLevel,self.image_crop)
             x0,y0,x1,y1 = self.start.x(),self.start.y(),self.end.x(),self.end.y()
             newStart = QtCore.QPointF()
@@ -989,7 +905,10 @@ class FitBroadening(QtCore.QObject):
                     RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,self.scale_factor)
                 else:
                     RC,I = self.image_worker.get_integral(newStart,newEnd,self.width,img,self.scale_factor)
-                results, cost, output = self.fit_worker.get_gaussian_fit(RC,I,self.numberOfPeaks,self.BGCheck,self.guess,(self.bound_low,self.bound_high),self.ftol,\
+                if self.remove_linear_BGCheck:
+                    BG = np.linspace(I[0],I[-1],len(I))
+                    I = I - BG
+                results, cost, output = self.fit_worker.get_fit(RC,I,self.numberOfPeaks,self.BGCheck,self.function, self.guess,(self.bound_low,self.bound_high),self.ftol,\
                                                                 self.xtol,self.gtol,self.method,self.loss)
                 Kperp = (np.abs((newEnd.y()-newStart.y())*self.origin.x()-(newEnd.x()-newStart.x())*self.origin.y()+newEnd.x()*newStart.y()-newEnd.y()*newStart.x())/\
                         np.sqrt((newEnd.y()-newStart.y())**2+(newEnd.x()-newStart.x())**2))/self.scale_factor
@@ -1013,6 +932,7 @@ class FitBroadening(QtCore.QObject):
                     self.WRITE_OUTPUT.emit(fitresults)
                 self.UPDATE_LOG.emit("MESSAGE:"+results.message)
                 self.ADD_PLOT.emit(RC,I,Kperp,nimg)
+                time.sleep(0.1)
                 if self._periodic:
                     if nimg < self.startIndex:
                         offset = 1
@@ -1051,6 +971,8 @@ class TAPD_model(object):
         self._epilayer_structure = None
         self._epilayer_sites = None
         self._epilayer_list = None
+        self._buffer_layer_list = None
+        self._buffer_layer_sites = None
         self._epilayer_domain_area_list = None
         self._epilayer_domain_boundary_list = None
         self._epilayer_domain = None
@@ -1098,6 +1020,40 @@ class TAPD_model(object):
     @epilayer_list.deleter
     def epilayer_list(self):
         del self._epilayer_list
+
+    @property
+    def buffer_layer_sites(self):
+        return self._buffer_layer_sites
+
+    @buffer_layer_sites.setter
+    def buffer_layer_sites(self,buffer_layer_sites):
+        self._buffer_layer_sites = buffer_layer_sites
+    @buffer_layer_sites.deleter
+    def buffer_layer_sites(self):
+        del self._buffer_layer_sites
+
+    @property
+    def buffer_layer_list(self):
+        return self._buffer_layer_list
+
+    @buffer_layer_list.setter
+    def buffer_layer_list(self,buffer_layer_list):
+        self._buffer_layer_list = buffer_layer_list
+    @buffer_layer_list.deleter
+    def buffer_layer_list(self):
+        del self._buffer_layer_list
+
+    @property
+    def epilayer_list(self):
+        return self._epilayer_list
+
+    @epilayer_list.setter
+    def epilayer_list(self,epilayer_list):
+        self._epilayer_list = epilayer_list
+    @epilayer_list.deleter
+    def epilayer_list(self):
+        del self._epilayer_list
+
 
     @property
     def epilayer_domain_area_list(self):
@@ -1174,7 +1130,9 @@ class TAPD_Simulation(QtCore.QObject):
     SEND_RESULTS = QtCore.pyqtSignal(TAPD_model)
     UPDATE_LOG = QtCore.pyqtSignal(str)
 
-    def __init__(self,X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, distribution, sub_orientation='(001)', epi_orientation='(001)', use_atoms = True, **kwargs):
+    def __init__(self,X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, distribution,\
+        atom='S',in_plane_distribution='completely random',out_of_plane_distribution='completely random',buffer_offset=[0,0,0],\
+        sub_orientation='(001)', epi_orientation='(001)', use_atoms = True, add_buffer = False, **kwargs):
         super(TAPD_Simulation,self).__init__()
         self.X_max = X_max
         self.Y_max = Y_max
@@ -1187,14 +1145,20 @@ class TAPD_Simulation(QtCore.QObject):
         self.epi_orientation = epi_orientation
         self.distribution = distribution
         self.use_atoms = use_atoms
+        self.buffer_layer_atom = atom
+        self.buffer_in_plane_distribution = in_plane_distribution
+        self.buffer_out_of_plane_distribution = out_of_plane_distribution
+        self.buffer_offset = buffer_offset
+        self.add_buffer = add_buffer
         self.parameters = kwargs
         self._abort = False
 
     def run(self):
         self.UPDATE_LOG.emit('Preparing the translational antiphase domain sites ...')
         QtCore.QCoreApplication.processEvents()
-        model = self.get_TAPD_sites(self.X_max,self.Y_max, self.Z_min, self.Z_max,\
-                                            self.offset, self.substrate_CIF_path, self.epilayer_CIF_path,self.sub_orientation,self.epi_orientation, self.use_atoms)
+        model = self.get_TAPD_sites(self.X_max,self.Y_max, self.Z_min, self.Z_max,self.offset, self.substrate_CIF_path, self.epilayer_CIF_path,\
+            self.buffer_layer_atom, self.buffer_in_plane_distribution, self.buffer_out_of_plane_distribution, self.buffer_offset,\
+            self.sub_orientation,self.epi_orientation, self.use_atoms, self.add_buffer)
         QtCore.QCoreApplication.processEvents()
         if not self._abort:
             self.UPDATE_LOG.emit('Translational antiphase domain sites are created!')
@@ -1207,15 +1171,26 @@ class TAPD_Simulation(QtCore.QObject):
     def stop(self):
         self._abort = True
 
-    def get_TAPD_sites(self, X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, sub_orientation='(001)', epi_orientation='(001)',use_atoms = True):
+    def get_TAPD_sites(self, X_max, Y_max, Z_min, Z_max, offset, substrate_CIF_path, epilayer_CIF_path, \
+        atom,in_plane_distribution,out_of_plane_distribution,buffer_offset,\
+        sub_orientation='(001)', epi_orientation='(001)',use_atoms = True, add_buffer = False):
         model = TAPD_model()
         model.substrate_structure = CifParser(substrate_CIF_path).get_structures(primitive=False)[0]
         model.epilayer_structure = CifParser(epilayer_CIF_path).get_structures(primitive=False)[0]
         self.UPDATE_LOG.emit('Preparing the substrate ...')
         QtCore.QCoreApplication.processEvents()
         substrate_set, model.substrate_list, model.substrate_sites = self.get_substrate(model.substrate_structure, sub_orientation, X_max, Y_max, Z_min, Z_max, use_atoms)
-        if not substrate_set is None:
+        if add_buffer:
             self.UPDATE_LOG.emit('Substrate created!')
+            self.UPDATE_LOG.emit('Adding the buffer layer ...')
+            QtCore.QCoreApplication.processEvents()
+            model.buffer_layer_list,model.buffer_layer_sites = self.get_buffer_layer(substrate_set,max(model.substrate_structure.lattice.a,model.substrate_structure.lattice.b),\
+                atom,in_plane_distribution,out_of_plane_distribution,buffer_offset,**self.parameters)
+        if not substrate_set is None:
+            if add_buffer:
+                self.UPDATE_LOG.emit('Buffer layer created!')
+            else:
+                self.UPDATE_LOG.emit('Substrate created!')
             self.UPDATE_LOG.emit('Creating nucleation ...')
             QtCore.QCoreApplication.processEvents()
             generators = self.generator_2D(substrate_set, self.distribution, **self.parameters)
@@ -1235,18 +1210,18 @@ class TAPD_Simulation(QtCore.QObject):
                     self.UPDATE_LOG.emit('Epilayer growth is done!')
         return model
 
-    def generator_2D(self, total, distribution, **kwargs):
-        total_length = len(total)
+    def generator_2D(self, substrate_set, distribution, **kwargs):
+        substrate_set_length = len(substrate_set)
         randPoints = []
-        number_of_sites = len(total)
+        number_of_sites = len(substrate_set)
         i = 0
-        while total:
-            x,y = random.choice(list(total))
+        while substrate_set:
+            x,y = random.choice(list(substrate_set))
             randPoints.append([x,y])
             if distribution == 'completely random':
                 density = kwargs['density']
-                number_of_sites = density*len(total)
-                total.remove((x,y))
+                number_of_sites = density*len(substrate_set)
+                substrate_set.remove((x,y))
             else:
                 if distribution == 'geometric':
                     radius = np.random.geometric(kwargs['gamma'])
@@ -1256,13 +1231,13 @@ class TAPD_Simulation(QtCore.QObject):
                     radius = np.random.uniform(kwargs['low'], kwargs['high'])
                 elif distribution == 'binomial':
                     radius = np.random.binomial(kwargs['n'],kwargs['p'])
-                total_temp = total.copy()
-                for (dx,dy) in total_temp:
+                substrate_set_temp = substrate_set.copy()
+                for (dx,dy) in substrate_set_temp:
                     if (dx-x)**2+(dy-y)**2 <= radius**2:
-                        total.remove((dx,dy))
+                        substrate_set.remove((dx,dy))
             if i <= number_of_sites:
                 i += 1
-                self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(total)/total_length*100,1))
+                self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(substrate_set)/substrate_set_length*100,1))
                 QtCore.QCoreApplication.processEvents()
             else:
                 break
@@ -1284,6 +1259,60 @@ class TAPD_Simulation(QtCore.QObject):
                 atomic_number = element.Z
                 name = element.symbol
         return name
+
+    def get_buffer_layer(self, substrate_set, substrate_lattice_constant, atom, in_plane_distribution, out_of_plane_distribution, offset, **kwargs):
+        substrate_set_length = len(substrate_set)
+        rand_atom_list = []
+        rand_atom_sites = []
+        number_of_sites = len(substrate_set)
+        i = 0
+        while substrate_set:
+            x0,y0 = random.choice(list(substrate_set))
+            x = x0+ substrate_lattice_constant*np.random.random_sample()-substrate_lattice_constant/2
+            y = y0+ substrate_lattice_constant*np.random.random_sample()-substrate_lattice_constant/2
+            if out_of_plane_distribution == 'gaussian':
+                z = np.random.normal((kwargs['z_low']+kwargs['z_high'])/2,kwargs['z_high']-kwargs['z_low'])
+                if z < kwargs['z_low']:
+                    z = kwargs['z_low']
+                if z > kwargs['z_high']:
+                    z = kwargs['z_high']
+            elif out_of_plane_distribution == 'uniform':
+                z = np.random.uniform(kwargs['z_low'], kwargs['z_high'])
+            elif out_of_plane_distribution == 'completely random':
+                z = np.random.random_sample()*(kwargs['z_high'] - kwargs['z_low']) + kwargs['z_low']
+            rand_atom_list.append([x+offset[0],y+offset[1]])
+            rand_atom_sites.append(pgSites.Site(atom,[x+offset[0],y+offset[1],z+offset[2]]))
+            if in_plane_distribution == 'completely random':
+                density = kwargs['buffer_density']
+                number_of_sites = density*len(substrate_set)
+                substrate_set.remove((x0,y0))
+            else:
+                if in_plane_distribution == 'geometric':
+                    radius = np.random.geometric(kwargs['buffer_gamma'])
+                elif in_plane_distribution == 'delta':
+                    radius = kwargs['buffer_radius']
+                elif in_plane_distribution == 'uniform':
+                    radius = np.random.uniform(kwargs['buffer_in_plane_low'], kwargs['buffer_in_plane_high'])
+                elif in_plane_distribution == 'buffer_binomial':
+                    radius = np.random.binomial(kwargs['buffer_n'],kwargs['buffer_p'])
+                substrate_set_temp = substrate_set.copy()
+                for (dx,dy) in substrate_set_temp:
+                    if (dx-x0)**2+(dy-y0)**2 <= radius**2:
+                        substrate_set.remove((dx,dy))
+            if i <= number_of_sites:
+                i += 1
+                self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(substrate_set)/substrate_set_length*100,1))
+                QtCore.QCoreApplication.processEvents()
+            else:
+                break
+            if self._abort:
+                break
+        self.PROGRESS_END.emit()
+        QtCore.QCoreApplication.processEvents()
+        if not self._abort:
+            return np.array(rand_atom_list), rand_atom_sites
+        else:
+            return None, None
 
     def get_substrate(self,structure, orientation, X_max, Y_max, Z_min, Z_max, use_atoms):
         if use_atoms:
@@ -1438,7 +1467,12 @@ class TAPD_Simulation(QtCore.QObject):
         return (v[0]-p[0])**2+(v[1]-p[1])**2 < (r/2)**2
 
     def get_domain(self, a, b, angle, point, polygon, gap_add_in, gap_subtract_in, X_max, Y_max, unit_cell_sites_epi):
-        vertices = list(polygon.exterior.coords)
+        try:
+            vertices = list(polygon.exterior.coords)
+        except AttributeError:
+            vertices = []
+            for p in polygon:
+                vertices.append(p.exterior.coords)
         extended_polygon = [polygon]
         exclusion = []
         for first, second in zip(vertices, vertices[1:]):

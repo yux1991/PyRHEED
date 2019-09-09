@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import plot_chart
+from scipy.stats import linregress as lrg
 
 class Window(QtCore.QObject):
 
@@ -73,7 +74,7 @@ class Window(QtCore.QObject):
         self.ReportInformationBox.setStyleSheet('QGroupBox::title {color:blue;}')
         self.ReportInformationGrid = QtWidgets.QGridLayout(self.ReportInformationBox)
         self.ReportInformationGrid.setAlignment(QtCore.Qt.AlignTop)
-        self.ReportInformation = QtWidgets.QLabel("Number of peaks:\nDate of the report:\nStart image index:\nEnd image index:\nStart Kperp position:\nEnd Kperp position:\nKperp step size:")
+        self.ReportInformation = QtWidgets.QLabel("Fit function:\nNumber of peaks:\nDate of the report:\nStart image index:\nEnd image index:\nStart Kperp position:\nEnd Kperp position:\nKperp step size:")
         self.ReportInformationGrid.addWidget(self.ReportInformation)
 
         self.typeOfReportBox = QtWidgets.QGroupBox("Type of the Report to Be Generated")
@@ -193,9 +194,12 @@ class Window(QtCore.QObject):
 
         self.ButtonBox = QtWidgets.QDialogButtonBox()
         self.ButtonBox.addButton("OK",QtWidgets.QDialogButtonBox.AcceptRole)
+        self.ButtonBox.addButton("Fit",QtWidgets.QDialogButtonBox.AcceptRole)
         self.ButtonBox.addButton("Cancel",QtWidgets.QDialogButtonBox.DestructiveRole)
         self.ButtonBox.setCenterButtons(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
+            connect(self.linear_fit)
+        self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].clicked.\
             connect(self.reject)
 
         self.LeftGrid.addWidget(self.chooseSource,0,0,1,2)
@@ -441,9 +445,17 @@ class Window(QtCore.QObject):
                                      {'Az':Az})
 
     def get_IA(self):
+        if self.BGCheck:
+            nop = self.NumberOfPeaks+1
+        else:
+            nop = self.NumberOfPeaks
         peakIndex = np.round(float(self.peak.currentData()),0)
-        columnI = int(1+peakIndex*2+1)
-        columnIerror = int(1+peakIndex*2+2)
+        if self.fit_function == 'Gaussian':
+            columnI = int(1+peakIndex*2+1)
+            columnIerror = int(1+peakIndex*2+2)
+        elif self.fit_function == 'Voigt':
+            columnI = int(1+nop*2+peakIndex*2+1)
+            columnIerror = int(1+nop*2+peakIndex*2+2)
         rows = np.full(self.AZmax+1, self.currentKP).astype(int) + np.linspace(0,self.AZmax,self.AZmax+1).astype(int)*(self.KPmax+1)
         A = self.Angles
         I = np.fromiter((self.report[i,columnI] for i in rows.tolist()),float)
@@ -456,12 +468,22 @@ class Window(QtCore.QObject):
         else:
             nop = self.NumberOfPeaks
         peakIndex = np.round(float(self.peak.currentData()),0)
-        columnF = int(1+nop*4+peakIndex*2+1)
-        columnFerror = int(1+nop*4+peakIndex*2+2)
+        if self.fit_function == 'Gaussian':
+            columnF = int(1+nop*4+peakIndex*2+1)
+            columnFerror = int(1+nop*4+peakIndex*2+2)
+        elif self.fit_function == 'Voigt':
+            columnFL = int(1+nop*4+peakIndex*2+1)
+            columnFLerror = int(1+nop*4+peakIndex*2+2)
+            columnFG = int(1+nop*6+peakIndex*2+1)
+            columnFGerror = int(1+nop*6+peakIndex*2+2)
         rows = np.full(self.AZmax+1, self.currentKP).astype(int) + np.linspace(0,self.AZmax,self.AZmax+1).astype(int)*(self.KPmax+1)
         A = self.Angles
-        F = np.fromiter((self.report[i,columnF]/2 for i in rows.tolist()),float)
-        Ferror = np.fromiter((self.report[i,columnFerror]/2 for i in rows.tolist()),float)
+        if self.fit_function == 'Gaussian':
+            F = np.fromiter((self.report[i,columnF]/2 for i in rows.tolist()),float)
+            Ferror = np.fromiter((self.report[i,columnFerror]/2 for i in rows.tolist()),float)
+        elif self.fit_function == 'Voigt':
+            F = np.fromiter(((0.5346*self.report[i,columnFL]+np.sqrt(0.2166*self.report[i,columnFL]**2+self.report[i,columnFG]**2))/2 for i in rows.tolist()),float)
+            Ferror = np.fromiter(((0.5346*self.report[i,columnFLerror]+(0.4332*self.report[i,columnFLerror]+2*self.report[i,columnFGerror])/np.sqrt(0.2166*self.report[i,columnFL]**2+self.report[i,columnFG]**2))/2 for i in rows.tolist()),float)
         return F,A,Ferror
 
     def get_IK(self):
@@ -470,8 +492,12 @@ class Window(QtCore.QObject):
         else:
             nop = self.NumberOfPeaks
         peakIndex = np.round(float(self.peak.currentData()),0)
-        columnI = int(1+peakIndex*2+1)
-        columnIerror = int(1+peakIndex*2+2)
+        if self.fit_function == 'Gaussian':
+            columnI = int(1+peakIndex*2+1)
+            columnIerror = int(1+peakIndex*2+2)
+        elif self.fit_function == 'Voigt':
+            columnI = int(1+nop*2+peakIndex*2+1)
+            columnIerror = int(1+nop*2+peakIndex*2+2)
         rows = np.full(self.KPmax+1, self.currentAzimuth*(self.KPmax+1)).astype(int) + np.linspace(0,self.KPmax,self.KPmax+1).astype(int)
         K = self.Kperps
         I = np.fromiter((self.report[i,columnI] for i in rows.tolist()),float)
@@ -484,13 +510,46 @@ class Window(QtCore.QObject):
         else:
             nop = self.NumberOfPeaks
         peakIndex = np.round(float(self.peak.currentData()),0)
-        columnF = int(1+nop*4+peakIndex*2+1)
-        columnFerror = int(1+nop*4+peakIndex*2+2)
+        if self.fit_function == 'Gaussian':
+            columnF = int(1+nop*4+peakIndex*2+1)
+            columnFerror = int(1+nop*4+peakIndex*2+2)
+        elif self.fit_function == 'Voigt':
+            columnFL = int(1+nop*4+peakIndex*2+1)
+            columnFLerror = int(1+nop*4+peakIndex*2+2)
+            columnFG = int(1+nop*6+peakIndex*2+1)
+            columnFGerror = int(1+nop*6+peakIndex*2+2)
         rows = np.full(self.KPmax+1, self.currentAzimuth*(self.KPmax+1)).astype(int) + np.linspace(0,self.KPmax,self.KPmax+1).astype(int)
         K = self.Kperps
-        F = np.fromiter((self.report[i,columnF]/2 for i in rows.tolist()),float)
-        Ferror = np.fromiter((self.report[i,columnFerror]/2 for i in rows.tolist()),float)
+        if self.fit_function == 'Gaussian':
+            F = np.fromiter((self.report[i,columnF]/2 for i in rows.tolist()),float)
+            Ferror = np.fromiter((self.report[i,columnFerror]/2 for i in rows.tolist()),float)
+        elif self.fit_function == 'Voigt':
+            F = np.fromiter(((0.5346*self.report[i,columnFL]+np.sqrt(0.2166*self.report[i,columnFL]**2+self.report[i,columnFG]**2))/2 for i in rows.tolist()),float)
+            Ferror = np.fromiter(((0.5346*self.report[i,columnFLerror]+(0.4332*self.report[i,columnFLerror]+2*self.report[i,columnFGerror])/np.sqrt(0.2166*self.report[i,columnFL]**2+self.report[i,columnFG]**2))/2 for i in rows.tolist()),float)
         return F,K,Ferror
+
+    def linear_fit(self):
+        file_name = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./linear_fit_results.txt","TXT (*.txt)")
+        if file_name:
+            output = open(file_name[0],mode='w')
+            for i in range(self.AZmin,self.AZmax+1):
+                self.currentAzimuth = i
+                Az = self.currentAzimuth*1.8+self.AzimuthStart
+                F,K,Ferror = self.get_FK()
+                F_part = F[10:len(F)-30]
+                K_part = K[10:len(K)-30]
+                slope, intercept, r, p, stderr = lrg(K_part*K_part,F_part*F_part)
+                output.write('{:9.6f}\t{:9.6f}\t{:9.6f}\t{:9.6f}\n'.format(Az,slope,intercept,stderr))
+                fig = plt.figure()
+                ax = plt.subplot()
+                ax.set_title(r'$h^{2} vs k^{2}$')
+                ax.scatter(K_part*K_part,F_part*F_part)
+                ax.plot(K_part*K_part,slope*K_part*K_part+intercept)
+                ax.set_xlabel(r'$k^{2}$')
+                ax.set_ylabel(r'$h^{2}$')
+            output.close
+            plt.show()
+        self.update_log("The fitting is done!")
 
     def load_report(self,path):
         with open(path,'r') as file:
@@ -503,6 +562,7 @@ class Window(QtCore.QObject):
                     pass
         self.NumberOfPeaks = self.header['NumberOfPeaks']
         self.BGCheck = self.header['BGCheck']
+        self.fit_function = self.header.get('fit_function','Gaussian')
         self.report = np.loadtxt(path,delimiter='\t',skiprows=5)
         self.Angles = np.unique(self.report[:,0])
         self.Kperps = np.unique(self.report[:,1])
@@ -524,28 +584,28 @@ class Window(QtCore.QObject):
         if self.BGCheck:
             if len(self.Kperps) > 1:
                 self.ReportInformation.setText("Date of the report: "+self.date+\
-                'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
-                .format(self.NumberOfPeaks,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+                'Fit function: '+self.fit_function+'\n'+'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
+                .format(self.NumberOfPeaks+1,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
             else:
                 self.ReportInformation.setText("Date of the report: "+self.date+ \
-                'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)' \
-                .format(self.NumberOfPeaks,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,0))
+                'Fit function: '+self.fit_function+'\n'+'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)' \
+                .format(self.NumberOfPeaks+1,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,0))
         else:
             if len(self.Kperps) > 1:
                 self.ReportInformation.setText("Date of the report: "+self.date+ \
-                'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
-                 .format(self.NumberOfPeaks+1,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
+                'Fit function: '+self.fit_function+'\n'+'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)'\
+                 .format(self.NumberOfPeaks,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,(self.Kperps[1]-self.Kperps[0])))
             else:
                 self.ReportInformation.setText("Date of the report: "+self.date+ \
-                'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)' \
-                .format(self.NumberOfPeaks+1,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,0))
+                'Fit function: '+self.fit_function+'\n'+'Number of peaks: {}\nStart image index: {}\nEnd image index: {}\nStart Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nEnd Kperp position: {:5.2f} (\u212B\u207B\u00B9)\nKperp step size: {:5.2f} (\u212B\u207B\u00B9)' \
+                .format(self.NumberOfPeaks,self.startIndex, self.endIndex,self.RangeStart,self.RangeEnd,0))
         self.peak.clear()
         peaks = ['L5','L4','L3','L2','L1','Center','R1','R2','R3','R4','R5','BG']
         if self.BGCheck:
-            for i in range(5-int((self.NumberOfPeaks-1)/2),5+int((self.NumberOfPeaks-1)/2)+1):
+            for i in range(5-int((self.NumberOfPeaks-1)/2),5+int((self.NumberOfPeaks-1)/2)):
                 self.peak.addItem(peaks[i],str(i-(5-(self.NumberOfPeaks-1)/2)))
         else:
-            for i in range(5-int((self.NumberOfPeaks-1)/2),5+int((self.NumberOfPeaks-1)/2)):
+            for i in range(5-int((self.NumberOfPeaks-1)/2),5+int((self.NumberOfPeaks-1)/2)+1):
                 self.peak.addItem(peaks[i],str(i-int((5-(self.NumberOfPeaks-1)/2))))
         self.peak.setCurrentText('Center')
         self.update_log("The report file is loaded")

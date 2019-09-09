@@ -242,15 +242,19 @@ class Window(QtWidgets.QWidget):
         self.density_length = len(self.config[section]['density'].split(","))-1
         self.density_index=0
         if section == 'TAPD':
-            self.simulation = simulate_RHEED.Window()
-            self.simulation.setEnabled(False)
-            self.simulation.TAPD_FINISHED.connect(self.scenario_finished)
-            self.simulation.TAPD_RESULTS.connect(self.scenario_results)
-            self.simulation.CLOSE.connect(self.scenario_is_closed)
-            self.simulation.RESULTS_IS_READY.connect(self.save_TAPD_results)
-            self.simulation.main()
-            self.simulation.load_scenario(self.config[section])
-            self.simulation.reload_TAPD(density=self.config[section]['density'].split(",")[self.density_index])
+            self.sub_scenario(self.config[section]['density'].split(",")[self.density_index])
+
+    def sub_scenario(self,density):
+        section = self.tab.tabText(self.tab.currentIndex())
+        self.simulation = simulate_RHEED.Window()
+        self.simulation.setEnabled(False)
+        self.simulation.TAPD_FINISHED.connect(self.scenario_finished)
+        self.simulation.TAPD_RESULTS.connect(self.scenario_results)
+        self.simulation.CLOSE.connect(self.scenario_is_closed)
+        self.simulation.RESULTS_IS_READY.connect(self.save_TAPD_results)
+        self.simulation.main()
+        self.simulation.load_scenario(self.config[section])
+        self.simulation.reload_TAPD(density=density)
 
     def reload_scenario(self):
         section = self.tab.tabText(self.tab.currentIndex())
@@ -314,7 +318,8 @@ class Window(QtWidgets.QWidget):
             self.simulation.show_XY_plot(directory=self.save_dir, name='2D_map.tif', save_as_file=True)
         if self.density_index < self.density_length:
             self.density_index+=1
-            self.reload_scenario()
+            self.simulation.deleteLater()
+            self.sub_scenario(self.config[section]['density'].split(",")[self.density_index])
         else:
             self.simulation.setEnabled(True)
     

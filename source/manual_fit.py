@@ -12,7 +12,7 @@ class Window(QtCore.QObject):
 
     STATUS_REQUESTED = QtCore.pyqtSignal()
     FIT_SATISFIED = QtCore.pyqtSignal(list)
-    COLOR = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
+    COLOR = ['magenta','cyan','darkCyan','darkMagenta','red','darkRed','blue','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
 
     def __init__(self,fontname='Arial',fontsize=20,function='gaussian'):
         super(Window,self).__init__()
@@ -34,44 +34,47 @@ class Window(QtCore.QObject):
     def set_status(self,status):
         self.status = status
 
-    #def get_input(self):
-    #    items = ['1','1+BG','3','3+BG','5','5+BG','7','7+BG','9','9+BG','11','11+BG']
-    #    return QtWidgets.QInputDialog.getItem(None,'Input','Choose the Number of Peaks',items,0,False)
-
     def get_input(self):
-        items = ['1','1+BG','3','3+BG','5','5+BG','7','7+BG','9','9+BG','11','11+BG']
+        items = []
+        for number in range(12):
+            items.append(str(number+1))
+            items.append(str(number+1)+'+BG')
         dialog = my_widgets.MultipleInputDialog()
         return dialog.getItems({'type':'ComboBox','label':'Choose the Number of Peaks','content':items},\
-                               {'type':'ComboBox','label':'Choose the Fit Function','content':['gaussian',\
-                                                                            'translational_antiphase_domain_model']})
+                               {'type':'ComboBox','label':'Choose the Fit Function','content':['gaussian','voigt',\
+                                                                            'translational_antiphase_domain_model']},\
+                               {'type':'ComboBox','label':'Choose Whether to Remove a Linear Background','content':['Yes','No']})
 
-    def main(self,path,nop=1,BG=False):
+    def main(self,path,nop=1,BG=False, remove_linear_BG=False):
         if nop == 0:
             input = self.get_input()
-            print(input)
             if input:
-                text = input['Choose the Number of Peaks']
-                OK = True
+                text_nop = input['Choose the Number of Peaks']
+                text_rmlBG = input['Choose Whether to Remove a Linear Background']
                 self.function = input['Choose the Fit Function']
             else:
-                text=''
-                OK = False
-            if OK:
-                if text.isdigit():
-                    self.nop = int(text)
-                    self.BG = False
-                else:
-                    self.nop = int(text.split('+')[0])+1
-                    self.BG = True
-            else:
                 return
+            if text_nop.isdigit():
+                self.nop = int(text_nop)
+                self.BG = False
+            else:
+                self.nop = int(text_nop.split('+')[0])+1
+                self.BG = True
+            if text_rmlBG == 'Yes':
+                self.remove_linear_BG = True
+            elif text_rmlBG == 'No':
+                self.remove_linear_BG = False
         else:
             self.nop = nop
             self.BG = BG
+            self.remove_linear_BG = remove_linear_BG
         self.STATUS_REQUESTED.emit()
         if self.function == 'gaussian':
             self.fit_function = self.fit_worker.gaussian
             self.initialGuess = ['1','0.1','1','0.5']
+        elif self.function == 'voigt':
+            self.fit_function = self.fit_worker.voigt
+            self.initialGuess = ['1','0.1','1','1','0.5']
         elif self.function == 'translational_antiphase_domain_model':
             self.fit_function = self.fit_worker.translational_antiphase_domain_model_intensity_using_S
             self.lattice_constant = 3.15
@@ -94,6 +97,9 @@ class Window(QtCore.QObject):
         self.parametersHLayout = QtWidgets.QHBoxLayout(self.parameters)
         self.windowDefault = dict(self.config['windowDefault'].items())
         self.RC, self.I = self.profile()
+        if self.remove_linear_BG:
+            background = np.linspace(self.I[0],self.I[-1],len(self.I))
+            self.I = self.I - background
         self.maxIntensity = np.amax(self.I)
         self.maxIntensityPosition = np.argmax(self.I)
         self.minIntensity = np.amin(self.I)
@@ -104,6 +110,9 @@ class Window(QtCore.QObject):
             if self.function == 'gaussian':
                 mode = [('C',i,self.RC[-1]/self.nop*i,0,self.RC[-1]),('H',i,float(self.initialGuess[1]),0.01,0.5),\
                         ('W',i,float(self.initialGuess[2]),0.01,5)]
+            elif self.function == 'voigt':
+                mode = [('C',i,self.RC[-1]/self.nop*i,0,self.RC[-1]),('A',i,float(self.initialGuess[1]),0.01,0.5),\
+                        ('FL',i,float(self.initialGuess[2]),0.01,5),('FG',i,float(self.initialGuess[3]),0.01,5)]
             elif self.function == 'translational_antiphase_domain_model':
                 mode = [('G',i,float(self.initialGuess[1]),0.0001,1),('H',i,float(self.initialGuess[2]),0,5), \
                         ('O',i,float(self.initialGuess[3]),-5,5)]
@@ -118,6 +127,19 @@ class Window(QtCore.QObject):
                             slider = VerticalLabelSlider(minimum,maximum,100,self.RC[-1]/2,name,index,self.BG,'vertical',self.COLOR[i-1])
                     else:
                         slider = VerticalLabelSlider(minimum,maximum,100,value,name,index,False,'vertical',self.COLOR[i-1])
+                elif self.function == 'voigt':
+                    if self.BG and i==self.nop:
+                        if name == 'FL':
+                            slider = VerticalLabelSlider(minimum,2*self.RC[-1],100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
+                        elif name == 'FG':
+                            slider = VerticalLabelSlider(minimum,2*self.RC[-1],100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
+                        elif name == 'A':
+                            slider = VerticalLabelSlider(minimum,10,100,value,name,index,self.BG,'vertical',self.COLOR[i-1])
+                        elif name =='C':
+                            slider = VerticalLabelSlider(minimum,maximum,100,self.RC[-1]/2,name,index,self.BG,'vertical',self.COLOR[i-1])
+                    else:
+                        slider = VerticalLabelSlider(minimum,maximum,100,value,name,index,False,'vertical',self.COLOR[i-1])
+
                 elif self.function == 'translational_antiphase_domain_model':
                     if self.BG and i==self.nop:
                         if name == 'G':
@@ -133,8 +155,8 @@ class Window(QtCore.QObject):
                 slider.VALUE_CHANGED.connect(self.update_guess)
                 parametersVLayout.addWidget(slider)
             self.parametersHLayout.addLayout(parametersVLayout)
-        if self.function == 'gaussian':
-            self.OffsetSlider = VerticalLabelSlider(0,1,100,(self.I[0]+self.I[-1])/2,'O',0)
+        if self.function == 'gaussian' or self.function == 'voigt':
+            self.OffsetSlider = VerticalLabelSlider(-1,1,100,(self.I[0]+self.I[-1])/2,'O',0)
             self.OffsetSlider.VALUE_CHANGED.connect(self.update_guess)
             self.parametersHLayout.addWidget(self.OffsetSlider)
 
@@ -164,7 +186,7 @@ class Window(QtCore.QObject):
     def accept(self):
         self.reject()
         results = self.flatten(self.guess)
-        if self.function == 'gaussian':
+        if self.function == 'gaussian' or self.function == 'voigt':
             results.append(float(self.OffsetSlider.value()))
         self.FIT_SATISFIED.emit(results)
 
@@ -173,7 +195,11 @@ class Window(QtCore.QObject):
 
     def flatten(self,input):
         new_list=[]
-        for i in [1,0,2]:
+        if self.function == 'gaussian':
+            i_list = [1,0,2]
+        elif self.function == 'voigt':
+            i_list = [0,1,2,3]
+        for i in i_list:
             for j in range(len(input)):
                 new_list.append(float(input[j][i]))
         return new_list
@@ -222,7 +248,7 @@ class Window(QtCore.QObject):
         if len(self.fit_chart.profileChart.series())>1:
             for series in self.fit_chart.profileChart.series()[1:]:
                 self.fit_chart.profileChart.removeSeries(series)
-        if self.function == 'gaussian':
+        if self.function == 'gaussian' or self.function == 'voigt':
             total = np.full(len(x0),float(self.OffsetSlider.value()))
         elif self.function == 'translational_antiphase_domain_model':
             total = np.full(len(x0),float(0))
@@ -239,6 +265,18 @@ class Window(QtCore.QObject):
                 maxH = self.fit_function(center,height,center,width,offset)
                 minH1 = self.fit_function(x0[0],height,center,width,offset)
                 minH2 = self.fit_function(x0[-1],height,center,width,offset)
+            elif self.function == 'voigt':
+                center = float(guess[i][0])
+                amplitude = float(guess[i][1])
+                width_L = float(guess[i][2])
+                width_G = float(guess[i][3])
+                offset = float(self.OffsetSlider.value())
+                fit = self.fit_function(x0,center,amplitude,width_L,width_G,offset)
+                fit0 = self.fit_function(x0,center,amplitude,width_L,width_G,0)
+                total = np.add(total,fit0)
+                maxH  = self.fit_function(center,center,amplitude,width_L, width_G,offset)
+                minH1 = self.fit_function(x0[0], center,amplitude,width_L, width_G,offset)
+                minH2 = self.fit_function(x0[-1],center,amplitude,width_L, width_G,offset)
             elif self.function == 'translational_antiphase_domain_model':
                 if i == len(guess)-1:
                     center = float(guess[i][0])

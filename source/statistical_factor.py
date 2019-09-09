@@ -1,7 +1,7 @@
+from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from my_widgets import LabelSlider
-from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -189,38 +189,39 @@ class Window(QtWidgets.QWidget):
                         'xkcd:bright green','xkcd:greenish yellow','xkcd:bright yellow','xkcd:bright orange','xkcd:red','xkcd:dark red']
         ax = figure.add_subplot(111)
         cs = ax.contourf(x,y,intensity,colors=colors_fixed, levels=levels_fixed)
-        csHM = ax.contour(x,y,intensity,levels=[0.5],colors=['black'],linestyles='dashed',linewidths=2)
+        #csHM = ax.contour(x,y,intensity,levels=[0.5],colors=['black'],linestyles='dashed',linewidths=2)
         ratio = 1.0
         FWHM = 1.0
         font = {'fontname':fontname,'fontsize':fontsize,'color':fontcolor}
-        for collection in csHM.collections:
-            path = collection.get_paths()
-            for item in path:
-                x = item.vertices[:,0]
-                y = item.vertices[:,1]
-                w = np.sqrt(x**2+y**2)
-                ratio = np.amax(w)/np.amin(w)
-                FWHM = np.amax(w)+np.amin(w)
-        ax.set_title("Statistical Factor Contour Plot\n(R = {:7.5f}, \u03B7 = {:5.3f}\u03C0, \u03B5 = {:5.3f})".\
-                     format(self.R_value,self.Eta.get_value(),self.Epsilon.get_value()),fontdict=font,pad=10)
+        #for collection in csHM.collections:
+        #    path = collection.get_paths()
+        #    for item in path:
+        #        x = item.vertices[:,0]
+        #        y = item.vertices[:,1]
+        #        w = np.sqrt(x**2+y**2)
+        #        ratio = np.amax(w)/np.amin(w)
+        #        FWHM = np.amax(w)+np.amin(w)
+        #ax.set_title("Statistical Factor Contour Plot\n(R = {:7.5f}, \u03B7 = {:5.3f}\u03C0, \u03B5 = {:5.3f})".\
+        #             format(self.R_value,self.Eta.get_value(),self.Epsilon.get_value()),fontdict=font,pad=10)
         if unit == "Brillouin Zone %":
             ax.text(z_min*0.96,x_max*0.7,"Average FWHM = {:5.4f} %BZ\nStep Atom Density Asymmetric Ratio = {:5.3f}\nFWHM Asymmetric Ratio = {:5.3f}". \
                     format(FWHM,self.AsymmetricRatio.get_value(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
             ax.set_ylabel(r"$BZ_{y}\ (\%)$",fontdict=font)
             ax.set_xlabel(r"$BZ_{x}\ (\%)$",fontdict=font)
         elif unit == "\u212B\u207B\u00B9":
-            ax.text(z_min*0.96,x_max*0.7,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nStep Atom Density Asymmetric Ratio = {:5.3f}\nFWHM Asymmetric Ratio = {:5.3f}". \
-                    format(FWHM,self.AsymmetricRatio.get_value(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+            #ax.text(z_min*0.96,x_max*0.7,"Average FWHM = {:5.4f} \u212B\u207B\u00B9\nStep Atom Density Asymmetric Ratio = {:5.3f}\nFWHM Asymmetric Ratio = {:5.3f}". \
+            #        format(FWHM,self.AsymmetricRatio.get_value(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
             ax.set_ylabel(r"$K_{y} (\AA^{-1})$",fontdict=font)
             ax.set_xlabel(r"$K_{x} (\AA^{-1})$",fontdict=font)
         ax.set_ylim(x_min,x_max)
         ax.tick_params(axis='both',which='major',labelsize=fontsize)
         ax.set_xlim(z_min,z_max)
         ax.set_aspect(1)
+        #plt.axis('off')
         cbar = figure.colorbar(cs,format='%.2f')
         cbar.ax.set_ylabel("Normalized Intensity",fontdict=font)
         cbar.ax.tick_params(labelsize=fontsize)
-        canvas.draw()
+        #canvas.draw()
         layout.addWidget(toolbar)
         layout.addWidget(canvas)
         window.setWindowTitle("2D Contour")

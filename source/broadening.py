@@ -23,6 +23,7 @@ class Window(QtCore.QObject):
     COLOR = ['magenta','cyan','darkCyan','darkMagenta','darkRed','darkBlue','darkGray','green','darkGreen','darkYellow','yellow','black']
     FONTS_CHANGED = QtCore.pyqtSignal(str,int)
     STOP_WORKER = QtCore.pyqtSignal()
+    FEED_BACK_TO_FIT_WORKER = QtCore.pyqtSignal(list,tuple)
 
     def __init__(self):
         super(Window,self).__init__()
@@ -136,21 +137,23 @@ class Window(QtCore.QObject):
         self.fitFunctionLabel.setFixedWidth(160)
         self.fitFunctionCombo = QtWidgets.QComboBox()
         self.fitFunctionCombo.addItem('Gaussian','gaussian')
+        self.fitFunctionCombo.addItem('Voigt','voigt')
         self.fitFunctionCombo.addItem('Translational Antiphase Domain Model','translational_antiphase_domain_model')
+        self.fitFunctionCombo.currentTextChanged.connect(self.change_fit_function)
+        self.fit_function = self.fit_worker.gaussian
         self.numberOfPeaksLabel = QtWidgets.QLabel("Number of Gaussian Peaks")
         self.numberOfPeaksLabel.setFixedWidth(160)
         self.numberOfPeaksCombo = QtWidgets.QComboBox()
-        self.numberOfPeaksCombo.addItem('1','1')
-        self.numberOfPeaksCombo.addItem('3','3')
-        self.numberOfPeaksCombo.addItem('5','5')
-        self.numberOfPeaksCombo.addItem('7','7')
-        self.numberOfPeaksCombo.addItem('9','9')
-        self.numberOfPeaksCombo.addItem('11','11')
+        for number in range(12):
+            self.numberOfPeaksCombo.addItem(str(number+1),str(number+1))
         self.numberOfPeaksCombo.currentIndexChanged.connect(self.number_of_peaks_changed)
-        self.includeBG = QtWidgets.QLabel("Include Gaussian Background?")
+        self.includeBG = QtWidgets.QLabel("Include Background?")
         self.BGCheck = QtWidgets.QCheckBox()
         self.BGCheck.setChecked(False)
         self.BGCheck.stateChanged.connect(self.background_check_changed)
+        self.remove_linear_BG = QtWidgets.QLabel("Remove Linear Background?")
+        self.remove_linear_BGCheck = QtWidgets.QCheckBox()
+        self.remove_linear_BGCheck.setChecked(False)
         self.FTolLabel = QtWidgets.QLabel("Cost Function Tolerance")
         self.FTolEdit = QtWidgets.QLineEdit(self.FTol)
         self.XTolLabel = QtWidgets.QLabel("Variable Tolerance")
@@ -172,7 +175,7 @@ class Window(QtCore.QObject):
         self.loss.addItem('Arctan','arctan')
         self.ManualFitButton = QtWidgets.QPushButton("Manual Fit")
         self.ManualFitButton.clicked.connect(self.show_manual_fit)
-        self.offset = LabelSlider(0,100,0,100,'Offset')
+        self.offset = LabelSlider(-100,100,0,100,'Offset')
         self.fitOptionsGrid.addWidget(self.fitFunctionLabel,0,0)
         self.fitOptionsGrid.addWidget(self.fitFunctionCombo,0,1)
         self.fitOptionsGrid.addWidget(self.numberOfPeaksLabel,1,0)
@@ -183,14 +186,16 @@ class Window(QtCore.QObject):
         self.fitOptionsGrid.addWidget(self.loss,3,1)
         self.fitOptionsGrid.addWidget(self.includeBG,4,0)
         self.fitOptionsGrid.addWidget(self.BGCheck,4,1)
-        self.fitOptionsGrid.addWidget(self.offset,5,0,1,2)
-        self.fitOptionsGrid.addWidget(self.FTolLabel,6,0)
-        self.fitOptionsGrid.addWidget(self.FTolEdit,6,1)
-        self.fitOptionsGrid.addWidget(self.XTolLabel,7,0)
-        self.fitOptionsGrid.addWidget(self.XTolEdit,7,1)
-        self.fitOptionsGrid.addWidget(self.GTolLabel,8,0)
-        self.fitOptionsGrid.addWidget(self.GTolEdit,8,1)
-        self.fitOptionsGrid.addWidget(self.ManualFitButton,9,0,1,2)
+        self.fitOptionsGrid.addWidget(self.remove_linear_BG,5,0)
+        self.fitOptionsGrid.addWidget(self.remove_linear_BGCheck,5,1)
+        self.fitOptionsGrid.addWidget(self.offset,6,0,1,2)
+        self.fitOptionsGrid.addWidget(self.FTolLabel,7,0)
+        self.fitOptionsGrid.addWidget(self.FTolEdit,7,1)
+        self.fitOptionsGrid.addWidget(self.XTolLabel,8,0)
+        self.fitOptionsGrid.addWidget(self.XTolEdit,8,1)
+        self.fitOptionsGrid.addWidget(self.GTolLabel,9,0)
+        self.fitOptionsGrid.addWidget(self.GTolEdit,9,1)
+        self.fitOptionsGrid.addWidget(self.ManualFitButton,10,0,1,2)
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
@@ -343,11 +348,13 @@ class Window(QtCore.QObject):
             if self.BGCheck.checkState():
                 index.append('BG')
             information = self.status
+            information['fit_function'] = self.fitFunctionCombo.currentText()
             information['StartImageIndex'] = startIndex
             information['EndImageIndex'] = endIndex
             information['AnalysisRange'] = analysisRange
             information['NumberOfPeaks'] = int(self.numberOfPeaksCombo.currentData())
             information['BGCheck'] = self.BGCheck.checkState()
+            information['RemoveLinearBGCheck'] = self.remove_linear_BGCheck.checkState()
             information['FTol'] = float(self.FTolEdit.text())
             information['XTol'] = float(self.XTolEdit.text())
             information['GTol'] = float(self.GTolEdit.text())
@@ -356,7 +363,10 @@ class Window(QtCore.QObject):
             if self.saveResult.checkState() == 2:
                 self.output.write(str(information))
                 self.output.write('\n\n')
-                results_head =str('Phi').ljust(12)+'\t'+str('Kperp').ljust(12)+'\t'+'\t'.join(str(label+i).ljust(12)+'\t'+str(label+i+'_error').ljust(12) for label in ['H','C','W'] for i in index )+'\t'+str('Offset').ljust(12)+'\t'+str('Offset_error').ljust(12)+'\n'
+                if self.fitFunctionCombo.currentText() == 'Gaussian':
+                    results_head =str('Phi').ljust(12)+'\t'+str('Kperp').ljust(12)+'\t'+'\t'.join(str(label+i).ljust(12)+'\t'+str(label+i+'_error').ljust(12) for label in ['H','C','W'] for i in index )+'\t'+str('Offset').ljust(12)+'\t'+str('Offset_error').ljust(12)+'\n'
+                elif self.fitFunctionCombo.currentText() == 'Voigt':
+                    results_head =str('Phi').ljust(12)+'\t'+str('Kperp').ljust(12)+'\t'+'\t'.join(str(label+i).ljust(12)+'\t'+str(label+i+'_error').ljust(12) for label in ['C','A','FL','FG'] for i in index )+'\t'+str('Offset').ljust(12)+'\t'+str('Offset_error').ljust(12)+'\n'
                 self.output.write(results_head)
             if self.status["startX"] == "" or self.status["startY"] == "" or self.status["endX"] == "" or \
                     self.status["endY"] == ""\
@@ -381,7 +391,7 @@ class Window(QtCore.QObject):
                 end.setY(self.status["endY"])
                 width = self.status["width"]*scale_factor
                 self.broadening_worker = FitBroadening(path,self.initialparameters,startIndex,endIndex,origin,start,end,width,analysisRange,scale_factor,autoWB,brightness,blackLevel,image_crop,\
-                                                       int(self.numberOfPeaksCombo.currentData()),self.BGCheck.checkState(),self.saveResult.checkState(),self.guess,(self.bound_low,self.bound_high),float(self.FTolEdit.text()),\
+                                                       int(self.numberOfPeaksCombo.currentData()),self.BGCheck.checkState(),self.remove_linear_BGCheck.checkState(),self.saveResult.checkState(),self.fitFunctionCombo.currentText(), self.guess,(self.bound_low,self.bound_high),float(self.FTolEdit.text()),\
                                                         float(self.XTolEdit.text()),float(self.GTolEdit.text()),self.method.currentData(),self.loss.currentData())
                 self.broadening_worker.UPDATE_RESULTS.connect(self.update_results)
                 self.broadening_worker.UPDATE_LOG.connect(self.update_log)
@@ -395,6 +405,7 @@ class Window(QtCore.QObject):
                 self.broadening_worker.DRAW_RECT_REQUESTED.connect(self.DRAW_RECT_REQUESTED)
                 self.broadening_worker.ADD_COST_FUNCTION.connect(self.plot_cost_function)
                 self.broadening_worker.ADD_PLOT.connect(self.plot_results)
+                self.FEED_BACK_TO_FIT_WORKER.connect(self.broadening_worker.update_fitting_parameters)
 
                 self.thread = QtCore.QThread()
                 self.broadening_worker.moveToThread(self.thread)
@@ -432,7 +443,8 @@ class Window(QtCore.QObject):
         self.fitting_results.append(results)
 
     def close_results(self):
-        self.output.write(self.fitting_results)
+        for result in self.fitting_results:
+            self.output.write(result)
         self.output.close()
         self.GenerateReportButton.setEnabled(True)
 
@@ -452,54 +464,107 @@ class Window(QtCore.QObject):
 
     def initial_parameters(self):
         para = []
-        for j in [3,0,6]:
+        if self.fitFunctionCombo.currentText() == 'Gaussian':
+            j_list = [3,0,6]
+        elif self.fitFunctionCombo.currentText() == 'Voigt':
+            j_list = [0,3,6,9]
+        for j in j_list:
             for i in range(self.table.rowCount()):
                 para.append(float(self.table.item(i,j).text()))
         para.append(float(self.offset.get_value()))
         return para
 
+    def change_fit_function(self,function):
+        if function == 'Gaussian':
+            self.table.setColumnCount(9)
+            self.table.setHorizontalHeaderItem(0,QtWidgets.QTableWidgetItem('C'))
+            self.table.setHorizontalHeaderItem(1,QtWidgets.QTableWidgetItem('C_Low'))
+            self.table.setHorizontalHeaderItem(2,QtWidgets.QTableWidgetItem('C_High'))
+            self.table.setHorizontalHeaderItem(3,QtWidgets.QTableWidgetItem('H'))
+            self.table.setHorizontalHeaderItem(4,QtWidgets.QTableWidgetItem('H_Low'))
+            self.table.setHorizontalHeaderItem(5,QtWidgets.QTableWidgetItem('H_High'))
+            self.table.setHorizontalHeaderItem(6,QtWidgets.QTableWidgetItem('W'))
+            self.table.setHorizontalHeaderItem(7,QtWidgets.QTableWidgetItem('W_Low'))
+            self.table.setHorizontalHeaderItem(8,QtWidgets.QTableWidgetItem('W_High'))
+            self.fit_function = self.fit_worker.gaussian
+        elif function == 'Voigt':
+            self.table.setColumnCount(12)
+            self.table.setHorizontalHeaderItem(0,QtWidgets.QTableWidgetItem('C'))
+            self.table.setHorizontalHeaderItem(1,QtWidgets.QTableWidgetItem('C_Low'))
+            self.table.setHorizontalHeaderItem(2,QtWidgets.QTableWidgetItem('C_High'))
+            self.table.setHorizontalHeaderItem(3,QtWidgets.QTableWidgetItem('A'))
+            self.table.setHorizontalHeaderItem(4,QtWidgets.QTableWidgetItem('A_Low'))
+            self.table.setHorizontalHeaderItem(5,QtWidgets.QTableWidgetItem('A_High'))
+            self.table.setHorizontalHeaderItem(6,QtWidgets.QTableWidgetItem('FL'))
+            self.table.setHorizontalHeaderItem(7,QtWidgets.QTableWidgetItem('FL_Low'))
+            self.table.setHorizontalHeaderItem(8,QtWidgets.QTableWidgetItem('FL_High'))
+            self.table.setHorizontalHeaderItem(9,QtWidgets.QTableWidgetItem('FG'))
+            self.table.setHorizontalHeaderItem(10,QtWidgets.QTableWidgetItem('FG_Low'))
+            self.table.setHorizontalHeaderItem(11,QtWidgets.QTableWidgetItem('FG_High'))
+            self.fit_function = self.fit_worker.voigt
+        self.table_auto_initialize()
+
     def update_results(self,results):
-        index=0
-        for j in [3,0,6]:
-            for i in range(self.table.rowCount()):
-                value = np.round(results[index],2)
-                item = QtWidgets.QTableWidgetItem('{}'.format(value))
-                variation = [0.5,0.5,0.5,0.5,0.5,0.5]
-                #Height
-                if j == 3:
-                    item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0,np.round(value-variation[0],2))))
-                    item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[1],2)))
-                #Center
-                elif j == 0:
-                    item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0,np.round(value-variation[2],2))))
-                    item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[3],2)))
-                #Width
-                else:
-                    item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0.1,np.round(value-variation[4],2))))
-                    item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[5],2)))
-                item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
-                item.setTextAlignment(QtCore.Qt.AlignCenter)
-                item2.setTextAlignment(QtCore.Qt.AlignCenter)
-                item3.setTextAlignment(QtCore.Qt.AlignCenter)
-                self.table.setItem(i,j,item)
-                self.table.setItem(i,j+1,item2)
-                self.table.setItem(i,j+2,item3)
-                index+=1
         self.offset.set_value(results[-1])
-        #if cls:
-            #self.monitor.update(cls[0],self.thread)
-            #total_size = 0
-            #for att in dir(self.broadening_worker):
-            #    size = getsizeof(getattr(self.broadening_worker,att))
-            #    print('\t'+str(att) + ': {}'.format(size))
-            #    total_size+=size
-            #print('total size of the broadening worker is:{}\n'.format(total_size))
-            #total_size = 0
-            #for att in dir(self.thread):
-            #    size = getsizeof(getattr(self.thread,att))
-            #    print('\t'+str(att) + ': {}'.format(size))
-            #    total_size+=size
-            #print('total size of the thread is:{}\n'.format(total_size))
+        if self.fitFunctionCombo.currentText() == 'Gaussian':
+            index=0
+            for j in [3,0,6]:
+                for i in range(self.table.rowCount()):
+                    value = np.round(results[index],2)
+                    item = QtWidgets.QTableWidgetItem('{}'.format(value))
+                    variation = [0.5,0.5,0.5,0.5,0.5,0.5]
+                    #Height
+                    if j == 3:
+                        item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0,np.round(value-variation[0],2))))
+                        item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[1],2)))
+                    #Center
+                    elif j == 0:
+                        item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0,np.round(value-variation[2],2))))
+                        item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[3],2)))
+                    #Width
+                    else:
+                        item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0.1,np.round(value-variation[4],2))))
+                        item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[5],2)))
+                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item2.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item3.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.table.setItem(i,j,item)
+                    self.table.setItem(i,j+1,item2)
+                    self.table.setItem(i,j+2,item3)
+                    index+=1
+        elif self.fitFunctionCombo.currentText() == 'Voigt':
+            index=0
+            for j in [0,3,6,9]:
+               for i in range(self.table.rowCount()):
+                   value = np.round(results[index],2)
+                   item = QtWidgets.QTableWidgetItem('{}'.format(value))
+                   variation = [0.5,0.5,1,1,1,1,1,1]
+                   #Center
+                   if j == 0:
+                       item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0,np.round(value-variation[0],2))))
+                       item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[1],2)))
+                   #Amplitude
+                   elif j == 3:
+                       item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0,np.round(value-variation[2],2))))
+                       item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[3],2)))
+                   #FL
+                   elif j == 6:
+                       item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0.01,np.round(value-variation[4],2))))
+                       item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[5],2)))
+                   #FG
+                   elif j == 9:
+                       item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0.01,np.round(value-variation[6],2))))
+                       item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[7],2)))
+                   item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
+                   item.setTextAlignment(QtCore.Qt.AlignCenter)
+                   item2.setTextAlignment(QtCore.Qt.AlignCenter)
+                   item3.setTextAlignment(QtCore.Qt.AlignCenter)
+                   self.table.setItem(i,j,item)
+                   self.table.setItem(i,j+1,item2)
+                   self.table.setItem(i,j+2,item3)
+                   index+=1
+        self.FEED_BACK_TO_FIT_WORKER.emit(self.guess, (self.bound_low,self.bound_high))
 
     def plot_cost_function(self,iteration,cost,text):
         self.costChart.add_chart(iteration,cost,text)
@@ -514,16 +579,29 @@ class Window(QtCore.QObject):
         total = np.full(len(x0),float(self.offset.get_value()))
         total_min = 100
         for i in range(self.table.rowCount()):
-            center = float(self.table.item(i,0).text())
-            height = float(self.table.item(i,3).text())
-            width = float(self.table.item(i,6).text())
-            offset = float(self.offset.get_value())
-            fit = self.fit_worker.gaussian(x0,height,center,width,offset)
-            fit0 = self.fit_worker.gaussian(x0,height,center,width,0)
-            total = np.add(total,fit0)
-            maxH = self.fit_worker.gaussian(center,height,center,width,offset)
-            minH1 = self.fit_worker.gaussian(x0[0],height,center,width,offset)
-            minH2 = self.fit_worker.gaussian(x0[-1],height,center,width,offset)
+            if self.fitFunctionCombo.currentText() == 'Gaussian':
+                center = float(self.table.item(i,0).text())
+                height = float(self.table.item(i,3).text())
+                width = float(self.table.item(i,6).text())
+                offset = float(self.offset.get_value())
+                fit = self.fit_function(x0,height,center,width,offset)
+                fit0 = self.fit_function(x0,height,center,width,0)
+                total = np.add(total,fit0)
+                maxH = self.fit_function(center,height,center,width,offset)
+                minH1 = self.fit_function(x0[0],height,center,width,offset)
+                minH2 = self.fit_function(x0[-1],height,center,width,offset)
+            elif self.fitFunctionCombo.currentText() == 'Voigt':
+                center = float(self.table.item(i,0).text())
+                amplitude = float(self.table.item(i,3).text())
+                width_L = float(self.table.item(i,6).text())
+                width_G = float(self.table.item(i,9).text())
+                offset = float(self.offset.get_value())
+                fit = self.fit_function(x0,center,amplitude,width_L,width_G,offset)
+                fit0 = self.fit_function(x0,center,amplitude,width_L,width_G,0)
+                total = np.add(total,fit0)
+                maxH  = self.fit_function(center,center,amplitude,width_L, width_G,offset)
+                minH1 = self.fit_function(x0[0], center,amplitude,width_L, width_G,offset)
+                minH2 = self.fit_function(x0[-1],center,amplitude,width_L, width_G,offset)
             if min(minH1,minH2) < total_min:
                 total_min = min(minH1,minH2)
             pen = QtGui.QPen(QtCore.Qt.DotLine)
@@ -578,11 +656,11 @@ class Window(QtCore.QObject):
     def table_auto_initialize(self):
         self.table.disconnect()
         for r in range(0,self.table.rowCount()):
-            valueList = ['1','0','5','1','0','5','1','0','5']
+            valueList = ['1','0','5','1','0','5','1','0','5','1','0','5']
             for c in range(0,self.table.columnCount()):
                 item = QtWidgets.QTableWidgetItem(valueList[c])
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
-                if c == 0 or c == 3 or c == 6:
+                if c == 0 or c == 3 or c == 6 or c == 9:
                     item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
                 self.table.setItem(r,c,item)
         self.save_table_contents()
@@ -590,7 +668,11 @@ class Window(QtCore.QObject):
 
     def table_is_ready(self):
         B = True
-        for j in [3,0,6]:
+        if self.fitFunctionCombo.currentText() == 'Gaussian':
+            j_list = [3,0,6]
+        elif self.fitFunctionCombo.currentText() == 'Voigt':
+            j_list = [0,3,6,9]
+        for j in j_list:
             for i in range(self.table.rowCount()):
                 if not (float(self.table.item(i,j).text()) >= float(self.table.item(i,j+1).text()) \
                         and float(self.table.item(i,j).text()) <= float(self.table.item(i,j+2).text())):
@@ -602,18 +684,18 @@ class Window(QtCore.QObject):
         self.guess = []
         self.bound_low = []
         self.bound_high = []
-        for j in [3,0,6]:
+        if self.fitFunctionCombo.currentText() == 'Gaussian':
+            j_list = [3,0,6]
+        elif self.fitFunctionCombo.currentText() == 'Voigt':
+            j_list = [0,3,6,9]
+        for j in j_list:
             for i in range(self.table.rowCount()):
                 self.guess.append(float(self.table.item(i,j).text()))
-        for j in [4,1,7]:
-            for i in range(self.table.rowCount()):
-                self.bound_low.append(float(self.table.item(i,j).text()))
-        for j in [5,2,8]:
-            for i in range(self.table.rowCount()):
-                self.bound_high.append(float(self.table.item(i,j).text()))
+                self.bound_low.append(float(self.table.item(i,j+1).text()))
+                self.bound_high.append(float(self.table.item(i,j+2).text()))
         self.guess.append(float(self.offset.get_value()))
-        self.bound_low.append(0)
-        self.bound_high.append(1)
+        self.bound_low.append(float(self.offset.get_value())-1)
+        self.bound_high.append(float(self.offset.get_value())+1)
 
     def number_of_peaks_changed(self):
         self.table.setRowCount(int(self.numberOfPeaksCombo.currentData()))
@@ -638,7 +720,6 @@ class Window(QtCore.QObject):
             self.table.removeRow(self.table.rowCount()-1)
         self.table_auto_initialize()
 
-
     def generate_broadening_report(self):
         self.broadeningReport = generate_report.Window()
         self.broadeningReport.main(self.reportPath,True)
@@ -654,7 +735,7 @@ class Window(QtCore.QObject):
         for filename in glob.glob(path):
             image_list.append(filename)
         if not image_list == []:
-            self.ManualFitWindow.main(image_list[startIndex],self.table.rowCount(),self.BGCheck.checkState())
+            self.ManualFitWindow.main(image_list[startIndex],self.table.rowCount(),self.BGCheck.checkState(),self.remove_linear_BGCheck.checkState())
         else:
             self.raise_error("Please open an image first")
 

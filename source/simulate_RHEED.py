@@ -52,7 +52,6 @@ class Window(QtWidgets.QWidget):
         self.graph = ScatterGraph()
         self.AFF = pd.read_excel(open('../doc/AtomicFormFactors.xlsx','rb'),sheet_name="Atomic Form Factors",index_col=0)
         self.AR = pd.read_excel(open('../doc/AtomicRadii.xlsx','rb'),sheet_name="Atomic Radius",index_col=0)
-        self.colors = ['magenta','cyan','green','yellow','red','black','darkGreen','darkYellow','darkCyan','darkMagenta','darkRed','darkBlue','darkGray']
         self.structure_index = 0
         self.data_index_set = set()
         self.sample_index_set = set()
@@ -133,7 +132,13 @@ class Window(QtWidgets.QWidget):
         self.TAPD_Shift_Y_label = QtWidgets.QLabel('Y shift (\u212B\u207B\u00B9)')
         self.TAPD_Shift_Y = QtWidgets.QLineEdit('0')
         self.TAPD_Shift_Z_label = QtWidgets.QLabel('Z shift (\u212B\u207B\u00B9)')
-        self.TAPD_Shift_Z = QtWidgets.QLineEdit('3')
+        self.TAPD_Shift_Z = QtWidgets.QLineEdit('6')
+        self.TAPD_buffer_shift_X_label = QtWidgets.QLabel('Buffer X shift (\u212B\u207B\u00B9)')
+        self.TAPD_buffer_shift_X = QtWidgets.QLineEdit('0')
+        self.TAPD_buffer_shift_Y_label = QtWidgets.QLabel('Buffer Y shift (\u212B\u207B\u00B9)')
+        self.TAPD_buffer_shift_Y = QtWidgets.QLineEdit('0')
+        self.TAPD_buffer_shift_Z_label = QtWidgets.QLabel('Buffer Z shift (\u212B\u207B\u00B9)')
+        self.TAPD_buffer_shift_Z = QtWidgets.QLineEdit('6')
         self.TAPD_substrate_orientation_label = QtWidgets.QLabel('Substrate orientation')
         self.TAPD_substrate_orientation = QtWidgets.QComboBox()
         self.TAPD_substrate_orientation.addItem('(001)')
@@ -155,6 +160,9 @@ class Window(QtWidgets.QWidget):
         self.TAPD_add_epilayer_label = QtWidgets.QLabel('Add epilayer?')
         self.TAPD_add_epilayer = QtWidgets.QCheckBox()
         self.TAPD_add_epilayer.setChecked(True)
+        self.TAPD_constant_af_label = QtWidgets.QLabel('Use constant atomic structure factor?')
+        self.TAPD_constant_af = QtWidgets.QCheckBox()
+        self.TAPD_constant_af.setChecked(False)
         self.TAPD_lattice_or_atoms_label = QtWidgets.QLabel('Use lattice or atoms?')
         self.TAPD_lattice = QtWidgets.QCheckBox("Lattice")
         self.TAPD_atoms = QtWidgets.QCheckBox("Atoms")
@@ -166,20 +174,64 @@ class Window(QtWidgets.QWidget):
 
         self.TAPD_distribution_function_label = QtWidgets.QLabel('Choose the distribution function')
         self.TAPD_distribution_function = QtWidgets.QComboBox()
-        self.TAPD_distribution_function.addItem('geometric')
         self.TAPD_distribution_function.addItem('completely random')
+        self.TAPD_distribution_function.addItem('geometric')
         self.TAPD_distribution_function.addItem('delta')
         self.TAPD_distribution_function.addItem('binomial')
         self.TAPD_distribution_function.addItem('uniform')
         self.TAPD_distribution_function.currentTextChanged.connect(self.change_distribution_function)
 
+        self.TAPD_add_buffer_label = QtWidgets.QLabel('Add buffer layer?')
+        self.TAPD_add_buffer = QtWidgets.QCheckBox()
+        self.TAPD_add_buffer.setChecked(True)
+        self.TAPD_add_buffer.stateChanged.connect(self.toggle_add_buffer)
+        self.TAPD_buffer_atom_label = QtWidgets.QLabel('Specify the buffer layer atom')
+        self.TAPD_buffer_atom = QtWidgets.QLineEdit('S')
+        self.TAPD_buffer_atom.textChanged.connect(self.check_TAPD_buffer_atom)
+
+        self.TAPD_buffer_in_plane_distribution_label = QtWidgets.QLabel('Choose the buffer layer in-plane distribution function')
+        self.TAPD_buffer_in_plane_distribution = QtWidgets.QComboBox()
+        self.TAPD_buffer_in_plane_distribution.addItem('completely random')
+        self.TAPD_buffer_in_plane_distribution.addItem('geometric')
+        self.TAPD_buffer_in_plane_distribution.addItem('delta')
+        self.TAPD_buffer_in_plane_distribution.addItem('binomial')
+        self.TAPD_buffer_in_plane_distribution.addItem('uniform')
+        self.TAPD_buffer_in_plane_distribution.currentTextChanged.connect(self.change_buffer_in_plane_distribution)
+
+        self.TAPD_buffer_out_of_plane_distribution_label = QtWidgets.QLabel('Choose the buffer layer out-of-plane distribution function')
+        self.TAPD_buffer_out_of_plane_distribution = QtWidgets.QComboBox()
+        self.TAPD_buffer_out_of_plane_distribution.addItem('completely random')
+        self.TAPD_buffer_out_of_plane_distribution.addItem('gaussian')
+        self.TAPD_buffer_out_of_plane_distribution.addItem('uniform')
+
         self.distribution_parameters = QtWidgets.QGroupBox('Parameters of the distribution')
         self.distribution_parameters.setStyleSheet('QGroupBox::title {color:blue;}')
         self.distribution_parameters_grid = QtWidgets.QGridLayout(self.distribution_parameters)
-        self.TAPD_geometric_gamma_label = QtWidgets.QLabel('Gamma')
-        self.TAPD_geometric_gamma = QtWidgets.QLineEdit('0.1')
-        self.distribution_parameters_grid.addWidget(self.TAPD_geometric_gamma_label)
-        self.distribution_parameters_grid.addWidget(self.TAPD_geometric_gamma)
+        self.TAPD_completely_random_label = QtWidgets.QLabel('Density')
+        self.TAPD_completely_random = QtWidgets.QLineEdit('0.1')
+        self.distribution_parameters_grid.addWidget(self.TAPD_completely_random_label)
+        self.distribution_parameters_grid.addWidget(self.TAPD_completely_random)
+
+        self.buffer_in_plane_distribution_parameters = QtWidgets.QGroupBox('Parameters of the buffer layer in-plane distribution')
+        self.buffer_in_plane_distribution_parameters.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.buffer_in_plane_distribution_parameters_grid = QtWidgets.QGridLayout(self.buffer_in_plane_distribution_parameters)
+        self.TAPD_buffer_in_plane_completely_random_label = QtWidgets.QLabel('Density')
+        self.TAPD_buffer_in_plane_completely_random = QtWidgets.QLineEdit('0.1')
+        self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_completely_random_label)
+        self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_completely_random)
+
+        self.buffer_out_of_plane_distribution_parameters = QtWidgets.QGroupBox('Parameters of the buffer layer out-of-plane distribution')
+        self.buffer_out_of_plane_distribution_parameters.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.buffer_out_of_plane_distribution_parameters_grid = QtWidgets.QGridLayout(self.buffer_out_of_plane_distribution_parameters)
+        self.TAPD_buffer_out_of_plane_low_label = QtWidgets.QLabel('low (\u212B)')
+        self.TAPD_buffer_out_of_plane_low = QtWidgets.QLineEdit('0')
+        self.TAPD_buffer_out_of_plane_high_label = QtWidgets.QLabel('high (\u212B)')
+        self.TAPD_buffer_out_of_plane_high = QtWidgets.QLineEdit('1')
+        self.buffer_out_of_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_out_of_plane_low_label)
+        self.buffer_out_of_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_out_of_plane_low)
+        self.buffer_out_of_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_out_of_plane_high_label)
+        self.buffer_out_of_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_out_of_plane_high)
+        self.toggle_add_buffer(2)
 
         self.plot_size_distribution_button = QtWidgets.QPushButton("Plot Size Distribution")
         self.plot_boundary_statistics_button = QtWidgets.QPushButton("Plot Boundary Statistics")
@@ -227,31 +279,51 @@ class Window(QtWidgets.QWidget):
         self.TAPD_model_grid.addWidget(self.TAPD_Shift_Y,17,0,1,4)
         self.TAPD_model_grid.addWidget(self.TAPD_Shift_Z_label,18,0,1,4)
         self.TAPD_model_grid.addWidget(self.TAPD_Shift_Z,19,0,1,4)
-        self.TAPD_model_grid.addWidget(self.TAPD_add_atoms_label,21,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_add_atoms,21,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_add_substrate_label,22,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_add_substrate,22,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_add_epilayer_label,23,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_add_epilayer,23,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_lattice_or_atoms_label,24,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_lattice,24,2,1,1)
-        self.TAPD_model_grid.addWidget(self.TAPD_atoms,24,3,1,1)
-        self.TAPD_model_grid.addWidget(self.TAPD_distribution_function_label,25,0,1,4)
-        self.TAPD_model_grid.addWidget(self.TAPD_distribution_function,26,0,1,4)
-        self.TAPD_model_grid.addWidget(self.distribution_parameters,27,0,1,4)
-        self.TAPD_model_grid.addWidget(self.reload_TAPD_structure_button,28,0,1,1)
-        self.TAPD_model_grid.addWidget(self.load_TAPD_structure_button,28,1,1,1)
-        self.TAPD_model_grid.addWidget(self.stop_TAPD_structure_button,28,2,1,1)
-        self.TAPD_model_grid.addWidget(self.reset_TAPD_structure_button,28,3,1,1)
-        self.TAPD_model_grid.addWidget(self.plot_size_distribution_button,29,0,1,4)
-        self.TAPD_model_grid.addWidget(self.plot_boundary_statistics_button,30,0,1,4)
-        self.TAPD_model_grid.addWidget(self.plot_boundary_button,31,0,1,4)
-        self.TAPD_model_grid.addWidget(self.plot_voronoi_button,32,0,1,4)
-        self.TAPD_model_grid.addWidget(self.save_scene_button,33,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_shift_X_label,20,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_shift_X,21,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_shift_Y_label,22,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_shift_Y,23,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_shift_Z_label,24,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_shift_Z,25,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_atoms_label,26,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_atoms,26,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_buffer_label,27,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_buffer,27,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_substrate_label,28,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_substrate,28,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_epilayer_label,29,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_epilayer,29,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_constant_af_label,30,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_constant_af,30,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_lattice_or_atoms_label,31,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_lattice,31,2,1,1)
+        self.TAPD_model_grid.addWidget(self.TAPD_atoms,31,3,1,1)
+        self.TAPD_model_grid.addWidget(self.TAPD_distribution_function_label,32,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_distribution_function,33,0,1,4)
+        self.TAPD_model_grid.addWidget(self.distribution_parameters,34,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_atom_label,37,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_atom,38,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_in_plane_distribution_label,39,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_in_plane_distribution,40,0,1,4)
+        self.TAPD_model_grid.addWidget(self.buffer_in_plane_distribution_parameters,41,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_out_of_plane_distribution_label,42,0,1,4)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_out_of_plane_distribution,43,0,1,4)
+        self.TAPD_model_grid.addWidget(self.buffer_out_of_plane_distribution_parameters,44,0,1,4)
+        self.TAPD_model_grid.addWidget(self.reload_TAPD_structure_button,45,0,1,1)
+        self.TAPD_model_grid.addWidget(self.load_TAPD_structure_button,45,1,1,1)
+        self.TAPD_model_grid.addWidget(self.stop_TAPD_structure_button,45,2,1,1)
+        self.TAPD_model_grid.addWidget(self.reset_TAPD_structure_button,45,3,1,1)
+        self.TAPD_model_grid.addWidget(self.plot_size_distribution_button,46,0,1,4)
+        self.TAPD_model_grid.addWidget(self.plot_boundary_statistics_button,47,0,1,4)
+        self.TAPD_model_grid.addWidget(self.plot_boundary_button,48,0,1,4)
+        self.TAPD_model_grid.addWidget(self.plot_voronoi_button,49,0,1,4)
+        self.TAPD_model_grid.addWidget(self.save_scene_button,50,0,1,4)
 
         self.CIF_tab = QtWidgets.QTabWidget()
         self.CIF_tab.addTab(self.chooseCif,'CIF')
         self.CIF_tab.addTab(self.TAPD_model,'TAPD')
+        self.CIF_tab.setMaximumHeight(400)
+        self.CIF_tab.currentChanged.connect(self.CIF_tab_changed)
 
         self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
         self.chooseDestination.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -559,6 +631,12 @@ class Window(QtWidgets.QWidget):
         self.STOP_CALCULATION.connect(self.graph.stop)
         self.showMaximized()
 
+    def CIF_tab_changed(self,index):
+        if index == 0:
+            self.CIF_tab.setMaximumHeight(400)
+        elif index == 1:
+            self.CIF_tab.setMaximumHeight(4000)
+
     def set_camera_position(self,label,value):
         if label == 'Horizontal Rotation':
             self.UPDATE_CAMERA_POSITION.emit(value,self.verticalRotation.value(),self.zoom.value())
@@ -682,7 +760,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['z_range'],\
                             self.real_space_specification_dict[index]['shape'],\
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
-                           self.real_space_specification_dict[index]['rotation'],self.AR, self.TAPD_add_atoms.isChecked())
+                           self.real_space_specification_dict[index]['rotation'],self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
         self.data_index_set.add(index)
         self.update_log("New real space range for sample" + str(index+1) +" applied!")
 
@@ -972,10 +1050,10 @@ class Window(QtWidgets.QWidget):
         grid = QtWidgets.QVBoxLayout(colorPalette)
         self.colorSheet[index]={}
         for i,name in enumerate(self.element_species[index]):
-            colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
+            colorPicker = IndexedColorPicker(name,'#'+self.AR.loc[name].at['Color'],self.AR.loc[name].at['Normalized Radius'],index)
             colorPicker.COLOR_CHANGED.connect(self.update_colors)
             colorPicker.SIZE_CHANGED.connect(self.update_size)
-            self.colorSheet[index][name] = self.colors[i]
+            self.colorSheet[index][name] = '#'+self.AR.loc[name].at['Color']
             grid.addWidget(colorPicker)
         self.colorTab.setVisible(True)
         self.colorTab.insertTab(index,colorPalette,"Atom Design "+str(index+1))
@@ -989,7 +1067,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['shape'], \
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],\
-                            self.AR, self.TAPD_add_atoms.isChecked())
+                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
         self.data_index_set.add(index)
         self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1031,10 +1109,10 @@ class Window(QtWidgets.QWidget):
             grid = QtWidgets.QVBoxLayout(colorPalette)
             self.colorSheet[index] = {}
             for i,name in enumerate(self.element_species[index]):
-                colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
+                colorPicker = IndexedColorPicker(name,'#'+self.AR.loc[name].at['Color'],self.AR.loc[name].at['Normalized Radius'],index)
                 colorPicker.COLOR_CHANGED.connect(self.update_colors)
                 colorPicker.SIZE_CHANGED.connect(self.update_size)
-                self.colorSheet[index][name] = self.colors[i]
+                self.colorSheet[index][name] = '#'+self.AR.loc[name].at['Color']
                 grid.addWidget(colorPicker)
             self.colorTab.widget(index).destroy()
             self.colorTab.removeTab(index)
@@ -1046,7 +1124,7 @@ class Window(QtWidgets.QWidget):
                                 self.real_space_specification_dict[index]['shape'], \
                                np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                                self.real_space_specification_dict[index]['rotation'],\
-                                self.AR, self.TAPD_add_atoms.isChecked())
+                                self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
             self.data_index_set.add(index)
             self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
             self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1089,10 +1167,10 @@ class Window(QtWidgets.QWidget):
         grid = QtWidgets.QVBoxLayout(colorPalette)
         self.colorSheet[index] = {}
         for i,name in enumerate(self.element_species[index]):
-            colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
+            colorPicker = IndexedColorPicker(name,'#'+self.AR.loc[name].at['Color'],self.AR.loc[name].at['Normalized Radius'],index)
             colorPicker.COLOR_CHANGED.connect(self.update_colors)
             colorPicker.SIZE_CHANGED.connect(self.update_size)
-            self.colorSheet[index][name] = self.colors[i]
+            self.colorSheet[index][name] = '#'+self.AR.loc[name].at['Color']
             grid.addWidget(colorPicker)
         self.colorTab.widget(tab_index).destroy()
         self.colorTab.removeTab(tab_index)
@@ -1104,7 +1182,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['shape'], \
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],\
-                           self.AR, self.TAPD_add_atoms.isChecked())
+                           self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
         self.data_index_set.add(index)
         self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1193,6 +1271,24 @@ class Window(QtWidgets.QWidget):
         QtCore.QCoreApplication.processEvents()
         event.accept()
 
+    def toggle_add_buffer(self,state):
+        if state == 0:
+            enabled = False
+        elif state == 2:
+            enabled = True
+        self.TAPD_buffer_shift_X.setEnabled(enabled)
+        self.TAPD_buffer_shift_Y.setEnabled(enabled)
+        self.TAPD_buffer_shift_Z.setEnabled(enabled)
+        self.TAPD_buffer_atom.setEnabled(enabled)
+        self.TAPD_buffer_in_plane_distribution.setEnabled(enabled)
+        self.TAPD_buffer_out_of_plane_distribution.setEnabled(enabled)
+        self.buffer_in_plane_distribution_parameters.setEnabled(enabled)
+        self.buffer_out_of_plane_distribution_parameters.setEnabled(enabled)
+
+    def check_TAPD_buffer_atom(self,text):
+        if not text in self.AR.index:
+            self.raise_error('Please enter a valid name of element')
+
     def load_scenario(self,scenario):
         self.scenario = scenario
         self.CIF_tab.setCurrentWidget(self.TAPD_model)
@@ -1242,6 +1338,10 @@ class Window(QtWidgets.QWidget):
             self.TAPD_add_epilayer.setChecked(True)
         elif scenario['add_epilayer'] == 'False':
             self.TAPD_add_epilayer.setChecked(False)
+        if scenario['constant_af'] == 'True':
+            self.TAPD_constant_af.setChecked(True)
+        elif scenario['constant_af'] == 'False':
+            self.TAPD_constant_af.setChecked(False)
         if scenario['add_atoms'] == 'True':
             self.TAPD_add_atoms.setChecked(True)
         elif scenario['add_atoms'] == 'False':
@@ -1256,6 +1356,8 @@ class Window(QtWidgets.QWidget):
 
     def prepare_TAPD(self):
         parameters = {}
+        parameters['z_low'] = float(self.TAPD_buffer_out_of_plane_low.text())
+        parameters['z_high'] = float(self.TAPD_buffer_out_of_plane_high.text())
         if self.TAPD_distribution_function.currentText() == 'completely random':
             parameters['density'] = float(self.TAPD_completely_random.text())
         elif self.TAPD_distribution_function.currentText() == 'geometric':
@@ -1269,16 +1371,34 @@ class Window(QtWidgets.QWidget):
             parameters['n'] = float(self.TAPD_binomial_n.text())
             parameters['p'] = float(self.TAPD_binomial_p.text())
 
+        if self.TAPD_buffer_in_plane_distribution.currentText() == 'completely random':
+            parameters['buffer_density'] = float(self.TAPD_buffer_in_plane_completely_random.text())
+        elif self.TAPD_buffer_in_plane_distribution.currentText() == 'geometric':
+            parameters['buffer_gamma'] = float(self.TAPD_buffer_in_plane_geometric_gamma.text())
+        elif self.TAPD_buffer_in_plane_distribution.currentText() == 'delta':
+            parameters['buffer_radius'] = float(self.TAPD_buffer_in_plane_delta_radius.text())
+        elif self.TAPD_buffer_in_plane_distribution.currentText() == 'uniform':
+            parameters['buffer_in_plane_low'] = float(self.TAPD_buffer_in_plane_uniform_low.text())
+            parameters['buffer_in_plane_high'] = float(self.TAPD_buffer_in_plane_uniform_high.text())
+        elif self.TAPD_buffer_in_plane_distribution.currentText() == 'binomial':
+            parameters['buffer_n'] = float(self.TAPD_buffer_in_plane_binomial_n.text())
+            parameters['buffer_p'] = float(self.TAPD_in_plane_binomial_p.text())
+
         self.TAPD_worker = TAPD_Simulation(float(self.TAPD_X_max.text()),\
                                           float(self.TAPD_Y_max.text()), \
                                           float(self.TAPD_Z_min.text()), \
                                           float(self.TAPD_Z_max.text()),\
                                           [float(self.TAPD_Shift_X.text()), float(self.TAPD_Shift_Y.text()), float(self.TAPD_Shift_Z.text())],\
                                           self.substrate_path, self.epilayer_path, \
-                                           self.TAPD_distribution_function.currentText(),\
+                                          self.TAPD_distribution_function.currentText(),\
+                                          self.TAPD_buffer_atom.text(),\
+                                          self.TAPD_buffer_in_plane_distribution.currentText(),\
+                                          self.TAPD_buffer_out_of_plane_distribution.currentText(),\
+                                          [float(self.TAPD_buffer_shift_X.text()), float(self.TAPD_buffer_shift_Y.text()),float(self.TAPD_buffer_shift_Z.text())],\
                                           self.TAPD_substrate_orientation.currentText(),\
                                           self.TAPD_epilayer_orientation.currentText(),\
-                                           self.TAPD_atoms.isChecked(), **parameters)
+                                          self.TAPD_atoms.isChecked(),\
+                                          self.TAPD_add_buffer.isChecked(),**parameters)
         self.thread = QtCore.QThread()
         self.TAPD_worker.moveToThread(self.thread)
         self.TAPD_worker.PROGRESS_ADVANCE.connect(self.progress)
@@ -1296,6 +1416,8 @@ class Window(QtWidgets.QWidget):
         self.structure_epi = model.epilayer_structure
         self.substrate_sites = model.substrate_sites
         self.substrate_list = model.substrate_list
+        self.buffer_sites = model.buffer_layer_sites
+        self.buffer_list = model.buffer_layer_list
         self.epilayer_sites = model.epilayer_sites
         self.epilayer_list = model.epilayer_list
         self.epilayer_domain_area_list = model.epilayer_domain_area_list
@@ -1305,12 +1427,17 @@ class Window(QtWidgets.QWidget):
             self.add_TAPD('substrate')
         if self.TAPD_add_epilayer.isChecked():
             self.add_TAPD('epilayer')
+        if self.TAPD_add_buffer.isChecked():
+            self.add_TAPD('buffer')
         self.plot_size_distribution_button.setEnabled(True)
         self.plot_boundary_statistics_button.setEnabled(True)
         self.plot_boundary_button.setEnabled(True)
         self.plot_voronoi_button.setEnabled(True)
         self.save_scene_button.setEnabled(True)
-        self.TAPD_RESULTS.emit(model, self.TAPD_completely_random.text())
+        try:
+            self.TAPD_RESULTS.emit(model, self.TAPD_completely_random.text())
+        except AttributeError:
+            pass
 
     def add_TAPD(self,label='substrate'):
         next_available_index = 0
@@ -1375,7 +1502,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['z_range'],\
                             self.real_space_specification_dict[index]['shape'],\
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
-                           self.real_space_specification_dict[index]['rotation'],self.AR, self.TAPD_add_atoms.isChecked())
+                           self.real_space_specification_dict[index]['rotation'],self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
         self.data_index_set.add(index)
         self.update_log("New real space range for TAPD" + str(index+1) +" applied!")
 
@@ -1390,10 +1517,10 @@ class Window(QtWidgets.QWidget):
         grid = QtWidgets.QVBoxLayout(colorPalette)
         self.colorSheet[index] = {}
         for i,name in enumerate(self.element_species[index]):
-            colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
+            colorPicker = IndexedColorPicker(name,'#'+self.AR.loc[name].at['Color'],self.AR.loc[name].at['Normalized Radius'],index)
             colorPicker.COLOR_CHANGED.connect(self.update_colors)
             colorPicker.SIZE_CHANGED.connect(self.update_size)
-            self.colorSheet[index][name] = self.colors[i]
+            self.colorSheet[index][name] = '#'+self.AR.loc[name].at['Color']
             grid.addWidget(colorPicker)
         self.colorTab.widget(tab_index).destroy()
         self.colorTab.removeTab(tab_index)
@@ -1405,7 +1532,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['shape'], \
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],\
-                            self.AR, self.TAPD_add_atoms.isChecked())
+                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
         self.data_index_set.add(index)
         self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1420,22 +1547,29 @@ class Window(QtWidgets.QWidget):
         elif label=='epilayer':
             self.structure_dict[index] = self.structure_epi
             self.TAPD[index] = self.epilayer_sites
-        self.UPDATE_INOFRMATION_BOARD.emit(index,self.structure_dict[index].composition.reduced_formula,self.structure_dict[index].lattice.a,self.structure_dict[index].lattice.b,self.structure_dict[index].lattice.c,\
-                           self.structure_dict[index].lattice.alpha,self.structure_dict[index].lattice.beta,self.structure_dict[index].lattice.gamma)
+        elif label =='buffer':
+            self.structure_dict[index] = None
+            self.TAPD[index] = self.buffer_sites
+
+        if not label == 'buffer':
+            self.UPDATE_INOFRMATION_BOARD.emit(index,self.structure_dict[index].composition.reduced_formula,self.structure_dict[index].lattice.a,self.structure_dict[index].lattice.b,self.structure_dict[index].lattice.c,\
+                            self.structure_dict[index].lattice.alpha,self.structure_dict[index].lattice.beta,self.structure_dict[index].lattice.gamma)
         self.update_log("TAPD "+label+str(index+1)+" loaded!")
         if label=='substrate':
             self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.substrate_sites)
         elif label=='epilayer':
             self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.epilayer_sites)
+        elif label=='buffer':
+            self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.buffer_sites)
 
         colorPalette = QtWidgets.QWidget()
         grid = QtWidgets.QVBoxLayout(colorPalette)
         self.colorSheet[index]={}
         for i,name in enumerate(self.element_species[index]):
-            colorPicker = IndexedColorPicker(name,self.colors[i],self.AR.loc[name].at['Normalized Radius'],index)
+            colorPicker = IndexedColorPicker(name,'#'+self.AR.loc[name].at['Color'],self.AR.loc[name].at['Normalized Radius'],index)
             colorPicker.COLOR_CHANGED.connect(self.update_colors)
             colorPicker.SIZE_CHANGED.connect(self.update_size)
-            self.colorSheet[index][name] = self.colors[i]
+            self.colorSheet[index][name] = '#'+self.AR.loc[name].at['Color']
             grid.addWidget(colorPicker)
         self.colorTab.setVisible(True)
         self.colorTab.insertTab(index,colorPalette,"Atom Design "+str(index+1))
@@ -1450,7 +1584,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['shape'], \
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],\
-                            self.AR, self.TAPD_add_atoms.isChecked())
+                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
         self.data_index_set.add(index)
         self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1461,12 +1595,16 @@ class Window(QtWidgets.QWidget):
         self.apply_reciprocal_range.setEnabled(True)
 
     def reload_TAPD(self, **kwargs):
-        self.UPDATE_CAMERA_POSITION.emit(float(self.scenario['camera_horizontal_rotation']),\
+        try:
+            self.UPDATE_CAMERA_POSITION.emit(float(self.scenario['camera_horizontal_rotation']),\
             float(self.scenario['camera_vertical_rotation']),float(self.scenario['camera_zoom_level']))
-        if kwargs['density']:
+        except AttributeError:
+            pass
+        if kwargs.get('density',False):
             self.TAPD_completely_random.setText(kwargs['density'])
         for index in sorted(list(self.sample_index_set), reverse = True):
-            self.delete_structure(index)
+            tab_index = index - len([x for x in self.deleted_tab_index if x < index])
+            self.delete_structure(tab_index)
         if self.substrate_path:
             if self.epilayer_path:
                 self.prepare_TAPD()
@@ -1506,8 +1644,49 @@ class Window(QtWidgets.QWidget):
         self.TAPD_Z_max.setText('1')
         self.TAPD_Shift_X.setText('0')
         self.TAPD_Shift_Y.setText('0')
-        self.TAPD_Shift_Z.setText('3')
+        self.TAPD_Shift_Z.setText('6')
+        self.TAPD_buffer_shift_X.setText('0')
+        self.TAPD_buffer_shift_Y.setText('0')
+        self.TAPD_buffer_shift_Z.setText('6')
         self.TAPD_distribution_function.setCurrentText('geometric')
+
+    def change_buffer_in_plane_distribution(self,text):
+        while self.buffer_in_plane_distribution_parameters_grid.itemAt(0):
+            self.buffer_in_plane_distribution_parameters_grid.itemAt(0).widget().deleteLater()
+            self.buffer_in_plane_distribution_parameters_grid.removeItem(self.buffer_in_plane_distribution_parameters_grid.itemAt(0))
+        if text == 'completely random':
+            self.TAPD_buffer_in_plane_completely_random_label = QtWidgets.QLabel('Density')
+            self.TAPD_buffer_in_plane_completely_random = QtWidgets.QLineEdit('0.1')
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_completely_random_label)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_completely_random)
+        elif text == 'geometric':
+            self.TAPD_buffer_in_plane_geometric_gamma_label = QtWidgets.QLabel('Gamma')
+            self.TAPD_buffer_in_plane_geometric_gamma = QtWidgets.QLineEdit('0.1')
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_geometric_gamma_label)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_geometric_gamma)
+        elif text == 'binomial':
+            self.TAPD_buffer_in_plane_binomial_n_label = QtWidgets.QLabel('n')
+            self.TAPD_buffer_in_plane_binomial_n = QtWidgets.QLineEdit('20')
+            self.TAPD_buffer_in_plane_binomial_p_label = QtWidgets.QLabel('p')
+            self.TAPD_buffer_in_plane_binomial_p = QtWidgets.QLineEdit('0.5')
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_binomial_n_label)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_binomial_n)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_binomial_p_label)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_binomial_p)
+        elif text == 'uniform':
+            self.TAPD_buffer_in_plane_uniform_low_label = QtWidgets.QLabel('low')
+            self.TAPD_buffer_in_plane_uniform_low = QtWidgets.QLineEdit('5')
+            self.TAPD_buffer_in_plane_uniform_high_label = QtWidgets.QLabel('high')
+            self.TAPD_buffer_in_plane_uniform_high = QtWidgets.QLineEdit('15')
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_uniform_low_label)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_uniform_low)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_uniform_high_label)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_uniform_high)
+        elif text == 'delta':
+            self.TAPD_buffer_in_plane_delta_radius_label = QtWidgets.QLabel('radius')
+            self.TAPD_buffer_in_plane_delta_radius = QtWidgets.QLineEdit('10')
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_delta_radius_label)
+            self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_delta_radius)
 
     def change_distribution_function(self,text):
         while self.distribution_parameters_grid.itemAt(0):
@@ -1866,8 +2045,9 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         self.scene().activeCamera().zoomLevelChanged.connect(self.camera_position_changed)
         self.scene().activeCamera().setMaxZoomLevel(10000)
 
-    def add_data(self,index,data,colorSheet,range,z_range,shape,offset,rotation,AR,add_series=True):
+    def add_data(self,index,data,colorSheet,range,z_range,shape,offset,rotation,AR,constant_af=False,add_series=True):
         self.colors_dict = colorSheet
+        self.constant_af = constant_af
         element_species = list(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in data)
         self.elements_dict[index] = element_species
         self.coords = (site.coords for site in data)
@@ -1977,7 +2157,7 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
 
     def prepare(self,Kx,Ky,Kz,AFF):
         atoms_list = self.flatten(self.atoms_dict)
-        self.diffraction_worker = DiffractionPattern(Kx,Ky,Kz,AFF,atoms_list)
+        self.diffraction_worker = DiffractionPattern(Kx,Ky,Kz,AFF,atoms_list, self.constant_af)
         self.diffraction_worker.ERROR.connect(self.raise_error)
         self.diffraction_worker.PROGRESS_ADVANCE.connect(self.PROGRESS_ADVANCE)
         self.diffraction_worker.PROGRESS_END.connect(self.PROGRESS_END)
