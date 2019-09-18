@@ -673,7 +673,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.fontsize = fontsize
         self.colormap = colormap
         self.plot_IV = False
-        self.minimum_log_intensity = -6
+        self.minimum_log_intensity = -5
         self.TwoDimMappingWindow = QtWidgets.QWidget()
         self.kwargs = kwargs
         if 1 in self.intensity.shape[0:1]:
@@ -687,7 +687,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0)
         self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0)
         self.TwoDimMappingWindow.setWindowModality(QtCore.Qt.WindowModal)
-        self.TwoDimMappingWindow.setMinimumSize(1200,1000)
+        #self.TwoDimMappingWindow.setMinimumSize(1200,1000)
         if not self.kwargs.get('save_as_file', False):
             self.TwoDimMappingWindow.show()
 
@@ -724,26 +724,26 @@ class DynamicalColorMap(QtWidgets.QWidget):
                 self.figure.axes.set_ylabel(r'${\bf k}_{z}$ $(\AA^{-1})$',font_dict)
             self.figure.axes.set_aspect(1)
             self.figure.axes.set_frame_on(False)
-            self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
+            self.figure.axes.tick_params(width = 0.1, length = 1, which='both', labelsize=self.fontsize)
             if self.log_scale:
                 self.cbar.ax.set_ylabel("Log Intensity",font_dict)
                 self.cbar.set_ticks(np.linspace(self.log_min,self.log_max,self.log_max-self.log_min+1))
                 self.cbar.set_ticklabels(list('$10^{{{}}}$'.format(i) for i in range(self.log_min,self.log_max+1,1)))
             else:
                 self.cbar.ax.set_ylabel("Normalized Intensity",font_dict)
-            self.cbar.ax.tick_params(labelsize=self.fontsize)
-            self.cbar.ax.set_frame_on(False)
+            self.cbar.ax.tick_params(width = 0.1, length = 1, labelsize=self.fontsize)
+            self.cbar.outline.set_linewidth(0.1)
         else:
             self.figure.axes.set_xlabel(r'$K_{\perp}$ $(\AA^{-1})$',font_dict)
             if self.log_scale:
                 self.figure.axes.set_ylabel('Log Intensity\n(arb. units)',font_dict)
             else:
                 self.figure.axes.set_ylabel('Intensity\n(arb. units)',font_dict)
-            self.figure.axes.tick_params(which='both', labelsize=self.fontsize)
+            self.figure.axes.tick_params(width = 0.1, length = 1, which='both', labelsize=self.fontsize)
             if self.pos == 211:
                 self.fft_axes.set_xlabel(r'$R_{\perp}$ $(\AA)$',font_dict)
                 self.fft_axes.set_ylabel('FFT Intensity\n(arb. units)',font_dict)
-                self.fft_axes.tick_params(which='both', labelsize=self.fontsize)
+                self.fft_axes.tick_params(width = 0.1, length = 1, which='both', labelsize=self.fontsize)
         self.figure.draw()
 
     def refresh_FWHM(self,showFWHM):

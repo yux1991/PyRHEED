@@ -38,7 +38,7 @@ class Window(QtCore.QObject):
         #self.plot_IS()
         self.plot_contour()
         #self.plot_2D()
-        #self.plot_HWHM()
+        self.plot_HWHM()
         plt.show()
 
     def plot_IS(self):
@@ -59,10 +59,11 @@ class Window(QtCore.QObject):
         self.width = self.fit_worker.HWHM_of_translational_antiphase_domain_model(1,self.gamma,self.lattice_constant)
         self.figure_HWHM, self.ax_HWHM = plt.subplots()
         self.ax_HWHM.plot(self.gamma,self.width,'ro')
-        self.ax_HWHM.set_xlabel(r'$\gamma$',fontsize=30)
-        self.ax_HWHM.set_ylabel('HWHM (\u212B\u207B\u00B9)',fontsize=30)
-        self.ax_HWHM.tick_params(labelsize=30)
-        self.output = open('HWHM_vs_gamma.txt',mode='w')
+        self.ax_HWHM.set_xlabel(r'$\gamma$',fontsize=36)
+        self.ax_HWHM.set_ylabel('HWHM (\u212B\u207B\u00B9)',fontsize=36)
+        self.ax_HWHM.tick_params(labelsize=36)
+        file_name = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./HWHM vs gamma.txt","TXT (*.txt)")
+        self.output = open(file_name[0],mode='w')
         for gamma,HWHM in zip(self.gamma,self.width):
             self.output.write(str(gamma)+'\t'+str(HWHM)+'\n')
         self.output.close()
@@ -70,7 +71,7 @@ class Window(QtCore.QObject):
     def plot_contour(self):
         x = np.linspace(-3,3,1000)
         y = np.linspace(0.001,0.25,1000)
-        fontsize = 26
+        fontsize = 36
         self.h_index,self.gamma = np.meshgrid(x,y)
         self.Int = self.fit_worker.translational_antiphase_domain_model_intensity_using_S(self.h_index,self.lattice_constant, self.gamma)
         self.figure, self.ax = plt.subplots()

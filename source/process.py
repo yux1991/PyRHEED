@@ -1,5 +1,4 @@
 import glob
-import igraph
 import itertools
 import math
 import matplotlib.pyplot as plt
@@ -206,17 +205,25 @@ class FitFunctions(object):
 
     def boundary_structure_factor_using_h(self,h,gamma):
         sum = h*0
-        for n in range(1,46):
-            sum += np.cos(2*np.pi*(1+0.0222*n)*h)
-        result = 1-gamma+gamma*sum/45
+        for n in range(0,45):
+            sum += np.cos(2*np.pi*(1+n/45)*h)*self.probability(n,45)
+        result = 1-gamma+gamma*sum
         return result
 
     def boundary_structure_factor_using_S(self,S,a,gamma):
         sum = S*0
-        for n in range(1,46):
-            sum += np.cos((1+0.0222*n)*S*a*np.cos(np.pi/6))
-        result = 1-gamma+gamma*sum/45
+        prob = 0
+        for n in range(0,45):
+            sum += np.cos((1+n/45)*S*a*np.cos(np.pi/6))*self.probability(n,45)
+            prob += self.probability(n,45)
+        result = 1-gamma+gamma*sum
         return result
+
+    def probability(self,n,A):
+        total = 0
+        for i in range(A, 2*A):
+            total+=1/i**2
+        return 1/(n+A)**2/total
 
     def gaussian(self,x,height, center,FWHM,offset=0):
         if FWHM == 0:
@@ -748,60 +755,81 @@ class DiffractionPattern(QtCore.QObject):
     ACCOMPLISHED = QtCore.pyqtSignal(np.ndarray)
     ABORTED = QtCore.pyqtSignal()
     FINISHED = QtCore.pyqtSignal()
+    ELAPSED_TIME = QtCore.pyqtSignal(float)
 
     def __init__(self,Kx,Ky,Kz,AFF,atoms, constant_atomic_structure_factor=False):
         super(DiffractionPattern,self).__init__()
         self.Psi = np.multiply(Kx,0).astype('complex128')
         self.species_dict = set(AFF.index.tolist())
+        self.af_dict = {}
         self.atoms_list = atoms
         self.Kx = Kx
         self.Ky = Ky
         self.Kz = Kz
+        self.coord_list = list(atoms.keys())
+        self.specie_list = list(atoms.values())
+        self.XYZ = np.dstack((self.Kx,self.Ky,self.Kz)).reshape((self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2],3))
         self.AFF = AFF
         self.constant_atomic_structure_factor = constant_atomic_structure_factor
         self._abort = False
 
+    def atomic_form_factor(self,specie):
+        if specie in self.species_dict:
+            af_row = self.AFF.loc[specie]
+        elif specie+'1+' in self.species_dict:
+            af_row = self.AFF.loc[specie+'1+']
+        elif specie+'2+' in self.species_dict:
+            af_row = self.AFF.loc[specie+'2+']
+        elif specie+'3+' in self.species_dict:
+            af_row = self.AFF.loc[specie+'3+']
+        elif specie+'4+' in self.species_dict:
+            af_row = self.AFF.loc[specie+'4+']
+        elif specie+'1-' in self.species_dict:
+            af_row = self.AFF.loc[specie+'1-']
+        elif specie+'2-' in self.species_dict:
+            af_row = self.AFF.loc[specie+'2-']
+        elif specie+'3-' in self.species_dict:
+            af_row = self.AFF.loc[specie+'3-']
+        elif specie+'4-' in self.species_dict:
+            af_row = self.AFF.loc[specie+'4-']
+        else:
+            self.ERROR.emit("No scattering coefficient for %s"%specie)
+        af = af_row.at['c']+af_row.at['a1']*np.exp(-af_row.at['b1']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
+                           +af_row.at['a2']*np.exp(-af_row.at['b2']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
+                           +af_row.at['a3']*np.exp(-af_row.at['b3']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
+                           +af_row.at['a4']*np.exp(-af_row.at['b4']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)
+        return af
+
+    def exponent_gen(self):
+        n = 0
+        while n < len(self.atoms_list)-1 and (not self._abort):
+            n+=1
+            yield np.multiply(self.af_dict[list(self.atoms_list.values())[n]],np.exp(1j*(np.tensordot(self.XYZ,np.array(self.coord_list[n]).T,axes=1))))
+            self.PROGRESS_ADVANCE.emit(0,100,n/(len(self.atoms_list)-1)*100)
+            QtCore.QCoreApplication.processEvents()
+
     def run(self):
+        start_time = time.time()
         itr = 0
         number_of_atoms = len(self.atoms_list)
-        for key,specie in self.atoms_list.items():
-            coord = list(float(x) for x in list(key.split(',')))
-            if specie in self.species_dict:
-                af_row = self.AFF.loc[specie]
-            elif specie+'1+' in self.species_dict:
-                af_row = self.AFF.loc[specie+'1+']
-            elif specie+'2+' in self.species_dict:
-                af_row = self.AFF.loc[specie+'2+']
-            elif specie+'3+' in self.species_dict:
-                af_row = self.AFF.loc[specie+'3+']
-            elif specie+'4+' in self.species_dict:
-                af_row = self.AFF.loc[specie+'4+']
-            elif specie+'1-' in self.species_dict:
-                af_row = self.AFF.loc[specie+'1-']
-            elif specie+'2-' in self.species_dict:
-                af_row = self.AFF.loc[specie+'2-']
-            elif specie+'3-' in self.species_dict:
-                af_row = self.AFF.loc[specie+'3-']
-            elif specie+'4-' in self.species_dict:
-                af_row = self.AFF.loc[specie+'4-']
+        for specie in set(self.atoms_list.values()):
+            if self.constant_atomic_structure_factor:
+                self.af_dict[specie] = 1
             else:
-                self.ERROR.emit("No scattering coefficient for %s"%specie)
-                break
-            QtCore.QCoreApplication.processEvents()
-            if self._abort:
-                break
-            else:
-                if self.constant_atomic_structure_factor:
-                    self.Psi += np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2]))
-                else:
-                    af = af_row.at['c']+af_row.at['a1']*np.exp(-af_row.at['b1']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
-                                    +af_row.at['a2']*np.exp(-af_row.at['b2']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
-                                    +af_row.at['a3']*np.exp(-af_row.at['b3']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)\
-                                    +af_row.at['a4']*np.exp(-af_row.at['b4']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)
-                    self.Psi += np.multiply(af,np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2])))
-                itr+=1
-                self.PROGRESS_ADVANCE.emit(0,100,itr/number_of_atoms*100)
-                QtCore.QCoreApplication.processEvents()
+                self.af_dict[specie] = self.atomic_form_factor(specie)
+        #for coord,specie in self.atoms_list.items():
+        #    QtCore.QCoreApplication.processEvents()
+        #    if self._abort:
+        #        break
+        #    else:
+        #        self.Psi += np.multiply(self.af_dict[specie],np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2])))
+        #        itr+=1
+        #        self.PROGRESS_ADVANCE.emit(0,100,itr/number_of_atoms*100)
+        #        QtCore.QCoreApplication.processEvents()
+        self.Psi = np.sum(e for e in self.exponent_gen())
+        #self.Psi = np.sum(np.multiply(np.dstack(np.array(self.af_list)).reshape(self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2],len(self.af_list)),np.exp(1j*(np.tensordot(self.XYZ,np.array(self.coord_list).T,axes=1)))),axis=3)
+        elapsed_time = time.time() - start_time
+        self.ELAPSED_TIME.emit(elapsed_time)
         if not self._abort:
             self.intensity = np.multiply(self.Psi.astype('complex64'),np.conj(self.Psi.astype('complex64')))
             self.PROGRESS_END.emit()
@@ -1180,17 +1208,8 @@ class TAPD_Simulation(QtCore.QObject):
         self.UPDATE_LOG.emit('Preparing the substrate ...')
         QtCore.QCoreApplication.processEvents()
         substrate_set, model.substrate_list, model.substrate_sites = self.get_substrate(model.substrate_structure, sub_orientation, X_max, Y_max, Z_min, Z_max, use_atoms)
-        if add_buffer:
-            self.UPDATE_LOG.emit('Substrate created!')
-            self.UPDATE_LOG.emit('Adding the buffer layer ...')
-            QtCore.QCoreApplication.processEvents()
-            model.buffer_layer_list,model.buffer_layer_sites = self.get_buffer_layer(substrate_set,max(model.substrate_structure.lattice.a,model.substrate_structure.lattice.b),\
-                atom,in_plane_distribution,out_of_plane_distribution,buffer_offset,**self.parameters)
         if not substrate_set is None:
-            if add_buffer:
-                self.UPDATE_LOG.emit('Buffer layer created!')
-            else:
-                self.UPDATE_LOG.emit('Substrate created!')
+            self.UPDATE_LOG.emit('Substrate created!')
             self.UPDATE_LOG.emit('Creating nucleation ...')
             QtCore.QCoreApplication.processEvents()
             generators = self.generator_2D(substrate_set, self.distribution, **self.parameters)
@@ -1208,6 +1227,11 @@ class TAPD_Simulation(QtCore.QObject):
                     self.UPDATE_LOG.emit('Atoms are filtered!')
                     QtCore.QCoreApplication.processEvents()
                     self.UPDATE_LOG.emit('Epilayer growth is done!')
+        if add_buffer:
+            self.UPDATE_LOG.emit('Adding the buffer layer ...')
+            QtCore.QCoreApplication.processEvents()
+            model.buffer_layer_list,model.buffer_layer_sites = self.get_buffer_layer(model.epilayer_list,max(model.epilayer_structure.lattice.a,model.epilayer_structure.lattice.b),\
+                atom,in_plane_distribution,out_of_plane_distribution,buffer_offset,**self.parameters)
         return model
 
     def generator_2D(self, substrate_set, distribution, **kwargs):
@@ -1220,7 +1244,10 @@ class TAPD_Simulation(QtCore.QObject):
             randPoints.append([x,y])
             if distribution == 'completely random':
                 density = kwargs['density']
-                number_of_sites = density*len(substrate_set)
+                if density > 0:
+                    number_of_sites = density*len(substrate_set)
+                elif density == 0:
+                    number_of_sites = 1
                 substrate_set.remove((x,y))
             else:
                 if distribution == 'geometric':
@@ -1260,16 +1287,17 @@ class TAPD_Simulation(QtCore.QObject):
                 name = element.symbol
         return name
 
-    def get_buffer_layer(self, substrate_set, substrate_lattice_constant, atom, in_plane_distribution, out_of_plane_distribution, offset, **kwargs):
-        substrate_set_length = len(substrate_set)
+    def get_buffer_layer(self, epilayer_list, substrate_lattice_constant, atom, in_plane_distribution, out_of_plane_distribution, offset, **kwargs):
+        epilayer_set = set(tuple(site) for site in epilayer_list)
+        epilayer_set_length = len(epilayer_list)
         rand_atom_list = []
         rand_atom_sites = []
-        number_of_sites = len(substrate_set)
+        number_of_sites = len(epilayer_set)
         i = 0
-        while substrate_set:
-            x0,y0 = random.choice(list(substrate_set))
-            x = x0+ substrate_lattice_constant*np.random.random_sample()-substrate_lattice_constant/2
-            y = y0+ substrate_lattice_constant*np.random.random_sample()-substrate_lattice_constant/2
+        while epilayer_set:
+            x0,y0 = random.choice(list(epilayer_set))
+            x = x0 + 0.1*(substrate_lattice_constant*np.random.random_sample()-substrate_lattice_constant/2)
+            y = y0 + 0.1*(substrate_lattice_constant*np.random.random_sample()-substrate_lattice_constant/2)
             if out_of_plane_distribution == 'gaussian':
                 z = np.random.normal((kwargs['z_low']+kwargs['z_high'])/2,kwargs['z_high']-kwargs['z_low'])
                 if z < kwargs['z_low']:
@@ -1284,8 +1312,8 @@ class TAPD_Simulation(QtCore.QObject):
             rand_atom_sites.append(pgSites.Site(atom,[x+offset[0],y+offset[1],z+offset[2]]))
             if in_plane_distribution == 'completely random':
                 density = kwargs['buffer_density']
-                number_of_sites = density*len(substrate_set)
-                substrate_set.remove((x0,y0))
+                number_of_sites = density*len(epilayer_set)
+                epilayer_set.remove((x0,y0))
             else:
                 if in_plane_distribution == 'geometric':
                     radius = np.random.geometric(kwargs['buffer_gamma'])
@@ -1295,13 +1323,13 @@ class TAPD_Simulation(QtCore.QObject):
                     radius = np.random.uniform(kwargs['buffer_in_plane_low'], kwargs['buffer_in_plane_high'])
                 elif in_plane_distribution == 'buffer_binomial':
                     radius = np.random.binomial(kwargs['buffer_n'],kwargs['buffer_p'])
-                substrate_set_temp = substrate_set.copy()
-                for (dx,dy) in substrate_set_temp:
+                epilayer_set_temp = epilayer_set.copy()
+                for (dx,dy) in epilayer_set_temp:
                     if (dx-x0)**2+(dy-y0)**2 <= radius**2:
-                        substrate_set.remove((dx,dy))
+                        epilayer_set.remove((dx,dy))
             if i <= number_of_sites:
                 i += 1
-                self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(substrate_set)/substrate_set_length*100,1))
+                self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(epilayer_set)/epilayer_set_length*100,1))
                 QtCore.QCoreApplication.processEvents()
             else:
                 break
@@ -1437,20 +1465,6 @@ class TAPD_Simulation(QtCore.QObject):
                 region_vertices_dict[tuple(vor.points[pointidx[1]])].append(list(intersection.coords[0]))
                 region_vertices_dict[tuple(vor.points[pointidx[1]])].append(list(intersection.coords[1]))
         return region_vertices_dict
-
-    def find_largest_independent_set(self, epilayer_list, r):
-        tree = cKDTree(epilayer_list)
-        edge_list = list(tree.query_pairs(r))
-        print('edge list is:')
-        print(edge_list)
-        graph = igraph.Graph(edge_list)
-        print('graph summary is:')
-        print(igraph.summary(graph))
-        #print(epilayer_list)
-        print('largest independent set is:')
-        vertex_set = graph.largest_independent_vertex_sets()[0]
-        print(vertex_set)
-        return vertex_set
 
     def point_in_triangle(self,v1,v2,v3,p,r):
         d1 = self.left_or_right(p,v1,v2)

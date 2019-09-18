@@ -24,8 +24,11 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 3. Visualize the fit results and generate a report.
 4. Simulate the statistical factor from a Markov process, assuming a certain distribution of step density on a hexagonal surface. More details are disscussed in the paper by [Spadacini et al.](https://www.sciencedirect.com/science/article/pii/0039602883904922).
 5. Read the crystal structure from a CIF file and create a customized structure by stacking different crystalline materials together. Calculate the diffraction pattern from this structure based on the kinematic diffraction theory.
+6. Simulate the reciprocal 3D structure from a given structure. The atomic model can be created within this program. It is especially designed to simulate the diffraction from a 2D translational antiphase domain model, see details in the paper by [Lu et al.](https://www.sciencedirect.com/science/article/pii/0039602881905410).
 
 ## Requirements
+- astropy 3.2.1
+- descartes 1.1.0
 - lxml 4.2.3
 - matplotlib 2.2.2
 - numpy 1.14.5
@@ -49,14 +52,15 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
     ```
 2. Load data
 
-    The RHEED data are often images. Both raw image and compressed image files could be directly opened 
-    through the open file dialog. The image is automatically converted to a gray scale image. Note that
-    JPEG only supports up to 8-bit RGB data. Please use other image formats if a higher dynamic range is desiered.
+    The RHEED data are often images. Both raw image and compressed image files could be directly opened through the open file dialog. The image is automatically converted to a gray scale image. Note that JPEG only supports up to 8-bit RGB data. Please use other image formats if a higher dynamic range is desiered.
     
 3. Analysis
 
-    Depending on the purpose, several kinds of data analysis can be done with this application. The RHEED pattern
-    simulation, structure factor simulation are modules that does not depend on the experimental data.
+    Depending on the purpose, several kinds of data analysis can be done with this application. The RHEED pattern simulation, structure factor simulation are modules that does not depend on the experimental data.
+
+4. Run Scenario
+
+    Load the predefined scenario or create a customized one, then run the scenario to automatically generate the results
     
 ## Modules 
 - broadening: batch automatic fit of the RHEED line profiles
@@ -84,10 +88,6 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 - translational_antiphase_domain: calculate the 1D and 2D profile from a translational APD model
 - window: the main window of the application
 - write_scenario: write the default scenario
-
-## Known Issues
-1. The Voronoi plot created by the `simulate_RHEED` module sometimes crashes because the `matplotlib` is not thread safe.
-2. The program crashes when fitting with "1+BG" mode when using the `broadening` module
 
 ## Contact
 Please contact Yu Xiang at [yux1991@gmail.com](mailto:yux1991@gmail.com) if you have any questions or suggestions.

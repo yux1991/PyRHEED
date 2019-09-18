@@ -64,7 +64,8 @@ class Window(QtWidgets.QWidget):
             self.key_dict[section] = {}
             iteration = 0
             for key, value in self.config[section].items():
-                if self.is_float(value) and (not key in {'density', 'gamma','radius','low','high','n','p'}):
+                if self.is_float(value) and (not key in {'density', 'gamma','radius','low','high','n','p',\
+                    'buffer_in_plane_density', 'buffer_in_plane_gamma','buffer_in_plane_radius','buffer_in_plane_low','buffer_in_plane_high','buffer_in_plane_n','buffer_in_plane_p'}):
                         label = QtWidgets.QLabel(key)
                         widget = QtWidgets.QLineEdit(value)
                         widget.textChanged.connect(self.update_scenario)
@@ -107,13 +108,22 @@ class Window(QtWidgets.QWidget):
                         widget.setCurrentText(value)
                         widget.currentTextChanged.connect(self.update_scenario)
                         self.combo_box_dict[section][iteration] = widget
-                    elif key == 'distribution':
+                    elif key == 'distribution' or key == 'buffer_in_plane_distribution':
                         label = QtWidgets.QLabel(key)
                         widget = QtWidgets.QComboBox()
                         widget.addItem('geometric')
                         widget.addItem('completely random')
                         widget.addItem('delta')
                         widget.addItem('binomial')
+                        widget.addItem('uniform')
+                        widget.setCurrentText(value)
+                        widget.currentTextChanged.connect(self.update_scenario)
+                        self.combo_box_dict[section][iteration] = widget
+                    elif key == 'buffer_out_of_plane_distribution':
+                        label = QtWidgets.QLabel(key)
+                        widget = QtWidgets.QComboBox()
+                        widget.addItem('completely random')
+                        widget.addItem('gaussian')
                         widget.addItem('uniform')
                         widget.setCurrentText(value)
                         widget.currentTextChanged.connect(self.update_scenario)
