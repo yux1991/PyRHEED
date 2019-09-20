@@ -10,7 +10,6 @@ import random
 import sys
 import time
 from astropy.modeling.models import Voigt1D
-from descartes.patch import PolygonPatch
 from io import StringIO
 from lxml import etree as ET
 from math import pi as Pi
@@ -1366,7 +1365,11 @@ class TAPD_Simulation(QtCore.QObject):
             offset = int(j*b*np.cos(angle/180*np.pi)/a)
             x = (i-offset)*a+j*b*np.cos(angle/180*np.pi)
             y = j*b*np.sin(angle/180*np.pi)
-            for site in unit_cell_sites_sub:
+            if orientation == '(001)':
+                for site in unit_cell_sites_sub:
+                    substrate_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
+            elif orientation == '(111)':
+                site = unit_cell_sites_sub[0]
                 substrate_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
             substrate_set.add((x,y))
             substrate_list.append([x,y])

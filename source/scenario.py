@@ -71,13 +71,13 @@ class Window(QtWidgets.QWidget):
                         widget.textChanged.connect(self.update_scenario)
                         self.line_edit_dict[section][iteration] = widget
                 elif os.path.exists(value):
-                    label = QtWidgets.QLabel('The ' + key + 'path is:\n' + value)
+                    label = QtWidgets.QLabel('The ' + key + ' is:\n' + value)
                     label.setWordWrap(True)
                     widget = IndexedPushButtonWithTag('Choose', iteration, section)
                     widget.BUTTON_CLICKED.connect(self.choose_path)
                     self.path_dict[section][iteration] = value
                 elif os.access(value, os.W_OK):
-                    label = QtWidgets.QLabel('The ' + key + 'path is:\n' + value)
+                    label = QtWidgets.QLabel('The ' + key + ' is:\n' + value)
                     label.setWordWrap(True)
                     widget = IndexedPushButtonWithTag('Choose', iteration, section)
                     widget.BUTTON_CLICKED.connect(self.choose_dir)
@@ -92,7 +92,17 @@ class Window(QtWidgets.QWidget):
                     widget.stateChanged.connect(self.update_scenario)
                     self.check_box_dict[section][iteration] = widget
                 else:
-                    if key == 'lattice_or_atoms':
+                    if key == 'sub_orientation' or key == 'epi_orientation':
+                        label = QtWidgets.QLabel(key)
+                        widget = QtWidgets.QComboBox()
+                        widget.addItem('(001)')
+                        widget.addItem('(111)')
+                        widget.addItem('(100)')
+                        widget.addItem('(110)')
+                        widget.setCurrentText(value)
+                        widget.currentTextChanged.connect(self.update_scenario)
+                        self.combo_box_dict[section][iteration] = widget
+                    elif key == 'lattice_or_atoms':
                         label = QtWidgets.QLabel(key)
                         widget = QtWidgets.QComboBox()
                         widget.addItem('lattice')
@@ -325,7 +335,7 @@ class Window(QtWidgets.QWidget):
         if self.config[section]['save_2D_map_data'] == 'True':
             self.simulation.save_results(directory=self.save_dir, name='2D_map', save_as_file=True)
         if self.config[section]['save_2D_map_image'] == 'True':
-            self.simulation.show_XY_plot(directory=self.save_dir, name='2D_map.tif', save_as_file=True)
+            self.simulation.show_XY_plot(directory=self.save_dir, name='2D_map.tif', font_size=50, save_as_file=True)
         if self.density_index < self.density_length:
             self.density_index+=1
             self.simulation.deleteLater()

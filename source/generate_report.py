@@ -195,7 +195,7 @@ class Window(QtCore.QObject):
         self.ButtonBox = QtWidgets.QDialogButtonBox()
         self.ButtonBox.addButton("OK",QtWidgets.QDialogButtonBox.AcceptRole)
         self.ButtonBox.addButton("Fit",QtWidgets.QDialogButtonBox.AcceptRole)
-        self.ButtonBox.addButton("Cancel",QtWidgets.QDialogButtonBox.DestructiveRole)
+        self.ButtonBox.addButton("Quit",QtWidgets.QDialogButtonBox.DestructiveRole)
         self.ButtonBox.setCenterButtons(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
             connect(self.linear_fit)

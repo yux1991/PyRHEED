@@ -80,30 +80,45 @@ class PlotChart(QtWidgets.QWidget):
 
     def add_chart(self,radius,profile,preset,fontname,fontsize,color,switchXY,kwargs):
         if self.type == 'Polar':
-            pen = QtGui.QPen(QtCore.Qt.SolidLine)
-            pen.setWidth(3)
+            pen1 = QtGui.QPen(QtCore.Qt.SolidLine)
+            pen1.setWidth(3)
+            pen1.setColor(QtGui.QColor(color))
+            pen2 = QtGui.QPen(QtCore.Qt.DotLine)
+            pen2.setWidth(3)
+            pen2.setColor(QtGui.QColor(color))
             if preset == 'IA':
-                Phi = np.append(profile,profile + np.full(len(profile),180))
-                Radius = np.append(radius,radius)/np.amax(radius)
+                Phi1 = profile
+                Phi2 = profile + np.full(len(profile),180)
+                Radius = radius/np.amax(radius)
             elif preset == 'FA':
-                Phi = np.append(profile,profile + np.full(len(profile),180))
-                Radius = np.append(radius,radius)
+                Phi1 = profile
+                Phi2 = profile + np.full(len(profile),180)
+                Radius = radius
             elif preset == 'general':
                 Phi = profile
                 Radius = radius
-            pen.setColor(QtGui.QColor(color))
-            series = QtChart.QLineSeries()
-            series.setPen(pen)
+            series1 = QtChart.QLineSeries()
+            series1.setPen(pen1)
+            series2 = QtChart.QLineSeries()
+            series2.setPen(pen2)
             self.currentRadius = []
             self.currentProfile = []
             if not switchXY:
-                for x,y in zip(Phi,Radius):
-                    series.append(x,y)
+                for x,y in zip(Phi1,Radius):
+                    series1.append(x,y)
+                    self.currentRadius.append(x)
+                    self.currentProfile.append(y)
+                for x,y in zip(Phi2,Radius):
+                    series2.append(x,y)
                     self.currentRadius.append(x)
                     self.currentProfile.append(y)
             else:
-                for y,x in zip(Phi,Radius):
-                    series.append(x,y)
+                for y,x in zip(Phi1,Radius):
+                    series1.append(x,y)
+                    self.currentRadius.append(x)
+                    self.currentProfile.append(y)
+                for y,x in zip(Phi2,Radius):
+                    series2.append(x,y)
                     self.currentRadius.append(x)
                     self.currentProfile.append(y)
             self.profileChart = QtChart.QPolarChart()
@@ -111,7 +126,8 @@ class PlotChart(QtWidgets.QWidget):
             self.profileChart.setBackgroundRoundness(0)
             self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
             self.profileChart.removeAllSeries()
-            self.profileChart.addSeries(series)
+            self.profileChart.addSeries(series1)
+            self.profileChart.addSeries(series2)
             self.profileChart.setTitleFont(QtGui.QFont(fontname,fontsize,57))
             self.profileChart.legend().setVisible(False)
             self.axisR = QtChart.QValueAxis()
@@ -150,8 +166,10 @@ class PlotChart(QtWidgets.QWidget):
                 self.axisR.setRange(low,high)
             self.profileChart.addAxis(self.axisR, QtChart.QPolarChart.PolarOrientationRadial)
             self.profileChart.addAxis(self.axisP, QtChart.QPolarChart.PolarOrientationAngular)
-            series.attachAxis(self.axisR)
-            series.attachAxis(self.axisP)
+            series1.attachAxis(self.axisR)
+            series1.attachAxis(self.axisP)
+            series2.attachAxis(self.axisR)
+            series2.attachAxis(self.axisP)
             self.chartView.setChart(self.profileChart)
             self.chartView.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
             self.CHART_IS_PRESENT = True
@@ -254,18 +272,15 @@ class PlotChart(QtWidgets.QWidget):
         if self.CHART_IS_PRESENT:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./plot.png","PNG (*.png);;JPEG (*.jpeg);;GIF (*.gif);;BMP (*.bmp)")
             if not self.filename[0] == "":
-                output_size = QtCore.QSize(800,600)
+                output_size = QtCore.QSize(int(self.profileChart.size().width()),int(self.profileChart.size().height()))
                 output_rect = QtCore.QRectF(QtCore.QPointF(0,0),QtCore.QSizeF(output_size))
                 image = QtGui.QImage(output_size,QtGui.QImage.Format_ARGB32)
                 image.fill(QtCore.Qt.transparent)
-                original_size = self.profileChart.size()
-                self.profileChart.resize(QtCore.QSizeF(output_size))
                 painter = QtGui.QPainter()
                 painter.begin(image)
                 painter.setRenderHint(QtGui.QPainter.Antialiasing)
                 self.profileChart.scene().render(painter, source=output_rect,target=output_rect,mode=QtCore.Qt.IgnoreAspectRatio)
                 painter.end()
-                self.profileChart.resize(original_size)
                 image.save(self.filename[0])
             else:
                 return
@@ -276,22 +291,17 @@ class PlotChart(QtWidgets.QWidget):
         if self.CHART_IS_PRESENT:
             self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./plot.svg","SVG (*.svg)")
             if not self.filename[0] == "":
-                output_size = QtCore.QSize(800,600)
+                output_size = QtCore.QSize(int(self.profileChart.size().width()),int(self.profileChart.size().height()))
                 output_rect = QtCore.QRectF(QtCore.QPointF(0,0),QtCore.QSizeF(output_size))
-
                 svg = QtSvg.QSvgGenerator()
                 svg.setFileName(self.filename[0])
                 svg.setSize(output_size)
                 svg.setViewBox(output_rect)
-
-                original_size = self.profileChart.size()
-                self.profileChart.resize(QtCore.QSizeF(output_size))
                 painter = QtGui.QPainter()
                 painter.begin(svg)
                 painter.setRenderHint(QtGui.QPainter.Antialiasing)
                 self.profileChart.scene().render(painter, source=output_rect,target=output_rect,mode=QtCore.Qt.IgnoreAspectRatio)
                 painter.end()
-                self.profileChart.resize(original_size)
             else:
                 return
         else:

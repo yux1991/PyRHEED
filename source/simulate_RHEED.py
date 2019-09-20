@@ -1385,6 +1385,8 @@ class Window(QtWidgets.QWidget):
         else:
             self.TAPD_add_buffer.setChecked(False)
         self.reciprocalMapColormapCombo.setCurrentText(scenario['colormap'])
+        self.TAPD_substrate_orientation.setCurrentText(scenario['sub_orientation'])
+        self.TAPD_epilayer_orientation.setCurrentText(scenario['epi_orientation'])
         self.UPDATE_CAMERA_POSITION.emit(float(scenario['camera_horizontal_rotation']),\
             float(scenario['camera_vertical_rotation']),float(scenario['camera_zoom_level']))
 

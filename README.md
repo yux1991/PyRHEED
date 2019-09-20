@@ -28,7 +28,6 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 
 ## Requirements
 - astropy 3.2.1
-- descartes 1.1.0
 - lxml 4.2.3
 - matplotlib 2.2.2
 - numpy 1.14.5

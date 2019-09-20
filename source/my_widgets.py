@@ -690,6 +690,8 @@ class DynamicalColorMap(QtWidgets.QWidget):
         #self.TwoDimMappingWindow.setMinimumSize(1200,1000)
         if not self.kwargs.get('save_as_file', False):
             self.TwoDimMappingWindow.show()
+        else:
+            self.fontsize = self.kwargs.get('font_size',50)
 
     def show_plot(self):
         self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)
