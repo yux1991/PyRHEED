@@ -767,7 +767,10 @@ class DiffractionPattern(QtCore.QObject):
         self.Kz = Kz
         self.coord_list = list(atoms.keys())
         self.specie_list = list(atoms.values())
-        self.XYZ = np.dstack((self.Kx,self.Ky,self.Kz)).reshape((self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2],3))
+        if self.Kx.shape[0] == 1 and self.Kx.shape[1]==1:
+            self.XYZ = np.dstack((self.Kx.T,self.Ky.T,self.Kz.T)).reshape((self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2],3))
+        else:
+            self.XYZ = np.dstack((self.Kx,self.Ky,self.Kz)).reshape((self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2],3))
         self.AFF = AFF
         self.constant_atomic_structure_factor = constant_atomic_structure_factor
         self._abort = False
@@ -1212,7 +1215,9 @@ class TAPD_Simulation(QtCore.QObject):
             self.UPDATE_LOG.emit('Creating nucleation ...')
             QtCore.QCoreApplication.processEvents()
             generators = self.generator_2D(substrate_set, self.distribution, **self.parameters)
-            if generators.any():
+            if isinstance(generators,int):
+                model.epilayer_list, model.epilayer_sites, model.epilayer_domain_area_list, model.epilayer_domain_boundary_list, model.epilayer_domain = self.get_boundaryless_epilayer(model.epilayer_structure, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
+            elif generators.any():
                 self.UPDATE_LOG.emit('Nucleation created!')
                 self.UPDATE_LOG.emit('Creating Voronoi ...')
                 QtCore.QCoreApplication.processEvents()
@@ -1238,43 +1243,43 @@ class TAPD_Simulation(QtCore.QObject):
         randPoints = []
         number_of_sites = len(substrate_set)
         i = 0
-        while substrate_set:
-            x,y = random.choice(list(substrate_set))
-            randPoints.append([x,y])
-            if distribution == 'completely random':
-                density = kwargs['density']
-                if density > 0:
+        if kwargs['density'] > 0:
+            while substrate_set:
+                x,y = random.choice(list(substrate_set))
+                randPoints.append([x,y])
+                if distribution == 'completely random':
+                    density = kwargs['density']
                     number_of_sites = density*len(substrate_set)
-                elif density == 0:
-                    number_of_sites = 1
-                substrate_set.remove((x,y))
+                    substrate_set.remove((x,y))
+                else:
+                    if distribution == 'geometric':
+                        radius = np.random.geometric(kwargs['gamma'])
+                    elif distribution == 'delta':
+                        radius = kwargs['radius']
+                    elif distribution == 'uniform':
+                        radius = np.random.uniform(kwargs['low'], kwargs['high'])
+                    elif distribution == 'binomial':
+                        radius = np.random.binomial(kwargs['n'],kwargs['p'])
+                    substrate_set_temp = substrate_set.copy()
+                    for (dx,dy) in substrate_set_temp:
+                        if (dx-x)**2+(dy-y)**2 <= radius**2:
+                            substrate_set.remove((dx,dy))
+                if i <= number_of_sites:
+                    i += 1
+                    self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(substrate_set)/substrate_set_length*100,1))
+                    QtCore.QCoreApplication.processEvents()
+                else:
+                    break
+                if self._abort:
+                    break
+            self.PROGRESS_END.emit()
+            QtCore.QCoreApplication.processEvents()
+            if not self._abort:
+                return np.array(randPoints)
             else:
-                if distribution == 'geometric':
-                    radius = np.random.geometric(kwargs['gamma'])
-                elif distribution == 'delta':
-                    radius = kwargs['radius']
-                elif distribution == 'uniform':
-                    radius = np.random.uniform(kwargs['low'], kwargs['high'])
-                elif distribution == 'binomial':
-                    radius = np.random.binomial(kwargs['n'],kwargs['p'])
-                substrate_set_temp = substrate_set.copy()
-                for (dx,dy) in substrate_set_temp:
-                    if (dx-x)**2+(dy-y)**2 <= radius**2:
-                        substrate_set.remove((dx,dy))
-            if i <= number_of_sites:
-                i += 1
-                self.PROGRESS_ADVANCE.emit(0,100,np.round(100-len(substrate_set)/substrate_set_length*100,1))
-                QtCore.QCoreApplication.processEvents()
-            else:
-                break
-            if self._abort:
-                break
-        self.PROGRESS_END.emit()
-        QtCore.QCoreApplication.processEvents()
-        if not self._abort:
-            return np.array(randPoints)
+                return None
         else:
-            return None
+            return 0
 
     def get_heavist_element(self, structure):
         atomic_number = 0
@@ -1386,6 +1391,26 @@ class TAPD_Simulation(QtCore.QObject):
         else:
             return None, None, None
 
+    def get_boundaryless_epilayer(self,structure,orientation,X_max,Y_max, Z_min, Z_max, offset, use_atoms):
+        if use_atoms:
+            unit_cell_sites_epi = [pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+offset[0],site.y+offset[1],site.z+offset[2]]) \
+                                   for site in structure.sites if (site.z>=Z_min*structure.lattice.c and site.z<Z_max*structure.lattice.c)]
+        else:
+            species = self.get_heavist_element(structure)
+            unit_cell_sites_epi = [pgSites.Site({species:1},[offset[0],offset[1],offset[2]])]
+
+        if orientation == '(001)':
+            a = structure.lattice.a
+            b = structure.lattice.b
+            angle = structure.lattice.gamma
+        elif orientation == '(111)':
+            a = structure.lattice.a/np.sqrt(2)
+            b = structure.lattice.a/np.sqrt(2)
+            angle = 120
+        rectangle = Polygon([(-X_max,-Y_max),(-X_max,Y_max),(X_max,Y_max),(X_max,-Y_max)])
+        epilayer_list, epilayer_sites, epilayer_domain_area, epilayer_domain_boundary, gap_add_out, gap_subtract_out, domain = self.get_boundaryless_domain(a, b, angle, rectangle, unit_cell_sites_epi)
+        return epilayer_list, epilayer_sites, [epilayer_domain_area], [epilayer_domain_boundary], domain
+
     def get_epilayer(self,vor,structure,orientation,X_max,Y_max, Z_min, Z_max, offset, use_atoms):
         epilayer_list = []
         epilayer_sites = []
@@ -1421,7 +1446,7 @@ class TAPD_Simulation(QtCore.QObject):
                 if original_polygon.is_valid:
                     polygon = original_polygon.intersection(rectangle)
                     if polygon:
-                        epilayer_domain, epilayer_domain_sites, epilayer_domain_area, epilayer_domain_boundary, gap_add_out, gap_subtract_out, domain = self.get_domain(a, b, angle, point, polygon, gap_add, gap_subtract, X_max, Y_max,unit_cell_sites_epi)
+                        epilayer_domain, epilayer_domain_sites, epilayer_domain_area, epilayer_domain_boundary, gap_add_out, gap_subtract_out, domain = self.get_domain(a, b, angle, point, polygon, gap_add, gap_subtract, unit_cell_sites_epi)
                         if epilayer_domain:
                             epilayer_list += epilayer_domain
                             epilayer_sites += epilayer_domain_sites
@@ -1483,7 +1508,24 @@ class TAPD_Simulation(QtCore.QObject):
     def within_vertex(self,v,p,r):
         return (v[0]-p[0])**2+(v[1]-p[1])**2 < (r/2)**2
 
-    def get_domain(self, a, b, angle, point, polygon, gap_add_in, gap_subtract_in, X_max, Y_max, unit_cell_sites_epi):
+    def get_boundaryless_domain(self, a, b, angle, rectangle, unit_cell_sites_epi):
+        epilayer_domain = []
+        epilayer_domain_sites = []
+        bounding_box = list(rectangle.bounds)
+        for i,j in itertools.product(range(int(bounding_box[0]/a)-5,int(bounding_box[2]/a)+6), \
+                                    range(int(bounding_box[1]/b/np.sin(angle/180*np.pi))-5,int(bounding_box[3]/b/np.sin(angle/180*np.pi))+6)):
+            offset = int(j*b*np.cos(angle/180*np.pi)/a)
+            x = (i-offset)*a+j*b*np.cos(angle/180*np.pi)
+            y = j*b*np.sin(angle/180*np.pi)
+            if rectangle.contains(Point(x,y)):
+                epilayer_domain.append([x,y])
+                for site in unit_cell_sites_epi:
+                    print(site)
+                    epilayer_domain_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
+        return epilayer_domain, epilayer_domain_sites, rectangle.area, None,None,None,rectangle 
+
+
+    def get_domain(self, a, b, angle, point, polygon, gap_add_in, gap_subtract_in, unit_cell_sites_epi):
         try:
             vertices = list(polygon.exterior.coords)
         except AttributeError:

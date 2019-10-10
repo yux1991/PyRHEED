@@ -796,6 +796,7 @@ class DynamicalColorMap(QtWidgets.QWidget):
         self.type = type
         self.figure.clear()
         self.IV = None
+        self.IV_line_width = 1
         if self.type == 'XY':
             matrix = self.intensity[:,:,self.nkz]
             max_intensity = np.amax(np.amax(matrix))
@@ -830,20 +831,20 @@ class DynamicalColorMap(QtWidgets.QWidget):
                 if self.plot_IV:
                     self.UPDATE_LOG.emit('Plotting IV ...')
                     QtCore.QCoreApplication.processEvents()
-                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=3)
+                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=self.IV_line_width)
                     if self.pos == 211:
                         self.fft_axes = self.figure.fig.add_subplot(212)
-                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=3)
+                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=self.IV_line_width)
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
                 if self.plot_IV:
                     self.UPDATE_LOG.emit('Plotting IV ...')
                     QtCore.QCoreApplication.processEvents()
-                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=3)
+                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=self.IV_line_width)
                     if self.pos == 211:
                         self.fft_axes = self.figure.fig.add_subplot(212)
-                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=3)
+                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=self.IV_line_width)
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'YZ':
@@ -859,20 +860,20 @@ class DynamicalColorMap(QtWidgets.QWidget):
                 if self.plot_IV:
                     self.UPDATE_LOG.emit('Plotting IV ...')
                     QtCore.QCoreApplication.processEvents()
-                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=3)
+                    self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=self.IV_line_width)
                     if self.pos == 211:
                         self.fft_axes = self.figure.fig.add_subplot(212)
-                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=3)
+                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=self.IV_line_width)
                 else:
                     self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
                 if self.plot_IV:
                     self.UPDATE_LOG.emit('Plotting IV ...')
                     QtCore.QCoreApplication.processEvents()
-                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=3)
+                    self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=self.IV_line_width)
                     if self.pos == 211:
                         self.fft_axes = self.figure.fig.add_subplot(212)
-                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=3)
+                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=self.IV_line_width)
                 else:
                     self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         if not self.plot_IV:
