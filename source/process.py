@@ -347,7 +347,7 @@ class Convertor(object):
         tree = ET.ElementTree(vtkFile)
         tree.write(open(filename, 'wb'))
 
-    def mtx2vtp(self,dir,name,matrix,KRange,N_para,N_perp,specification,species):
+    def mtx2vtp(self,dir,name,matrix,KRange,N_para,N_perp,specification,species,save_vtp = True):
         x_linear = np.linspace(KRange[0][0],KRange[0][1],N_para)
         y_linear = np.linspace(KRange[1][0],KRange[1][1],N_para)
         z_linear = np.linspace(KRange[2][0],KRange[2][1],N_perp)
@@ -401,9 +401,10 @@ class Convertor(object):
         offsets.set('RangeMin', '1')
         offsets.set('RangeMax', str(np.shape(data)[0]))
         offsets.text = ' '.join(map(str, range(1, np.shape(data)[0]+1)))
-        filename = dir+'/'+name+".vtp"
-        tree = ET.ElementTree(vtkFile)
-        tree.write(open(filename, 'wb'))
+        if save_vtp:
+            filename = dir+'/'+name+".vtp"
+            tree = ET.ElementTree(vtkFile)
+            tree.write(open(filename, 'wb'))
         information = {}
         information['Kx_min'] = KRange[0][0]
         information['Kx_max'] = KRange[0][1]

@@ -1,9 +1,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib import ticker, cm, colors
 from my_widgets import LabelSlider
 import matplotlib.pyplot as plt
 import numpy as np
+import sys
 
 class Window(QtWidgets.QWidget):
     SHOW_2D_CONTOUR_SIGNAL = QtCore.pyqtSignal(list,float,float,float,float,str,int,str)
@@ -176,19 +178,25 @@ class Window(QtWidgets.QWidget):
         toolbar = NavigationToolbar(canvas,window)
         figure.clear()
         x,y,intensity = self.convert_to_RTI(data)
-        intensity_min = np.amin(np.amin(intensity))
-        intensity_max = np.amax(np.amax(intensity))
-        levels_fixed = [intensity_min,intensity_min+0.0005*(intensity_max-intensity_min),intensity_min+\
-                        0.001*(intensity_max-intensity_min),intensity_min+0.002*(intensity_max-intensity_min),\
-                        intensity_min+0.004*(intensity_max-intensity_min),intensity_min+0.008*(intensity_max-intensity_min),\
-                        intensity_min+0.016*(intensity_max-intensity_min),intensity_min+0.032*(intensity_max-intensity_min),\
-                        intensity_min+0.064*(intensity_max-intensity_min),intensity_min+0.128*(intensity_max-intensity_min),\
-                        intensity_min+0.256*(intensity_max-intensity_min),intensity_min+0.6*(intensity_max-intensity_min),\
-                        intensity_min+0.8*(intensity_max-intensity_min),intensity_max]
-        colors_fixed = ['xkcd:black','xkcd:navy','xkcd:deep blue','xkcd:royal blue','xkcd:blue','xkcd:sky blue','xkcd:cyan','xkcd:sea green',\
-                        'xkcd:bright green','xkcd:greenish yellow','xkcd:bright yellow','xkcd:bright orange','xkcd:red','xkcd:dark red']
+        #intensity_min = np.amin(np.amin(intensity))
+        #intensity_max = np.amax(np.amax(intensity))
+        #levels_fixed = [intensity_min,intensity_min+0.0005*(intensity_max-intensity_min),intensity_min+\
+        #                0.001*(intensity_max-intensity_min),intensity_min+0.002*(intensity_max-intensity_min),\
+        #                intensity_min+0.004*(intensity_max-intensity_min),intensity_min+0.008*(intensity_max-intensity_min),\
+        #                intensity_min+0.016*(intensity_max-intensity_min),intensity_min+0.032*(intensity_max-intensity_min),\
+        #                intensity_min+0.064*(intensity_max-intensity_min),intensity_min+0.128*(intensity_max-intensity_min),\
+        #                intensity_min+0.256*(intensity_max-intensity_min),intensity_min+0.6*(intensity_max-intensity_min),\
+        #                intensity_min+0.8*(intensity_max-intensity_min),intensity_max]
+        #colors_fixed = ['xkcd:black','xkcd:navy','xkcd:deep blue','xkcd:royal blue','xkcd:blue','xkcd:sky blue','xkcd:cyan','xkcd:sea green',\
+        #                'xkcd:bright green','xkcd:greenish yellow','xkcd:bright yellow','xkcd:bright orange','xkcd:red','xkcd:dark red']
         ax = figure.add_subplot(111)
-        cs = ax.contourf(x,y,intensity,colors=colors_fixed, levels=levels_fixed)
+        #cs = ax.contourf(x,y,intensity,colors=colors_fixed, levels=levels_fixed)
+
+        intensity_min = np.amin(intensity)
+        intensity_max = np.amax(intensity)
+        lev_exp = np.linspace(np.floor(np.log10(intensity_min.min())-1),np.ceil(np.log10(intensity_max.max())+1),2000)
+        levs = np.power(10, lev_exp)
+        cs = ax.contourf(x,y,intensity, levs, norm = colors.LogNorm(), cmap = cm.jet)
         #csHM = ax.contour(x,y,intensity,levels=[0.5],colors=['black'],linestyles='dashed',linewidths=2)
         ratio = 1.0
         FWHM = 1.0
@@ -204,8 +212,8 @@ class Window(QtWidgets.QWidget):
         #ax.set_title("Statistical Factor Contour Plot\n(R = {:7.5f}, \u03B7 = {:5.3f}\u03C0, \u03B5 = {:5.3f})".\
         #             format(self.R_value,self.Eta.get_value(),self.Epsilon.get_value()),fontdict=font,pad=10)
         if unit == "Brillouin Zone %":
-            ax.text(z_min*0.96,x_max*0.7,"Average FWHM = {:5.4f} %BZ\nStep Atom Density Asymmetric Ratio = {:5.3f}\nFWHM Asymmetric Ratio = {:5.3f}". \
-                    format(FWHM,self.AsymmetricRatio.get_value(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
+            #ax.text(z_min*0.96,x_max*0.7,"Average FWHM = {:5.4f} %BZ\nStep Atom Density Asymmetric Ratio = {:5.3f}\nFWHM Asymmetric Ratio = {:5.3f}". \
+            #        format(FWHM,self.AsymmetricRatio.get_value(),ratio),color='white',fontsize=fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
             ax.set_ylabel(r"$BZ_{y}\ (\%)$",fontdict=font)
             ax.set_xlabel(r"$BZ_{x}\ (\%)$",fontdict=font)
         elif unit == "\u212B\u207B\u00B9":
@@ -218,7 +226,7 @@ class Window(QtWidgets.QWidget):
         ax.set_xlim(z_min,z_max)
         ax.set_aspect(1)
         #plt.axis('off')
-        cbar = figure.colorbar(cs,format='%.2f')
+        cbar = figure.colorbar(cs,format='%.1e')
         cbar.ax.set_ylabel("Normalized Intensity",fontdict=font)
         cbar.ax.tick_params(labelsize=fontsize)
         #canvas.draw()
@@ -419,3 +427,12 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
         info.setStandardButtons(QtWidgets.QMessageBox.Ok)
         info.setEscapeButton(QtWidgets.QMessageBox.Close)
         info.exec()
+
+def test():
+    app = QtWidgets.QApplication(sys.argv)
+    simulation = Window()
+    simulation.main()
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    test()

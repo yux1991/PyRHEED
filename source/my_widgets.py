@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -645,6 +646,7 @@ class MplCanvas(FigureCanvas):
         self.setParent(parent)
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
+        mpl.rcParams['axes.linewidth'] = 0.4
 
     def clear(self):
         self.fig.clear()
@@ -834,7 +836,9 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=self.IV_line_width)
                     if self.pos == 211:
                         self.fft_axes = self.figure.fig.add_subplot(212)
-                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=self.IV_line_width)
+                        length = 100000
+                        self.FFT = [np.fft.rfftfreq(length,(self.z_linear[1]-self.z_linear[0])/2/np.pi)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,length))[0:1000]]
+                        self.fft_axes.plot(self.FFT[0],self.FFT[1],'b-',linewidth=self.IV_line_width)
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
@@ -844,7 +848,9 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=self.IV_line_width)
                     if self.pos == 211:
                         self.fft_axes = self.figure.fig.add_subplot(212)
-                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=self.IV_line_width)
+                        length = 100000
+                        self.FFT = [np.fft.rfftfreq(length,(self.z_linear[1]-self.z_linear[0])/2/np.pi)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,length))[0:1000]]
+                        self.fft_axes.plot(self.FFT[0],self.FFT[1],'b-',linewidth=self.IV_line_width)
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         elif self.type == 'YZ':
@@ -863,7 +869,9 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.IV = self.figure.axes.plot(self.z_linear,np.log10(matrix[0,:]/max_intensity),'r-',linewidth=self.IV_line_width)
                     if self.pos == 211:
                         self.fft_axes = self.figure.fig.add_subplot(212)
-                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=self.IV_line_width)
+                        length = 100000
+                        self.FFT = [np.fft.rfftfreq(length,(self.z_linear[1]-self.z_linear[0])/2/np.pi)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,length))[0:1000]]
+                        self.fft_axes.plot(self.FFT[0],self.FFT[1],'b-',linewidth=self.IV_line_width)
                 else:
                     self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
             else:
@@ -873,7 +881,10 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.IV = self.figure.axes.plot(self.z_linear,matrix[0,:]/max_intensity,'r-',linewidth=self.IV_line_width)
                     if self.pos == 211:
                         self.fft_axes = self.figure.fig.add_subplot(212)
-                        self.fft_axes.plot(np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),15001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000],'b-',linewidth=self.IV_line_width)
+                        length = 100000
+                        self.FFT = [np.fft.rfftfreq(length,(self.z_linear[1]-self.z_linear[0])/2/np.pi)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,length))[0:1000]]
+                        #self.FFT = [np.linspace(0,2*np.pi/(self.z_linear[1]-self.z_linear[0]),30001)[0:1000], abs(np.fft.rfft(matrix[0,:]/max_intensity,30000))[0:1000]]
+                        self.fft_axes.plot(self.FFT[0],self.FFT[1],'b-',linewidth=self.IV_line_width)
                 else:
                     self.cs = self.figure.axes.contourf(self.y_linear,self.z_linear,matrix.T/max_intensity,100,cmap=self.colormap)
         if not self.plot_IV:
@@ -882,6 +893,17 @@ class DynamicalColorMap(QtWidgets.QWidget):
             self.refresh_fonts(self.fontname,self.fontsize)
         if self.IV:
             self.refresh_fonts(self.fontname,self.fontsize)
+
+    def save_FFT(self,path):
+        try:
+            output = open(path,mode='w')
+            output.write('Time: \n')
+            output.write(QtCore.QDateTime.currentDateTime().toString("MMMM d, yyyy  hh:mm:ss ap")+"\n\n")
+            results = "\n".join(str(self.FFT[0][i])+'\t'+str(self.FFT[1][i]) for i in range(1000))
+            output.write(results)
+            output.close()
+        except:
+            pass
 
     def refresh_colormap(self,colormap):
         self.colormap = colormap

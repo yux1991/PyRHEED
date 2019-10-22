@@ -25,7 +25,7 @@ class Window(QtWidgets.QWidget):
         self.row = {}
 
         self.load_scenario()
-        default_destination = 'C:/Google Drive/Documents/RHEED/RHEED simulation results/MoS2 TAPD '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy/')
+        default_destination = 'C:/Google Drive/Documents/RHEED/RHEED simulation results/RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy/')
         try:
             os.mkdir(default_destination)
         except FileExistsError:
@@ -43,13 +43,14 @@ class Window(QtWidgets.QWidget):
                 failed = True
                 suffix = 1
                 while failed:
-                    default_destination = 'C:/Google Drive/Documents/RHEED/RHEED simulation results/MoS2 TAPD '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy') + ' (' + str(suffix) + ')/'
+                    default_destination = 'C:/Google Drive/Documents/RHEED/RHEED simulation results/RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy') + ' (' + str(suffix) + ')/'
                     try:
                         os.mkdir(default_destination)
                         failed = False
                     except FileExistsError:
                         suffix+=1
         self.config.set('TAPD','destination', default_destination)
+        self.config.set('CIF','destination', default_destination)
 
         self.tab = QtWidgets.QTabWidget()
         for section in self.config.sections():
@@ -107,6 +108,16 @@ class Window(QtWidgets.QWidget):
                         widget = QtWidgets.QComboBox()
                         widget.addItem('lattice')
                         widget.addItem('atoms')
+                        widget.setCurrentText(value)
+                        widget.currentTextChanged.connect(self.update_scenario)
+                        self.combo_box_dict[section][iteration] = widget
+                    elif key == 'shape':
+                        label = QtWidgets.QLabel(key)
+                        widget = QtWidgets.QComboBox()
+                        widget.addItem("Triangle")
+                        widget.addItem("Square")
+                        widget.addItem("Hexagon")
+                        widget.addItem("Circle")
                         widget.setCurrentText(value)
                         widget.currentTextChanged.connect(self.update_scenario)
                         self.combo_box_dict[section][iteration] = widget
@@ -259,33 +270,42 @@ class Window(QtWidgets.QWidget):
         section = self.tab.tabText(self.tab.currentIndex())
         self.stop_scenario_button.setEnabled(True)
         self.close_scenario_button.setEnabled(False)
-        self.density_length = len(self.config[section]['density'].split(","))-1
-        self.density_index=0
         if section == 'TAPD':
-            self.sub_scenario(self.config[section]['density'].split(",")[self.density_index])
+            self.density_length = len(self.config[section]['density'].split(","))-1
+            self.density_index=0
+            self.sub_TAPD_scenario(self.config[section]['density'].split(",")[self.density_index])
+        elif section == 'CIF':
+            self.Z_min_length = len(self.config[section]['Z_min'].split(","))-1
+            self.Z_min_index=0
+            self.sub_CIF_scenario(float(self.config[section]['Z_min'].split(",")[self.Z_min_index]))
 
-    def sub_scenario(self,density):
+    def sub_TAPD_scenario(self,density):
         section = self.tab.tabText(self.tab.currentIndex())
         self.simulation = simulate_RHEED.Window()
         self.simulation.setEnabled(False)
         self.simulation.TAPD_FINISHED.connect(self.scenario_finished)
-        self.simulation.TAPD_RESULTS.connect(self.scenario_results)
+        self.simulation.TAPD_RESULTS.connect(self.scenario_TAPD_results)
         self.simulation.CLOSE.connect(self.scenario_is_closed)
-        self.simulation.RESULTS_IS_READY.connect(self.save_TAPD_results)
+        self.simulation.RESULT_IS_READY.connect(self.save_TAPD_results)
         self.simulation.main()
-        self.simulation.load_scenario(self.config[section])
+        self.simulation.load_TPAD_scenario(self.config[section])
         self.simulation.reload_TAPD(density=density)
 
-    def reload_scenario(self):
+    def sub_CIF_scenario(self,Z_min):
         section = self.tab.tabText(self.tab.currentIndex())
-        if section == 'TAPD':
-            current_density = self.config[section]['density'].split(",")[self.density_index]
-            self.simulation.reload_TAPD(density=current_density)
+        self.simulation = simulate_RHEED.Window()
+        self.simulation.setEnabled(False)
+        self.simulation.CLOSE.connect(self.scenario_is_closed)
+        self.simulation.RESULT_IS_READY.connect(self.save_CIF_results)
+        self.simulation.main()
+        self.simulation.load_CIF_scenario(self.config[section])
+        self.simulation.get_cif_path(self.config[section]['cif_path'])
+        self.simulation.reload_CIF(Z_min=Z_min)
 
     def scenario_finished(self):
         self.stop_scenario_button.setEnabled(False)
 
-    def scenario_results(self,model,density):
+    def scenario_TAPD_results(self,model,density):
         self.TAPD_results = model
         self.close_scenario_button.setEnabled(True)
         section = self.tab.tabText(self.tab.currentIndex())
@@ -339,14 +359,68 @@ class Window(QtWidgets.QWidget):
         if self.density_index < self.density_length:
             self.density_index+=1
             self.simulation.deleteLater()
-            self.sub_scenario(self.config[section]['density'].split(",")[self.density_index])
+            self.sub_TAPD_scenario(self.config[section]['density'].split(",")[self.density_index])
+        else:
+            self.simulation.setEnabled(True)
+
+    def save_CIF_results(self,always_say_yes = True):
+        section = self.tab.tabText(self.tab.currentIndex())
+        self.save_dir = self.config[section]['destination'] + self.config[section]['Z_min'].split(",")[self.Z_min_index] + '/'
+        try:
+            os.mkdir(self.save_dir)
+        except FileExistsError:
+            if not always_say_yes:
+                value = self.request_confirmation('The directory already exist. Do you want to overwrite it?')
+            else:
+                value = 0x00004000
+            if value == 0x00004000:
+                for file in os.listdir(self.save_dir):
+                    file_path = os.path.join(self.save_dir,file)
+                    try:
+                        if os.path.isfile(file_path):
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                    except:pass
+            elif value == 0x00010000:
+                failed = True
+                suffix = 1
+                while failed:
+                    self.save_dir = self.config[section]['destination'] + self.config[section]['Z_min'].split(",")[self.Z_min_index] +  + ' (' + str(suffix) + ')/'
+                    try:
+                        os.mkdir(self.save_dir)
+                        failed = False
+                    except FileExistsError:
+                        suffix+=1
+
+        if self.config[section]['save_scene'] == 'True':
+            if self.config[section]['save_zoomed_scene'] == 'True':
+                zoom = True
+            elif self.config[section]['save_zoomed_scene'] == 'False':
+                zoom = False
+            self.simulation.graph.save_scene(destination=self.save_dir, save_as_file=True, save_zoomed_scene = zoom)
+        if self.config[section]['save_IV_data'] == 'True':
+            self.simulation.save_results(directory=self.save_dir, name='IV_'+str(self.Z_min_index)+'.txt', save_as_file=True, save_vtp=False)
+        if self.config[section]['save_IV_image'] == 'True':
+            self.simulation.show_YZ_plot(directory=self.save_dir, name='IV_'+str(self.Z_min_index)+'.tif', font_size=50, save_as_file=True)
+            self.simulation.save_FFT([self.save_dir+'FFT_'+str(self.Z_min_index)+'.txt'])
+        if self.Z_min_index < self.Z_min_length:
+            self.Z_min_index+=1
+            self.simulation.deleteLater()
+            self.sub_CIF_scenario(float(self.config[section]['Z_min'].split(",")[self.Z_min_index]))
         else:
             self.simulation.setEnabled(True)
     
     def stop_scenario(self):
-        self.simulation.stop_TAPD()
-        self.simulation.deleteLater()
-        self.close_scenario_button.setEnabled(False)
+        section = self.tab.tabText(self.tab.currentIndex())
+        if section == 'TAPD':
+            self.simulation.stop_TAPD()
+            self.simulation.deleteLater()
+            self.close_scenario_button.setEnabled(False)
+        elif section == 'CIF':
+            self.simulation.stop_diffraction_calculation()
+            self.simulation.deleteLater()
+            self.close_scenario_button.setEnabled(False)
 
     def close_scenario(self):
         self.simulation.deleteLater()

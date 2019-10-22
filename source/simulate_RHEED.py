@@ -42,7 +42,8 @@ class Window(QtWidgets.QWidget):
     TAPD_FINISHED = QtCore.pyqtSignal()
     TAPD_RESULTS = QtCore.pyqtSignal(TAPD_model,str)
     CLOSE = QtCore.pyqtSignal()
-    RESULTS_IS_READY = QtCore.pyqtSignal()
+    RESULT_IS_READY = QtCore.pyqtSignal()
+    SAVE_FFT = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super(Window,self).__init__()
@@ -67,6 +68,7 @@ class Window(QtWidgets.QWidget):
         self.z_shift_history = {}
         self.substrate_path = None
         self.epilayer_path = None
+        self.scenario_CIF = None 
         self.currentDestination = ''
         self.container = QtWidgets.QWidget.createWindowContainer(self.graph)
         self.screenSize = self.graph.screen().size()
@@ -242,11 +244,11 @@ class Window(QtWidgets.QWidget):
         self.plot_boundary_button = QtWidgets.QPushButton("Plot Boundary")
         self.plot_voronoi_button = QtWidgets.QPushButton("Plot Voronoi Diagram")
         self.save_scene_button = QtWidgets.QPushButton("Save Scene")
+        self.save_scene_button.clicked.connect(self.graph.save_scene)
         self.plot_size_distribution_button.setEnabled(False)
         self.plot_boundary_statistics_button.setEnabled(False)
         self.plot_boundary_button.setEnabled(False)
         self.plot_voronoi_button.setEnabled(False)
-        self.save_scene_button.setEnabled(False)
         self.reload_TAPD_structure_button = QtWidgets.QPushButton("Reload Structure")
         self.load_TAPD_structure_button = QtWidgets.QPushButton("Add Structure")
         self.stop_TAPD_structure_button = QtWidgets.QPushButton("Stop")
@@ -255,7 +257,6 @@ class Window(QtWidgets.QWidget):
         self.plot_boundary_statistics_button.clicked.connect(self.plot_boundary_statistics)
         self.plot_boundary_button.clicked.connect(self.plot_boundary)
         self.plot_voronoi_button.clicked.connect(self.plot_voronoi)
-        self.save_scene_button.clicked.connect(self.graph.save_scene)
         self.reload_TAPD_structure_button.clicked.connect(self.reload_TAPD)
         self.load_TAPD_structure_button.clicked.connect(self.load_TAPD)
         self.stop_TAPD_structure_button.clicked.connect(self.stop_TAPD)
@@ -323,7 +324,6 @@ class Window(QtWidgets.QWidget):
         self.TAPD_model_grid.addWidget(self.plot_boundary_statistics_button,41,0,1,4)
         self.TAPD_model_grid.addWidget(self.plot_boundary_button,42,0,1,4)
         self.TAPD_model_grid.addWidget(self.plot_voronoi_button,43,0,1,4)
-        self.TAPD_model_grid.addWidget(self.save_scene_button,44,0,1,4)
 
         self.CIF_tab = QtWidgets.QTabWidget()
         self.CIF_tab.addTab(self.chooseCif,'CIF')
@@ -345,7 +345,7 @@ class Window(QtWidgets.QWidget):
         self.destinationGrid.addWidget(self.chooseDestinationButton,0,3,1,1)
         self.destinationGrid.addWidget(self.destinationNameLabel,1,0,1,1)
         self.destinationGrid.addWidget(self.destinationNameEdit,1,1,1,3)
-
+        self.destinationGrid.addWidget(self.save_scene_button,2,0,1,4)
 
         self.sample_tab = QtWidgets.QTabWidget()
         self.sample_tab.setTabsClosable(True)
@@ -457,9 +457,12 @@ class Window(QtWidgets.QWidget):
         self.show_YZ_plot_button = QtWidgets.QPushButton("Show YZ Slices")
         self.show_YZ_plot_button.clicked.connect(self.show_YZ_plot)
         self.show_YZ_plot_button.setEnabled(False)
-        self.save_Results_button = QtWidgets.QPushButton("Save the 3D data")
+        self.save_Results_button = QtWidgets.QPushButton("Save the data")
         self.save_Results_button.clicked.connect(self.save_results)
         self.save_Results_button.setEnabled(False)
+        self.save_FFT_button = QtWidgets.QPushButton("Save the FFT")
+        self.save_FFT_button.clicked.connect(self.save_FFT)
+        self.save_FFT_button.setEnabled(False)
         self.plotOptionsGrid.addWidget(self.load_data_button,0,0,1,3)
         self.plotOptionsGrid.addWidget(self.KxyIndex,1,0,1,3)
         self.plotOptionsGrid.addWidget(self.KzIndex,2,0,1,3)
@@ -479,6 +482,7 @@ class Window(QtWidgets.QWidget):
         self.plotOptionsGrid.addWidget(self.show_XZ_plot_button,9,1,1,1)
         self.plotOptionsGrid.addWidget(self.show_YZ_plot_button,9,2,1,1)
         self.plotOptionsGrid.addWidget(self.save_Results_button,10,0,1,3)
+        self.plotOptionsGrid.addWidget(self.save_FFT_button,11,0,1,3)
 
         self.appearance = QtWidgets.QWidget()
         self.appearanceGrid = QtWidgets.QVBoxLayout(self.appearance)
@@ -778,6 +782,7 @@ class Window(QtWidgets.QWidget):
         self.show_XZ_plot_button.setEnabled(False)
         self.show_YZ_plot_button.setEnabled(False)
         self.save_Results_button.setEnabled(False)
+        self.save_FFT_button.setEnabled(False)
         QtCore.QCoreApplication.processEvents()
         self.KRange = [self.Kx_range.values(),self.Ky_range.values(),self.Kz_range.values()]
         self.x_linear = np.linspace(self.KRange[0][0],self.KRange[0][1],self.number_of_steps_para.value())
@@ -793,9 +798,11 @@ class Window(QtWidgets.QWidget):
         self.show_XZ_plot_button.setEnabled(True)
         self.show_YZ_plot_button.setEnabled(True)
         self.save_Results_button.setEnabled(True)
+        if 1 in self.diffraction_intensity.shape:
+            self.save_FFT_button.setEnabled(True)
         self.apply_reciprocal_range.setEnabled(True)
         self.stop_calculation.setEnabled(False)
-        self.RESULTS_IS_READY.emit()
+        self.RESULT_IS_READY.emit()
 
     def abort_calculation(self):
         self.apply_reciprocal_range.setEnabled(True)
@@ -805,6 +812,7 @@ class Window(QtWidgets.QWidget):
         self.show_XZ_plot_button.setEnabled(False)
         self.show_YZ_plot_button.setEnabled(False)
         self.save_Results_button.setEnabled(False)
+        self.save_FFT_button.setEnabled(False)
         self.progress_reset()
 
     def stop_diffraction_calculation(self):
@@ -866,30 +874,34 @@ class Window(QtWidgets.QWidget):
         if not 1 in self.diffraction_intensity.shape[0:1]:
             self.update_log("Simulated diffraction patterns obtained!")
 
-    def show_XZ_plot(self):
+    def show_XZ_plot(self, **kwargs):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos)
+                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos,kwargs)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             if not 1 in self.diffraction_intensity.shape:
                 self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
                 self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
+            else:
+                self.SAVE_FFT.connect(TwoDimPlot.save_FFT)
             TwoDimPlot.show_plot()
         if not 1 in self.diffraction_intensity.shape:
             self.update_log("Simulated diffraction patterns obtained!")
 
-    def show_YZ_plot(self):
+    def show_YZ_plot(self, **kwargs):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'YZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos)
+                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos,kwargs)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
             if not 1 in self.diffraction_intensity.shape:
                 self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
                 self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
+            else:
+                self.SAVE_FFT.connect(TwoDimPlot.save_FFT)
             TwoDimPlot.show_plot()
         if not 1 in self.diffraction_intensity.shape:
             self.update_log("Simulated diffraction patterns obtained!")
@@ -923,8 +935,9 @@ class Window(QtWidgets.QWidget):
             self.show_YZ_plot_button.setEnabled(True)
 
 
-    def get_cif_path(self):
-        path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The CIF File",'./',filter="CIF (*.cif);;All Files (*.*)")[0]
+    def get_cif_path(self,path=None):
+        if not path:
+            path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The CIF File",'./',filter="CIF (*.cif);;All Files (*.*)")[0]
         if not path == "":
             self.update_log("CIF opened!")
             self.cifPath = path
@@ -966,12 +979,6 @@ class Window(QtWidgets.QWidget):
         range_grid.setAlignment(QtCore.Qt.AlignTop)
         lattice_constants_box = InfoBoard("Information",index)
         self.UPDATE_INOFRMATION_BOARD.connect(lattice_constants_box.update)
-        h_range = LabelSlider(1,100,3,1,"h",index=index)
-        h_range.VALUE_CHANGED.connect(self.update_h_range)
-        k_range = LabelSlider(1,100,3,1,"k",index=index)
-        k_range.VALUE_CHANGED.connect(self.update_k_range)
-        l_range = LabelSlider(1,100,1,1,"l",index=index)
-        l_range.VALUE_CHANGED.connect(self.update_l_range)
         shape_label = QtWidgets.QLabel("Shape")
         shape_label.setStyleSheet('QLabel {color:blue;}')
         shape = IndexedComboBox(index)
@@ -979,18 +986,36 @@ class Window(QtWidgets.QWidget):
         shape.addItem("Square")
         shape.addItem("Hexagon")
         shape.addItem("Circle")
+        if not self.scenario_CIF:
+            h_range = LabelSlider(1,100,3,1,"h",index=index)
+            k_range = LabelSlider(1,100,3,1,"k",index=index)
+            l_range = LabelSlider(1,100,1,1,"l",index=index)
+            lateral_size = LabelSpinBox(1,100,1,1,"Lateral Size",'nm',index=index)
+            x_shift = LabelSpinBox(-1000,1000,0,100,"X Shift",'\u212B',index=index)
+            y_shift = LabelSpinBox(-1000,1000,0,100,"Y Shift",'\u212B',index=index)
+            z_shift = LabelSpinBox(-5000,5000,0,100,"Z Shift",'\u212B',index=index)
+            rotation = LabelSpinBox(-1800,1800,0,10,"rotation",'\u00B0',index=index)
+            z_range_slider = LockableDoubleSlider(-8000,8000,100,-10,10,"Z range","\u212B",False,type='spinbox', index=index)
+        else:
+            h_range = LabelSlider(1,100,int(self.scenario_CIF['h_range']),1,"h",index=index)
+            k_range = LabelSlider(1,100,int(self.scenario_CIF['k_range']),1,"k",index=index)
+            l_range = LabelSlider(1,100,int(self.scenario_CIF['l_range']),1,"l",index=index)
+            shape.setCurrentText(self.scenario_CIF['shape'])
+            lateral_size = LabelSpinBox(1,100,int(self.scenario_CIF['lateral_size']),1,"Lateral Size",'nm',index=index)
+            x_shift = LabelSpinBox(-1000,1000,float(self.scenario_CIF['X_shift']),100,"X Shift",'\u212B',index=index)
+            y_shift = LabelSpinBox(-1000,1000,float(self.scenario_CIF['Y_shift']),100,"Y Shift",'\u212B',index=index)
+            z_shift = LabelSpinBox(-5000,5000,float(self.scenario_CIF['Z_shift']),100,"Z Shift",'\u212B',index=index)
+            rotation = LabelSpinBox(-1800,1800,float(self.scenario_CIF['rotation']),10,"rotation",'\u00B0',index=index)
+            z_range_slider = LockableDoubleSlider(-8000,8000,100,-10,self.scenario_CIF['Z_max'],"Z range","\u212B",False,type='spinbox', index=index)
         shape.TEXT_CHANGED.connect(self.update_shape)
-        lateral_size = LabelSpinBox(1,100,1,1,"Lateral Size",'nm',index=index)
+        h_range.VALUE_CHANGED.connect(self.update_h_range)
+        k_range.VALUE_CHANGED.connect(self.update_k_range)
+        l_range.VALUE_CHANGED.connect(self.update_l_range)
         lateral_size.VALUE_CHANGED.connect(self.update_lateral_size)
-        x_shift = LabelSpinBox(-1000,1000,0,100,"X Shift",'\u212B',index=index)
         x_shift.VALUE_CHANGED.connect(self.update_x_shift)
-        y_shift = LabelSpinBox(-1000,1000,0,100,"Y Shift",'\u212B',index=index)
         y_shift.VALUE_CHANGED.connect(self.update_y_shift)
-        z_shift = LabelSpinBox(-5000,5000,0,100,"Z Shift",'\u212B',index=index)
         z_shift.VALUE_CHANGED.connect(self.update_z_shift)
-        rotation = LabelSpinBox(-1800,1800,0,10,"rotation",'\u00B0',index=index)
         rotation.VALUE_CHANGED.connect(self.update_rotation)
-        z_range_slider = LockableDoubleSlider(-8000,8000,100,-10,10,"Z range","\u212B",False,type='spinbox', index=index)
         z_range_slider.VALUE_CHANGED.connect(self.update_z_range)
 
         self.real_space_specification_dict[index] = {'h_range':h_range.get_value(),'k_range':k_range.get_value(),'l_range':l_range.get_value(),\
@@ -1206,10 +1231,19 @@ class Window(QtWidgets.QWidget):
         if not directory == '':
             self.convertor_worker.mtx2vtp(directory,name,self.diffraction_intensity,self.KRange,\
                         self.number_of_steps_para.value(),self.number_of_steps_perp.value(),\
-                        self.real_space_specification_dict,self.element_species)
+                        self.real_space_specification_dict,self.element_species,kwargs['save_vtp'])
             self.PROGRESS_END.emit()
         else:
             self.raise_error("Save destination is empty!")
+    
+    def save_FFT(self,path=None):
+        if not path:
+            path = QtWidgets.QFileDialog.getSaveFileName(None,\
+                "Choose the destination for the FFT result",'./FFT.txt',"TXT (*.txt)")
+        self.update_log("Saving FFT...")
+        self.SAVE_FFT.emit(path[0])
+        QtCore.QCoreApplication.processEvents()
+        self.update_log("FFT saved")
 
     def get_extended_structure(self,molecule,a,b,c,alpha,beta,gamma,images=(1,1,1), rotation=0,cls=None,offset=None):
         if offset is None:
@@ -1295,8 +1329,38 @@ class Window(QtWidgets.QWidget):
         if not text in self.AR.index:
             self.raise_error('Please enter a valid name of element')
 
-    def load_scenario(self,scenario):
-        self.scenario = scenario
+    def load_CIF_scenario(self,scenario):
+        self.scenario_CIF = scenario
+        self.CIF_tab.setCurrentWidget(self.chooseCif)
+        self.Kx_range.set_locked(False)
+        self.Ky_range.set_locked(False)
+        self.Kx_range.set_head(float(scenario['Kx_range_min']))
+        self.Kx_range.set_tail(float(scenario['Kx_range_max']))
+        self.Ky_range.set_head(float(scenario['Ky_range_min']))
+        self.Ky_range.set_tail(float(scenario['Ky_range_max']))
+        self.Kz_range.set_head(float(scenario['Kz_range_min']))
+        self.Kz_range.set_tail(float(scenario['Kz_range_max']))
+        self.number_of_steps_para.setValue(int(scenario['number_of_K_para_steps']))
+        self.number_of_steps_perp.setValue(int(scenario['number_of_K_perp_steps']))
+        self.currentDestination = scenario['destination'] 
+        self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
+        if scenario['constant_af'] == 'True':
+            self.TAPD_constant_af.setChecked(True)
+        elif scenario['constant_af'] == 'False':
+            self.TAPD_constant_af.setChecked(False)
+        if scenario['plot_log_scale'] == 'True':
+            self.plot_log_scale.setChecked(True)
+        elif scenario['plot_log_scale'] == 'False':
+            self.plot_log_scale.setChecked(False)
+        if scenario['do_FFT_for_IV'] == 'True':
+            self.plot_fft.setChecked(True)
+        elif scenario['plot_log_scale'] == 'False':
+            self.plot_fft.setChecked(False)
+        self.UPDATE_CAMERA_POSITION.emit(float(scenario['camera_horizontal_rotation']),\
+            float(scenario['camera_vertical_rotation']),float(scenario['camera_zoom_level']))
+
+    def load_TAPD_scenario(self,scenario):
+        self.scenario_TAPD = scenario
         self.CIF_tab.setCurrentWidget(self.TAPD_model)
         self.TAPD_distribution_function.setCurrentText(scenario['distribution'])
         if self.TAPD_distribution_function.currentText() == 'completely random':
@@ -1469,7 +1533,6 @@ class Window(QtWidgets.QWidget):
         self.plot_boundary_statistics_button.setEnabled(True)
         self.plot_boundary_button.setEnabled(True)
         self.plot_voronoi_button.setEnabled(True)
-        self.save_scene_button.setEnabled(True)
         try:
             self.TAPD_RESULTS.emit(model, self.TAPD_completely_random.text())
         except AttributeError:
@@ -1632,8 +1695,8 @@ class Window(QtWidgets.QWidget):
 
     def reload_TAPD(self, **kwargs):
         try:
-            self.UPDATE_CAMERA_POSITION.emit(float(self.scenario['camera_horizontal_rotation']),\
-            float(self.scenario['camera_vertical_rotation']),float(self.scenario['camera_zoom_level']))
+            self.UPDATE_CAMERA_POSITION.emit(float(self.scenario_TAPD['camera_horizontal_rotation']),\
+            float(self.scenario_TAPD['camera_vertical_rotation']),float(self.scenario_TAPD['camera_zoom_level']))
         except AttributeError:
             pass
         if kwargs.get('density',False):
@@ -1649,6 +1712,17 @@ class Window(QtWidgets.QWidget):
                 self.raise_error('Please specify the epilayer!')
         else:
             self.raise_error('Please specify the substrate!')
+
+    def reload_CIF(self, **kwargs):
+        try:
+            self.UPDATE_CAMERA_POSITION.emit(float(self.scenario_TAPD['camera_horizontal_rotation']),\
+            float(self.scenario_TAPD['camera_vertical_rotation']),float(self.scenario_TAPD['camera_zoom_level']))
+        except AttributeError:
+            pass
+        if kwargs.get('Z_min',False):
+            self.sample_tab.widget(0).layout().itemAt(11).widget().set_head(kwargs['Z_min'])
+        self.update_range(0)
+        self.update_reciprocal_range()
 
     def load_TAPD(self):
         if self.substrate_path:
@@ -2328,12 +2402,14 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
                                                                     "BMP (*.bmp);;JPEG (*.jpeg);;PNG(*.png)")
             imageFileName2 = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./lattice_5x5_zoomed.bmp",\
                                                                     "BMP (*.bmp);;JPEG (*.jpeg);;PNG(*.png)")
-        capture = self.renderToImage(0,QtCore.QSize(3000,3000))
-        capture.save(imageFileName1[0], quality=100)
-        self.scene().activeCamera().setCameraPosition(self.scene().activeCamera().xRotation(),\
-            self.scene().activeCamera().yRotation(),self.scene().activeCamera().zoomLevel()*5)
-        capture = self.renderToImage(0,QtCore.QSize(3000,3000))
-        capture.save(imageFileName2[0], quality=100)
+        if imageFileName1[0] and imageFileName2[0]:
+            capture = self.renderToImage(0,QtCore.QSize(3000,3000))
+            capture.save(imageFileName1[0], quality=100)
+            if kwargs.get('save_zoomed_scene',True):
+                self.scene().activeCamera().setCameraPosition(self.scene().activeCamera().xRotation(),\
+                    self.scene().activeCamera().yRotation(),self.scene().activeCamera().zoomLevel()*5)
+                capture = self.renderToImage(0,QtCore.QSize(3000,3000))
+                capture.save(imageFileName2[0], quality=100)
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
