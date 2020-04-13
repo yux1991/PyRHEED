@@ -546,10 +546,10 @@ class Window(QtWidgets.QWidget):
         self.logBox.ensureCursorVisible()
         self.logBox.setAlignment(QtCore.Qt.AlignTop)
         self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
-        self.logBoxScroll = QtWidgets.QScrollArea()
-        self.logBoxScroll.setWidget(self.logBox)
-        self.logBoxScroll.setWidgetResizable(True)
-        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        #self.logBoxScroll = QtWidgets.QScrollArea()
+        #self.logBoxScroll.setWidget(self.logBox)
+        #self.logBoxScroll.setWidgetResizable(True)
+        #self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.progressBar = QtWidgets.QProgressBar()
         self.progressBar.setVisible(False)
         self.progressBar.setOrientation(QtCore.Qt.Horizontal)
@@ -560,7 +560,7 @@ class Window(QtWidgets.QWidget):
         self.PROGRESS_ADVANCE.connect(self.progress)
         self.PROGRESS_HOLD.connect(self.progress_on)
         self.PROGRESS_END.connect(self.progress_reset)
-        self.statusGrid.addWidget(self.logBoxScroll,0,0)
+        self.statusGrid.addWidget(self.logBox,0,0)
         self.vLayout_left.addWidget(self.statusBar)
         self.vLayout_left.addWidget(self.progressBar)
 
@@ -1310,6 +1310,11 @@ class Window(QtWidgets.QWidget):
         self.CLOSE.emit()
         QtCore.QCoreApplication.processEvents()
         event.accept()
+
+    def resizeEvent(self,event):
+        self.screenSize = self.graph.screen().size()
+        self.container.setMinimumSize(self.screenSize.width()/2, self.screenSize.height()/2)
+        self.container.setMaximumSize(self.screenSize)
 
     def toggle_add_buffer(self,state):
         if state == 0:

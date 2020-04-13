@@ -16,7 +16,6 @@ class DoubleSlider(QtWidgets.QWidget):
         self.scale = scale
         self.unit = unit
         self.minLabel = QtWidgets.QLabel(self.text+"_min = {:5.2f} ".format(self.currentMin*self.scale)+"("+unit+")")
-        self.minLabel.setFixedWidth(180)
         self.minSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.minSlider.setFixedWidth(300)
         self.minSlider.setMinimum(minimum)
@@ -25,7 +24,6 @@ class DoubleSlider(QtWidgets.QWidget):
         self.minSlider.valueChanged.connect(self.min_changed)
 
         self.maxLabel = QtWidgets.QLabel(self.text+"_max = {:5.2f} ".format(self.currentMax*self.scale)+"("+unit+")")
-        self.maxLabel.setFixedWidth(180)
         self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.maxSlider.setFixedWidth(300)
         self.maxSlider.setMinimum(minimum)
@@ -363,7 +361,6 @@ class LockableDoubleSlider(QtWidgets.QWidget):
                 self.minLabel = QtWidgets.QLabel(self.text+"_min = {:5.3f} ".format(self.currentMin)+"("+unit+")")
             elif 1/self.scale >=0.0001:
                 self.minLabel = QtWidgets.QLabel(self.text+"_min = {:6.4f} ".format(self.currentMin)+"("+unit+")")
-        self.minLabel.setFixedWidth(180)
         if self.type == 'slider':
             self.minSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         elif self.type == 'spinbox':
@@ -400,7 +397,6 @@ class LockableDoubleSlider(QtWidgets.QWidget):
                 self.maxLabel = QtWidgets.QLabel(self.text+"_max = {:5.3f} ".format(self.currentMax)+"("+unit+")")
             elif 1/self.scale >=0.0001:
                 self.maxLabel = QtWidgets.QLabel(self.text+"_max = {:6.4f} ".format(self.currentMax)+"("+unit+")")
-        self.maxLabel.setFixedWidth(180)
         if self.type == 'slider':
             self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         elif self.type == 'spinbox':

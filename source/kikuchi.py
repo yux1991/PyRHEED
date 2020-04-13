@@ -381,6 +381,11 @@ class Simulation(QtCore.QObject):
 
     def run(self):
         Bin, width = self.plot_range,self.plot_range
+        R0 = self.K_in*np.sin(self.theta_in/180*np.pi)
+        theta_f1 = np.arccos((self.K_in*np.cos(self.theta_in/180*np.pi)-Bin)/self.K_in)
+        R1 = self.K_in*np.cos(self.theta_in/180*np.pi)*np.tan(theta_f1)
+        theta_f2 = np.arccos((self.K_in*np.cos(self.theta_in/180*np.pi)-2*Bin)/self.K_in)
+        R2 = self.K_in*np.cos(self.theta_in/180*np.pi)*np.tan(theta_f2)
         self.UPDATE_LOG.emit("Calculating Kikuchi lines ...")
         QtCore.QCoreApplication.processEvents()
         for h,k,l in itertools.product(range(-self.index_max,self.index_max+1),repeat=3):
@@ -389,11 +394,6 @@ class Simulation(QtCore.QObject):
                 kb = np.linalg.multi_dot([ccc,self.conversion,self.ZA])/np.linalg.norm(np.matmul(self.conversion,self.ZA))
                 if abs(kb) < Bin and kb > 0.01:
                     Bin = abs(kb)
-                R0 = self.K_in*np.sin(self.theta_in/180*np.pi)
-                theta_f1 = np.arccos((self.K_in*np.cos(self.theta_in/180*np.pi)-Bin)/self.K_in)
-                R1 = self.K_in*np.cos(self.theta_in/180*np.pi)*np.tan(theta_f1)
-                theta_f2 = np.arccos((self.K_in*np.cos(self.theta_in/180*np.pi)-2*Bin)/self.K_in)
-                R2 = self.K_in*np.cos(self.theta_in/180*np.pi)*np.tan(theta_f2)
                 if np.matmul(self.ZA,[[h],[k],[l]]) == 0:
                     kh = np.matmul(ccc,self.HA)/np.linalg.norm(self.HA)
                     kp = np.linalg.multi_dot([ccc,self.conversion,self.OPA])/np.linalg.norm(np.matmul(self.conversion,self.OPA))
