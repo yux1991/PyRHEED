@@ -521,6 +521,7 @@ class ReciprocalSpaceMap(QtCore.QObject):
                 chiStep = 1
                 for filename in glob.glob(self.path):
                     image_list.append(filename)
+                self.endIndex = min(self.endIndex, len(image_list)-1)
                 map_2D1=np.array([0,0,0])
                 map_2D2=np.array([0,0,0])
                 self.SET_TITLE.emit("Chi Scan at R = {:3.2f} \u212B\u207B\u00B9".format(radius))
@@ -589,6 +590,7 @@ class ReciprocalSpaceMap(QtCore.QObject):
                 width = self.status["width"]*scale_factor
                 for filename in glob.glob(self.path):
                     image_list.append(filename)
+                self.endIndex = min(self.endIndex, len(image_list)-1)
                 if self.Is2D:
                     Kperp = (np.abs((end.y()-start.y())*origin.x()-(end.x()-start.x())*origin.y()+end.x()*start.y()-end.y()*start.x())/ \
                              np.sqrt((end.y()-start.y())**2+(end.x()-start.x())**2))/scale_factor

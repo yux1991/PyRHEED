@@ -123,7 +123,17 @@ class Window(QtWidgets.QMainWindow):
         self.controlPanelGrid = QtWidgets.QGridLayout(self.controlPanelFrame)
         self.controlPanelGrid.setContentsMargins(0,0,0,0)
         self.controlPanelSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.browser_widget = browser.Browser(self,{"*.nef","*.NEF","*.arw","*.ARW"})
+        supportedFormats =    {'*.3fr','*.ari','*.arw','*.srf', '*.sr2','*.bay','*.cri','*.crw', '*.cr2',     '*.cr3', '*.cap','*.iiq','*.eip',\
+                               '*.dcs','*.dcr','*.drf','*.k25', '*.kdc','*.dng','*.erf','*.fff', '*.mef',     '*.mdc', '*.mos','*.mrw','*.nef',\
+                               '*.nrw','*.orf','*.pef','*.ptx', '*.pxn','*.r3d','*.raf','*.raw', '*.rw2',     '*.rwl', '*.rwz','*.srw','*.x3f',\
+                               '*.3FR','*.ARI','*.ARW','*.SRF', '*.SR2','*.BAY','*.CRI','*.CRW', '*.CR2',     '*.CR3', '*.CAP','*.IIQ','*.EIP',\
+                               '*.DCS','*.DCR','*.DRF','*.K25', '*.KDC','*.DNG','*.ERF','*.FFF', '*.MEF',     '*.MDC', '*.MOS','*.MRW','*.NEF',\
+                               '*.NRW','*.ORF','*.PEF','*.PTX', '*.PXN','*.R3D','*.RAF','*.RAW', '*.RW2',     '*.RWL', '*.RWZ','*.SRW','*.X3F',\
+                               '*.bmp','*.eps','*.gif','*.icns','*.ico','*.im', '*.jpg','*.jpeg','*.jpeg2000','*.msp', '*.pcx','*.png','*.ppm',\
+                               '*.sgi','*.tiff','*.tif','*.xbm','*.BMP','*.EPS','*.GIF','*.ICNS','*.ICO',     '*.IM',  '*.JPG','*.JPEG','*.JPEG2000',\
+                               '*.MSP','*.PCX','*.PNG','*.PPM','*.SGI','*.TIFF','*.TIF','*.XBM'}
+
+        self.browser_widget = browser.Browser(self,supportedFormats)
         self.controlPanelBottomWidget = QtWidgets.QWidget()
         self.controlPanelBottomGrid = QtWidgets.QGridLayout(self.controlPanelBottomWidget)
         self.controlPanelBottomGrid.setContentsMargins(0,0,2,0)

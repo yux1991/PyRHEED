@@ -41,6 +41,7 @@ class Window(QtCore.QObject):
         self.endIndex = "100"
         self.defaultFileName = "2D_Map"
         self.path = os.path.dirname(path)
+        self.extension = os.path.splitext(path)[1]
         self.currentSource = self.path
         self.currentDestination = self.currentSource
         self.Dialog = QtWidgets.QWidget()
@@ -65,7 +66,7 @@ class Window(QtCore.QObject):
         self.chooseDestinationLabel = QtWidgets.QLabel("The save destination is:\n"+self.currentSource)
         self.destinationNameLabel = QtWidgets.QLabel("The file name is:")
         self.destinationNameEdit = QtWidgets.QLineEdit(self.defaultFileName)
-        self.fileTypeLabel = QtWidgets.QLabel("Type of file is:")
+        self.fileTypeLabel = QtWidgets.QLabel("The file format is:")
         self.fileType = QtWidgets.QComboBox()
         self.fileType.addItem(".txt",".txt")
         self.fileType.addItem(".xlsx",".xlsx")
@@ -357,7 +358,7 @@ class Window(QtCore.QObject):
                 or self.status["width"] =="": pass
         else:
             self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Ready to Start!")
-        path = os.path.join(self.currentSource,'*.nef')
+        path = os.path.join(self.currentSource,'*'+self.extension)
         startIndex = int(self.startImageIndexEdit.text())
         endIndex = int(self.endImageIndexEdit.text())
         analysisRange = float(self.rangeEdit.text())
