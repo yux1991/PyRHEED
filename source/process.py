@@ -72,11 +72,14 @@ class Image(object):
     def get_line_scan(self,start,end,img,scale_factor):
         x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
         K_length = max(int(abs(x1-x0)+1),int(abs(y1-y0)+1))
-        Kx = np.linspace(x0,x1,K_length)
-        Ky = np.linspace(y0,y1,K_length)
+        Kx = np.linspace(x0,min(x1,len(img[0])-1),K_length)
+        Ky = np.linspace(y0,min(y1,len(img)-1),K_length)
         LineScanIntensities = np.zeros(len(Kx))
         for i in range(0,len(Kx)):
-            LineScanIntensities[i] = img[int(Ky[i]),int(Kx[i])]
+            try:
+                LineScanIntensities[i] = img[int(Ky[i]),int(Kx[i])]
+            except:
+                pass
         LineScanRadius = np.linspace(0,math.sqrt((x1-x0)**2+(y1-y0)**2),len(Kx))
         return LineScanRadius/scale_factor,LineScanIntensities/np.amax(np.amax(img))
 
@@ -84,28 +87,42 @@ class Image(object):
         x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
         K_length = max(int(abs(x1-x0)+1),int(abs(y1-y0)+1))
         int_width = int(width)
-        Kx = np.linspace(x0,x1,K_length)
-        Ky = np.linspace(y0,y1,K_length)
+        Kx = np.linspace(x0,min(x1,len(img[0])-int_width-1),K_length)
+        Ky = np.linspace(y0,min(y1,len(img)-int_width-1),K_length)
         LineScanIntensities = np.zeros(len(Kx))
         LineScanRadius = np.linspace(0,math.sqrt((x1-x0)**2+(y1-y0)**2),len(Kx))
         if y1 == y0:
-            for i in range (0,len(Kx)): LineScanIntensities[i] = np.sum(img[int(Ky[i])-int_width:int(Ky[i])+\
+            for i in range (0,len(Kx)): 
+                try:
+                    LineScanIntensities[i] = np.sum(img[int(Ky[i])-int_width:int(Ky[i])+\
                                         int_width,int(Kx[i])])
+                except:
+                    pass
         elif x1 == x0:
-            for i in range (0,len(Kx)): LineScanIntensities[i] = np.sum(img[int(Ky[i]),int(Kx[i])-int_width:\
+            for i in range (0,len(Kx)): 
+                try:
+                    LineScanIntensities[i] = np.sum(img[int(Ky[i]),int(Kx[i])-int_width:\
                                         int(Kx[i])+int_width])
+                except:
+                    pass
         else:
             slope =(x0-x1)/(y1-y0)
             if abs(slope) > 1:
-                index = np.asarray([[np.linspace(Ky[i]-int_width,Ky[i]+int_width+1,2*int_width+1),\
+                try:
+                    index = np.asarray([[np.linspace(Ky[i]-int_width,Ky[i]+int_width+1,2*int_width+1),\
                                      np.linspace(Kx[i]-int_width/slope,Kx[i]+(int_width+1)/slope,2*int_width+1)] for i in range(len(Kx))],dtype=int)
+                except:
+                    pass
             else:
-                index = np.asarray([[np.linspace(Ky[i]-int_width*slope,Ky[i]+(int_width+1)*slope,2*int_width+1),\
+                try:
+                    index = np.asarray([[np.linspace(Ky[i]-int_width*slope,Ky[i]+(int_width+1)*slope,2*int_width+1),\
                                      np.linspace(Kx[i]-int_width,Kx[i]+int_width+1,2*int_width+1)] for i in range(len(Kx))],dtype=int)
+                except:
+                    pass
             try:
                 LineScanIntensities = np.sum([img[index[i,0,:],index[i,1,:]] for i in range(len(Kx))],axis=1)
             except:
-                self.raise_error("index out of bounds")
+                pass
         return LineScanRadius/scale_factor,LineScanIntensities/2/width/np.amax(np.amax(img))
 
     def get_chi_scan(self,center,radius,width,chiRange,tilt,img,chiStep=1):
