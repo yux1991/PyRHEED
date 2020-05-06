@@ -5,3 +5,6 @@ source/.idea
 source/__pycache__
 source/venv
 source/venv_64
+Dockerfile
+requirements.txt
+.dockerignore

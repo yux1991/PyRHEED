@@ -675,11 +675,17 @@ class ReciprocalSpaceMap(QtCore.QObject):
                         newStart = QtCore.QPointF()
                         newEnd = QtCore.QPointF()
                         if width==0.0:
-                            step = 5
-                            nos = int(self.analysisRange*scale_factor/step)
+                            if self.origin.y() < (y0 + y1) /2:
+                                step = 5
+                            else:
+                                step = -5
+                            nos = int(self.analysisRange*scale_factor/abs(step))
                         else:
                             nos = int(self.analysisRange*scale_factor/width)
-                            step = width
+                            if self.origin.y() < (y0 + y1) /2:
+                                step = width
+                            else:
+                                step = -width
                         for i in range(1,nos+1):
                             if x0 == xn:
                                 newStart.setX(x0+i*step)
@@ -934,11 +940,17 @@ class FitBroadening(QtCore.QObject):
             newStart = QtCore.QPointF()
             newEnd = QtCore.QPointF()
             if self.width==0.0:
-                step = 5
+                if self.origin.y() < (y0 + y1) /2:
+                    step = 5
+                else:
+                    step = -5
                 nos = int(self.analysisRange*self.scale_factor/step)
             else:
                 nos = int(self.analysisRange*self.scale_factor/self.width)
-                step = self.width
+                if self.origin.y() < (y0 + y1) /2:
+                    step = self.width
+                else:
+                    step = -self.width
             for i in range(1,nos+1):
                 if x0 == x1:
                     newStart.setX(x0+i*step)

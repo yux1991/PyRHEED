@@ -45,7 +45,7 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 ## Usage
 1. Installation
     ```
-    git https://github.com/yux1991/PyRHEED.git
+    git clone https://github.com/yux1991/PyRHEED.git
     cd source
     python main.py
     ```
