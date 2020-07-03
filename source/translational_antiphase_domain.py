@@ -36,9 +36,9 @@ class Window(QtCore.QObject):
 
         self.fit_worker = FitFunctions()
         #self.plot_IS()
-        self.plot_contour()
-        #self.plot_2D()
-        self.plot_HWHM()
+        #self.plot_contour()
+        self.plot_2D()
+        #self.plot_HWHM()
         plt.show()
 
     def plot_IS(self):

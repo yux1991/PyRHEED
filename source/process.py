@@ -1140,6 +1140,16 @@ class TAPD_model(object):
         del self._epilayer_domain_boundary_list
 
     @property
+    def epilayer_boundary_sites(self):
+        return self._epilayer_boundary_sites
+    @epilayer_boundary_sites.setter
+    def epilayer_boundary_sites(self,epilayer_boundary_sites):
+        self._epilayer_boundary_sites = epilayer_boundary_sites
+    @epilayer_boundary_sites.deleter
+    def epilayer_boundary_sites(self):
+        del self._epilayer_boundary_sites
+
+    @property
     def epilayer_domain(self):
         return self._epilayer_domain
 
@@ -1248,7 +1258,7 @@ class TAPD_Simulation(QtCore.QObject):
             QtCore.QCoreApplication.processEvents()
             generators = self.generator_2D(substrate_set, self.distribution, **self.parameters)
             if isinstance(generators,int):
-                model.epilayer_list, model.epilayer_sites, model.epilayer_domain_area_list, model.epilayer_domain_boundary_list, model.epilayer_domain = self.get_boundaryless_epilayer(model.epilayer_structure, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
+                model.epilayer_list, model.epilayer_sites, model.epilayer_domain_area_list, model.epilayer_domain_boundary_list, model.epilayer_boundary_sites, model.epilayer_domain = self.get_boundaryless_epilayer(model.epilayer_structure, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
             elif generators.any():
                 self.UPDATE_LOG.emit('Nucleation created!')
                 self.UPDATE_LOG.emit('Creating Voronoi ...')
@@ -1258,7 +1268,7 @@ class TAPD_Simulation(QtCore.QObject):
                 self.UPDATE_LOG.emit('Voronoi is created!')
                 self.UPDATE_LOG.emit('Epilayer is growing ...')
                 QtCore.QCoreApplication.processEvents()
-                model.epilayer_list, model.epilayer_sites, model.epilayer_domain_area_list, model.epilayer_domain_boundary_list, model.epilayer_domain = self.get_epilayer(vor, model.epilayer_structure, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
+                model.epilayer_list, model.epilayer_sites, model.epilayer_domain_area_list, model.epilayer_domain_boundary_list, model.epilayer_boundary_sites, model.epilayer_domain = self.get_epilayer(vor, model.epilayer_structure, epi_orientation, X_max, Y_max, Z_min, Z_max, offset, use_atoms)
                 if model.epilayer_list:
                     self.UPDATE_LOG.emit('Atoms are filtered!')
                     QtCore.QCoreApplication.processEvents()
@@ -1441,13 +1451,14 @@ class TAPD_Simulation(QtCore.QObject):
             angle = 120
         rectangle = Polygon([(-X_max,-Y_max),(-X_max,Y_max),(X_max,Y_max),(X_max,-Y_max)])
         epilayer_list, epilayer_sites, epilayer_domain_area, epilayer_domain_boundary, gap_add_out, gap_subtract_out, domain = self.get_boundaryless_domain(a, b, angle, rectangle, unit_cell_sites_epi)
-        return epilayer_list, epilayer_sites, [epilayer_domain_area], [epilayer_domain_boundary], domain
+        return epilayer_list, epilayer_sites, [epilayer_domain_area], [epilayer_domain_boundary], None, domain
 
     def get_epilayer(self,vor,structure,orientation,X_max,Y_max, Z_min, Z_max, offset, use_atoms):
         epilayer_list = []
         epilayer_sites = []
         epilayer_domain_area_list = []
         epilayer_domain_boundary_list = []
+        epilayer_boundary_sites = []
         epilayer_domain_list = []
         gap_add = {}
         gap_subtract = {}
@@ -1478,7 +1489,7 @@ class TAPD_Simulation(QtCore.QObject):
                 if original_polygon.is_valid:
                     polygon = original_polygon.intersection(rectangle)
                     if polygon:
-                        epilayer_domain, epilayer_domain_sites, epilayer_domain_area, epilayer_domain_boundary, gap_add_out, gap_subtract_out, domain = self.get_domain(a, b, angle, point, polygon, gap_add, gap_subtract, unit_cell_sites_epi)
+                        epilayer_domain, epilayer_domain_sites, epilayer_domain_area, epilayer_domain_boundary, epilayer_domain_boundary_sites, gap_add_out, gap_subtract_out, domain = self.get_domain(a, b, angle, point, polygon, gap_add, gap_subtract, unit_cell_sites_epi)
                         if epilayer_domain:
                             epilayer_list += epilayer_domain
                             epilayer_sites += epilayer_domain_sites
@@ -1488,15 +1499,16 @@ class TAPD_Simulation(QtCore.QObject):
                             if not -1 in vor.regions[region_index]:
                                 epilayer_domain_area_list.append(epilayer_domain_area)
                                 epilayer_domain_boundary_list.append(epilayer_domain_boundary)
+                                epilayer_boundary_sites += epilayer_domain_boundary_sites
             if self._abort:
                 break
         self.PROGRESS_END.emit()
         QtCore.QCoreApplication.processEvents()
         if not self._abort:
             self.UPDATE_LOG.emit('Filtering atoms that are too close ...')
-            return epilayer_list, epilayer_sites, epilayer_domain_area_list, epilayer_domain_boundary_list, epilayer_domain_list
+            return epilayer_list, epilayer_sites, epilayer_domain_area_list, epilayer_domain_boundary_list, epilayer_boundary_sites, epilayer_domain_list
         else:
-            return None, None, None, None, None
+            return None, None, None, None, None, None
 
     def get_region_vertices_dict(self,vor,x_max,y_max):
         region_vertices_dict = {}
@@ -1578,6 +1590,7 @@ class TAPD_Simulation(QtCore.QObject):
         if (domain_include.is_valid) or (np.all(subdomain.is_valid for subdomain in domain_include)):
             epilayer_domain = []
             epilayer_domain_sites = []
+            hull_sites = []
             bounding_box = list(polygon.bounds)
             bounding_box[0] -= point[0]
             bounding_box[1] -= point[1]
@@ -1604,8 +1617,24 @@ class TAPD_Simulation(QtCore.QObject):
             point_cloud = MultiPoint(epilayer_domain)   
             try:
                 hull = ConvexHull(epilayer_domain, qhull_options='Qc')
+                x_list = []
+                y_list = []
+                for vertex_index in hull.vertices:
+                    x_list.append(hull.points[vertex_index][0])
+                    y_list.append(hull.points[vertex_index][1])
+                for vertex_index in hull.coplanar:
+                    if not (hull.points[vertex_index[0]][0] in x_list and hull.points[vertex_index[0]][1] in y_list):
+                        x_list.append(hull.points[vertex_index[0]][0])
+                        y_list.append(hull.points[vertex_index[0]][1])
+                for x, y in zip(x_list, y_list):
+                    for site in unit_cell_sites_epi:
+                        hull_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+x,site.y+y,site.z]))
             except:
                 hull = epilayer_domain
+                for point in hull:
+                    for site in unit_cell_sites_epi:
+                        hull_sites.append(pgSites.Site({site.as_dict()['species'][0]['element']:site.as_dict()['species'][0]['occu']},[site.x+point[0],site.y+point[1],site.z]))
+
             gap_add_out = {}
             gap_subtract_out = {}
             if point_cloud.is_valid:
@@ -1620,9 +1649,9 @@ class TAPD_Simulation(QtCore.QObject):
                         if not (first, second) in gap_subtract_in:
                             gap_subtract_out[(first,second)] = gap_subtract
                             gap_subtract_out[(second,first)] = gap_subtract
-            return epilayer_domain, epilayer_domain_sites, polygon.area, hull, gap_add_out, gap_subtract_out, domain_include
+            return epilayer_domain, epilayer_domain_sites, polygon.area, hull, hull_sites, gap_add_out, gap_subtract_out, domain_include
         else:
-            return None,None,None,None,None,None, None
+            return None,None,None,None,None,None, None, None
 
     def sortpts_clockwise(self,points):
         self.origin = np.mean(points,axis=0)

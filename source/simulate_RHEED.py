@@ -162,6 +162,10 @@ class Window(QtWidgets.QWidget):
         self.TAPD_add_epilayer_label = QtWidgets.QLabel('Add epilayer?')
         self.TAPD_add_epilayer = QtWidgets.QCheckBox()
         self.TAPD_add_epilayer.setChecked(True)
+        self.TAPD_add_epilayer.stateChanged.connect(self.toggle_add_epilayer)
+        self.TAPD_add_boundary_label = QtWidgets.QLabel('Add only boundary?')
+        self.TAPD_add_boundary = QtWidgets.QCheckBox()
+        self.TAPD_add_boundary.setChecked(False)
         self.TAPD_constant_af_label = QtWidgets.QLabel('Use constant atomic structure factor?')
         self.TAPD_constant_af = QtWidgets.QCheckBox()
         self.TAPD_constant_af.setChecked(False)
@@ -296,26 +300,28 @@ class Window(QtWidgets.QWidget):
         self.TAPD_model_grid.addWidget(self.TAPD_add_substrate,27,2,1,2)
         self.TAPD_model_grid.addWidget(self.TAPD_add_epilayer_label,28,0,1,2)
         self.TAPD_model_grid.addWidget(self.TAPD_add_epilayer,28,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_constant_af_label,29,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_constant_af,29,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_lattice_or_atoms_label,30,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_lattice,30,2,1,1)
-        self.TAPD_model_grid.addWidget(self.TAPD_atoms,30,3,1,1)
-        self.TAPD_model_grid.addWidget(self.TAPD_add_buffer_label,31,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_add_buffer,31,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_buffer_atom_label,32,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_buffer_atom,32,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_distribution_function_label,33,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_distribution_function,33,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_buffer_in_plane_distribution_label,34,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_buffer_in_plane_distribution,34,2,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_buffer_out_of_plane_distribution_label,35,0,1,2)
-        self.TAPD_model_grid.addWidget(self.TAPD_buffer_out_of_plane_distribution,35,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_boundary_label,29,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_boundary,29,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_constant_af_label,30,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_constant_af,30,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_lattice_or_atoms_label,31,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_lattice,31,2,1,1)
+        self.TAPD_model_grid.addWidget(self.TAPD_atoms,31,3,1,1)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_buffer_label,32,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_add_buffer,32,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_atom_label,33,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_atom,33,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_distribution_function_label,34,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_distribution_function,34,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_in_plane_distribution_label,35,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_in_plane_distribution,35,2,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_out_of_plane_distribution_label,36,0,1,2)
+        self.TAPD_model_grid.addWidget(self.TAPD_buffer_out_of_plane_distribution,36,2,1,2)
         self.TAPD_distribution_parameters_layout = QtWidgets.QHBoxLayout()
         self.TAPD_distribution_parameters_layout.addWidget(self.distribution_parameters)
         self.TAPD_distribution_parameters_layout.addWidget(self.buffer_in_plane_distribution_parameters)
         self.TAPD_distribution_parameters_layout.addWidget(self.buffer_out_of_plane_distribution_parameters)
-        self.TAPD_model_grid.addLayout(self.TAPD_distribution_parameters_layout,36,0,1,4)
+        self.TAPD_model_grid.addLayout(self.TAPD_distribution_parameters_layout,37,0,1,4)
         self.TAPD_model_grid.addWidget(self.reload_TAPD_structure_button,39,0,1,1)
         self.TAPD_model_grid.addWidget(self.load_TAPD_structure_button,39,1,1,1)
         self.TAPD_model_grid.addWidget(self.stop_TAPD_structure_button,39,2,1,1)
@@ -1316,6 +1322,13 @@ class Window(QtWidgets.QWidget):
         self.container.setMinimumSize(self.screenSize.width()/2, self.screenSize.height()/2)
         self.container.setMaximumSize(self.screenSize)
 
+    def toggle_add_epilayer(self,state):
+        if state == 0:
+            enabled = False
+        elif state == 2:
+            enabled = True
+        self.TAPD_add_boundary.setEnabled(enabled)
+
     def toggle_add_buffer(self,state):
         if state == 0:
             enabled = False
@@ -1527,10 +1540,13 @@ class Window(QtWidgets.QWidget):
         self.epilayer_list = model.epilayer_list
         self.epilayer_domain_area_list = model.epilayer_domain_area_list
         self.epilayer_domain_boundary_list = model.epilayer_domain_boundary_list
+        self.epilayer_boundary_sites = model.epilayer_boundary_sites
         self.epilayer_domain = model.epilayer_domain
         if self.TAPD_add_substrate.isChecked():
             self.add_TAPD('substrate')
-        if self.TAPD_add_epilayer.isChecked():
+        if self.TAPD_add_epilayer.isChecked() and self.TAPD_add_boundary.isChecked():
+            self.add_TAPD('boundary')
+        elif self.TAPD_add_epilayer.isChecked():
             self.add_TAPD('epilayer')
         if self.TAPD_add_buffer.isChecked():
             self.add_TAPD('buffer')
@@ -1648,6 +1664,9 @@ class Window(QtWidgets.QWidget):
         if label=='substrate':
             self.structure_dict[index] = self.structure_sub
             self.TAPD[index] = self.substrate_sites
+        elif label=='boundary':
+            self.structure_dict[index] = self.structure_epi
+            self.TAPD[index] = self.epilayer_boundary_sites
         elif label=='epilayer':
             self.structure_dict[index] = self.structure_epi
             self.TAPD[index] = self.epilayer_sites
@@ -1661,6 +1680,8 @@ class Window(QtWidgets.QWidget):
         self.update_log("TAPD "+label+str(index+1)+" loaded!")
         if label=='substrate':
             self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.substrate_sites)
+        elif label=='boundary':
+            self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.epilayer_boundary_sites)
         elif label=='epilayer':
             self.element_species[index] = set(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in self.epilayer_sites)
         elif label=='buffer':
