@@ -69,7 +69,7 @@ class Image(object):
             qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
             return qImg, img_array
 
-    def get_line_scan(self,start,end,img,scale_factor):
+    def get_line_scan(self,start,end,img,scale_factor,normalize_to_img_max=True):
         x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
         K_length = max(int(abs(x1-x0)+1),int(abs(y1-y0)+1))
         Kx = np.linspace(x0,min(x1,len(img[0])-1),K_length)
@@ -81,9 +81,10 @@ class Image(object):
             except:
                 pass
         LineScanRadius = np.linspace(0,math.sqrt((x1-x0)**2+(y1-y0)**2),len(Kx))
-        return LineScanRadius/scale_factor,LineScanIntensities/np.amax(np.amax(img))
+        normalization_factor = np.amax(np.amax(img)) if normalize_to_img_max else 1
+        return LineScanRadius/scale_factor,LineScanIntensities/normalization_factor
 
-    def get_integral(self,start,end,width,img,scale_factor):
+    def get_integral(self,start,end,width,img,scale_factor,normalize_to_img_max=True):
         x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
         K_length = max(int(abs(x1-x0)+1),int(abs(y1-y0)+1))
         int_width = int(width)
@@ -123,9 +124,10 @@ class Image(object):
                 LineScanIntensities = np.sum([img[index[i,0,:],index[i,1,:]] for i in range(len(Kx))],axis=1)
             except:
                 pass
-        return LineScanRadius/scale_factor,LineScanIntensities/2/width/np.amax(np.amax(img))
+        normalization_factor = np.amax(np.amax(img)) if normalize_to_img_max else 1
+        return LineScanRadius/scale_factor,LineScanIntensities/2/width/normalization_factor
 
-    def get_chi_scan(self,center,radius,width,chiRange,tilt,img,chiStep=1):
+    def get_chi_scan(self,center,radius,width,chiRange,tilt,img,chiStep=1,normalize_to_img_max=True):
         x0,y0 = center.x(),center.y()
         if int(chiRange/chiStep)>2:
             ChiTotalSteps = int(chiRange/chiStep)
@@ -159,7 +161,8 @@ class Image(object):
                                     [np.cos((theta-ChiAngle[0])*np.pi/180), np.sin((theta-ChiAngle[0])*np.pi/180)]] for theta in ChiAngle])
         ImageIndices =np.tensordot(RotationTensor,(indices[1:-1]-[y0,x0]).T,axes=1).astype(int)
         ChiProfile = np.sum([img[ImageIndices[i,1,:]+int(y0),ImageIndices[i,0,:]+int(x0)] for i in range(ChiTotalSteps+1)], axis=1)/cit
-        return np.flip(ChiAngle2,axis=0),ChiProfile/np.amax(np.amax(img))
+        normalization_factor = np.amax(np.amax(img)) if normalize_to_img_max else 1
+        return np.flip(ChiAngle2,axis=0),ChiProfile/normalization_factor
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
@@ -490,7 +493,7 @@ class ReciprocalSpaceMap(QtCore.QObject):
     ATTENTION = QtCore.pyqtSignal(str)
     ABORTED = QtCore.pyqtSignal()
 
-    def __init__(self,status,path,default,IsPoleFigure,IsCentered,IsSaveResult,Is2D,IsCartesian,startIndex,endIndex,analysisRange,destination,saveFileName,fileType,group):
+    def __init__(self,status,path,default,IsPoleFigure,azimuthRange,normalizationMethod,centralisationMethod,IsSaveResult,Is2D,IsCartesian,startIndex,endIndex,analysisRange,destination,saveFileName,fileType,group):
         super(ReciprocalSpaceMap,self).__init__()
         self.path = path
         self.status = status
@@ -502,13 +505,16 @@ class ReciprocalSpaceMap(QtCore.QObject):
         self.saveFileName = saveFileName
         self.fileType = fileType
         self.IsPoleFigure = IsPoleFigure
-        self.IsCentered = IsCentered
+        self.azimuthRange = azimuthRange
+        self.normalizationMethod = normalizationMethod
+        self.centralisationMethod = centralisationMethod
         self.IsSaveResult = IsSaveResult
         self.Is2D = Is2D
         self.IsCartesian = IsCartesian
         self.group = group
         self.image_worker = Image()
         self.convertor_worker = Convertor()
+        self._bit_depth = 16
         self._abort = False
 
     def run(self):
@@ -539,33 +545,41 @@ class ReciprocalSpaceMap(QtCore.QObject):
                 for filename in glob.glob(self.path):
                     image_list.append(filename)
                 self.endIndex = min(self.endIndex, len(image_list)-1)
-                map_2D1=np.array([0,0,0])
-                map_2D2=np.array([0,0,0])
+                map_2D360=np.array([0,0,0])
+                map_2D180=np.array([0,0,0])
                 self.SET_TITLE.emit("Chi Scan at R = {:3.2f} \u212B\u207B\u00B9".format(radius))
                 QtCore.QCoreApplication.processEvents()
                 for nimg in range(self.startIndex,self.endIndex+1):
-                    qImg, img = self.image_worker.get_image(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
-                    RC,I = self.image_worker.get_chi_scan(start,radius*scale_factor,width,chiRange,tiltAngle,img,chiStep)
-                    Phi1 = np.full(len(RC),nimg*1.8)
-                    Phi2 = np.full(len(RC),nimg*1.8)
+                    qImg, img = self.image_worker.get_image(self._bit_depth,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
+                    RC,I = self.image_worker.get_chi_scan(start,radius*scale_factor,width,chiRange,tiltAngle,img,chiStep,normalize_to_img_max=False)
+                    Phi360 = np.full(len(RC),nimg*1.8)
+                    Phi180 = np.full(len(RC),nimg*1.8)
                     for iphi in range(0,int(len(RC)/2)):
-                        Phi1[iphi]=nimg*1.8+180
-                    map_2D1 = np.vstack((map_2D1,np.vstack((abs(RC),Phi1,I)).T))
-                    map_2D2 = np.vstack((map_2D2,np.vstack((RC,Phi2,I)).T))
-                    if self.IsCentered:
-                        self.UPDATE_CHART.emit(RC,I,"arc")
-                    else:
-                        self.UPDATE_CHART.emit(abs(RC),I,"arc")
+                        Phi360[iphi]=nimg*1.8+180
+                    if self.normalizationMethod == 0:
+                        normalization_factor = 1
+                    elif self.normalizationMethod == 1:
+                        normalization_factor = 2**8 - 1
+                    elif self.normalizationMethod == 2:
+                        normalization_factor = max(I)
+                    elif self.normalizationMethod == 3:
+                        normalization_factor = np.amax(np.amax(img))
+                    map_2D360 = np.vstack((map_2D360,np.vstack((abs(RC),Phi360,I/normalization_factor)).T))
+                    map_2D180 = np.vstack((map_2D180,np.vstack((RC,Phi180,I/normalization_factor)).T))
+                    if self.azimuthRange == 360:
+                        self.UPDATE_CHART.emit(abs(RC),I/normalization_factor,"arc")
+                    elif self.azimuthRange == 180:
+                        self.UPDATE_CHART.emit(RC,I/normalization_factor,"arc")
                     self.PROGRESS_ADVANCE.emit(0,100,(nimg+1-self.startIndex)*100/(self.endIndex-self.startIndex+1))
                     self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                     QtCore.QCoreApplication.processEvents()
                     if self._abort:
                         break
                 if not self._abort:
-                    if self.IsCentered:
-                        pole_figure = np.delete(map_2D2,0,0)
-                    else:
-                        pole_figure = np.delete(map_2D1,0,0)
+                    if self.azimuthRange == 360:
+                        pole_figure = np.delete(map_2D360,0,0)
+                    elif self.azimuthRange == 180:
+                        pole_figure = np.delete(map_2D180,0,0)
                     self.graphTextPath = self.currentDestination+"/"+self.saveFileName+self.fileType
                     if self.IsSaveResult:
                         np.savetxt(self.graphTextPath,pole_figure,fmt='%4.3f')
@@ -611,45 +625,66 @@ class ReciprocalSpaceMap(QtCore.QObject):
                 if self.Is2D:
                     Kperp = (np.abs((end.y()-start.y())*origin.x()-(end.x()-start.x())*origin.y()+end.x()*start.y()-end.y()*start.x())/ \
                              np.sqrt((end.y()-start.y())**2+(end.x()-start.x())**2))/scale_factor
-                    map_2D1=np.array([0,0,0])
-                    map_2D2=np.array([0,0,0])
+                    map_2D360=np.array([0,0,0])
+                    map_2D180=np.array([0,0,0])
                     self.SET_TITLE.emit("Line Profile at Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
                     QtCore.QCoreApplication.processEvents()
                     for nimg in range(self.startIndex,self.endIndex+1):
-                        qImg, img = self.image_worker.get_image(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
+                        qImg, img = self.image_worker.get_image(self._bit_depth,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                         if width==0.0:
-                            RC,I = self.image_worker.get_line_scan(start,end,img,scale_factor)
+                            RC,I = self.image_worker.get_line_scan(start,end,img,scale_factor,normalize_to_img_max=False)
                         else:
-                            RC,I = self.image_worker.get_integral(start,end,width,img,scale_factor)
-                        Phi1 = np.full(len(RC),nimg*1.8)
-                        Phi2 = np.full(len(RC),nimg*1.8)
+                            RC,I = self.image_worker.get_integral(start,end,width,img,scale_factor,normalize_to_img_max=False)
+                        Phi360 = np.full(len(RC),nimg*1.8)
+                        Phi180 = np.full(len(RC),nimg*1.8)
                         maxPos = np.argmax(I)
-                        for iphi in range(0,maxPos):
-                            Phi1[iphi]=nimg*1.8+180
-                        if maxPos<(len(RC)-1)/2:
-                            x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
-                            map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],y1)).T))
-                            x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
-                            map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],y2)).T))
-                        else:
-                            x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                            map_2D1 = np.vstack((map_2D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],y1)).T))
-                            x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                            map_2D2 = np.vstack((map_2D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],y2)).T))
-                        if self.IsCentered:
-                            self.UPDATE_CHART.emit(x2,y2,"line")
-                        else:
-                            self.UPDATE_CHART.emit(x1,y1,"line")
+                        if self.normalizationMethod == 0:
+                            normalization_factor = 1
+                        elif self.normalizationMethod == 1:
+                            normalization_factor = 2**8 - 1
+                        elif self.normalizationMethod == 2:
+                            normalization_factor = I[maxPos]
+                        elif self.normalizationMethod == 3:
+                            normalization_factor = np.amax(np.amax(img))
+                        if self.centralisationMethod == 1:
+                            for iphi in range(0,maxPos):
+                                Phi360[iphi]=nimg*1.8+180
+                            if maxPos<(len(RC)-1)/2:
+                                x360,y360 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/normalization_factor
+                                map_2D360 = np.vstack((map_2D360,np.vstack((x360,Phi360[0:(2*maxPos+1)],y360)).T))
+                                x180,y180 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/normalization_factor
+                                map_2D180 = np.vstack((map_2D180,np.vstack((x180,Phi180[0:(2*maxPos+1)],y180)).T))
+                            else:
+                                x360,y360 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/normalization_factor
+                                map_2D360 = np.vstack((map_2D360,np.vstack((x360,Phi360[(2*maxPos-len(RC)-1):-1],y360)).T))
+                                x180,y180 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/normalization_factor
+                                map_2D180 = np.vstack((map_2D180,np.vstack((x180,Phi180[(2*maxPos-len(RC)-1):-1],y180)).T))
+                        elif self.centralisationMethod == 0:
+                            x360,y360 = RC, I/normalization_factor
+                            map_2D360 = np.vstack((map_2D360,np.vstack((x360,Phi180,y360)).T))
+                            x180,y180 = RC,I/normalization_factor
+                            map_2D180 = np.vstack((map_2D180,np.vstack((x180,Phi180,y180)).T))
+                        elif self.centralisationMethod == 2:
+                            for iphi in range(0,len(RC)//2):
+                                Phi360[iphi]=nimg*1.8+180
+                            x360,y360 = abs(RC - RC[len(RC)//2]), I/normalization_factor
+                            map_2D360 = np.vstack((map_2D360,np.vstack((x360,Phi360,y360)).T))
+                            x180,y180 = RC - RC[len(RC)//2],I/normalization_factor
+                            map_2D180 = np.vstack((map_2D180,np.vstack((x180,Phi180,y180)).T))
+                        if self.azimuthRange == 360:
+                            self.UPDATE_CHART.emit(x360,y360,"line")
+                        elif self.azimuthRange == 180:
+                            self.UPDATE_CHART.emit(x180,y180,"line")
                         self.PROGRESS_ADVANCE.emit(0,100,(nimg+1-self.startIndex)*100/(self.endIndex-self.startIndex+1))
                         self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                         QtCore.QCoreApplication.processEvents()
                         if self._abort:
                             break
                     if not self._abort:
-                        if self.IsCentered:
-                            map_2D_polar = np.delete(map_2D2,0,0)
-                        else:
-                            map_2D_polar = np.delete(map_2D1,0,0)
+                        if self.azimuthRange == 360:
+                            map_2D_polar = np.delete(map_2D360,0,0)
+                        elif self.azimuthRange == 180:
+                            map_2D_polar = np.delete(map_2D180,0,0)
                         map_2D_cart = np.empty(map_2D_polar.shape)
                         map_2D_cart[:,2] = map_2D_polar[:,2]
                         map_2D_cart[:,0] = map_2D_polar[:,0]*np.cos((map_2D_polar[:,1])*Pi/180)
@@ -667,22 +702,22 @@ class ReciprocalSpaceMap(QtCore.QObject):
                             self.FILE_SAVED.emit(self.graphTextPath)
                         QtCore.QCoreApplication.processEvents()
                 else:
-                    map_3D1=np.array([0,0,0,0])
-                    map_3D2=np.array([0,0,0,0])
+                    map_3D360=np.array([0,0,0,0])
+                    map_3D180=np.array([0,0,0,0])
                     for nimg in range(self.startIndex,self.endIndex+1):
-                        qImg, img = self.image_worker.get_image(16,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
+                        qImg, img = self.image_worker.get_image(self._bit_depth,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                         x0,y0,xn,yn = start.x(),start.y(),end.x(),end.y()
                         newStart = QtCore.QPointF()
                         newEnd = QtCore.QPointF()
                         if width==0.0:
-                            if self.origin.y() < (y0 + y1) /2:
+                            if origin.y() < (y0 + yn) /2:
                                 step = 5
                             else:
                                 step = -5
                             nos = int(self.analysisRange*scale_factor/abs(step))
                         else:
                             nos = int(self.analysisRange*scale_factor/width)
-                            if self.origin.y() < (y0 + y1) /2:
+                            if origin.y() < (y0 + yn) /2:
                                 step = width
                             else:
                                 step = -width
@@ -703,10 +738,10 @@ class ReciprocalSpaceMap(QtCore.QObject):
                             self.SET_TITLE.emit("Line Profile at Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
                             QtCore.QCoreApplication.processEvents()
                             if width==0.0:
-                                RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,scale_factor)
+                                RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,scale_factor,normalize_to_img_max=False)
                                 self.DRAW_LINE_REQUESTED.emit(newStart,newEnd,False)
                             else:
-                                RC,I = self.image_worker.get_integral(newStart,newEnd,width,img,scale_factor)
+                                RC,I = self.image_worker.get_integral(newStart,newEnd,width,img,scale_factor,normalize_to_img_max=False)
                                 self.DRAW_RECT_REQUESTED.emit(newStart,newEnd,width,False)
                             QtCore.QCoreApplication.processEvents()
                             rem = np.remainder(len(RC),self.group)
@@ -714,27 +749,50 @@ class ReciprocalSpaceMap(QtCore.QObject):
                                 RC = np.pad(RC,(0,self.group-rem),'edge')
                                 I = np.pad(I,(0,self.group-rem),'edge')
                             RC,I = RC.reshape(-1,self.group).mean(axis=1), I.reshape(-1,self.group).mean(axis=1)
-                            Phi1 = np.full(len(RC),nimg*1.8)
-                            Phi2 = np.full(len(RC),nimg*1.8)
+                            Phi360 = np.full(len(RC),nimg*1.8)
+                            Phi180 = np.full(len(RC),nimg*1.8)
                             maxPos = np.argmax(I)
-                            for iphi in range(0,maxPos):
-                                Phi1[iphi]=nimg*1.8+180
-                            if maxPos<(len(RC)-1)/2:
-                                x1,y1 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/I[maxPos]
-                                K = np.full(len(x1),Kperp)
-                                map_3D1 = np.vstack((map_3D1,np.vstack((x1,Phi1[0:(2*maxPos+1)],K,y1)).T))
-                                x2,y2 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/I[maxPos]
-                                map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[0:(2*maxPos+1)],K,y2)).T))
-                            else:
-                                x1,y1 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                K = np.full(len(x1),Kperp)
-                                map_3D1 = np.vstack((map_3D1,np.vstack((x1,Phi1[(2*maxPos-len(RC)-1):-1],K,y1)).T))
-                                x2,y2 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/I[maxPos]
-                                map_3D2 = np.vstack((map_3D2,np.vstack((x2,Phi2[(2*maxPos-len(RC)-1):-1],K,y2)).T))
-                            if self.IsCentered:
-                                self.UPDATE_CHART.emit(x2,y2,"line")
-                            else:
-                                self.UPDATE_CHART.emit(x1,y1,"line")
+                            if self.normalizationMethod == 0:
+                                normalization_factor = 1
+                            elif self.normalizationMethod == 1:
+                                normalization_factor = 2**8 - 1
+                            elif self.normalizationMethod == 2:
+                                normalization_factor = I[maxPos]
+                            elif self.normalizationMethod == 3:
+                                normalization_factor = np.amax(np.amax(img))
+                            if self.centralisationMethod == 1:
+                                for iphi in range(0,maxPos):
+                                    Phi360[iphi]=nimg*1.8+180
+                                if maxPos<(len(RC)-1)/2:
+                                    x360,y360 = abs(RC[0:(2*maxPos+1)]-RC[maxPos]), I[0:(2*maxPos+1)]/normalization_factor
+                                    K = np.full(len(x360),Kperp)
+                                    map_3D360 = np.vstack((map_3D360,np.vstack((x360,Phi360[0:(2*maxPos+1)],K,y360)).T))
+                                    x180,y180 = RC[0:(2*maxPos+1)]-RC[maxPos],I[0:(2*maxPos+1)]/normalization_factor
+                                    map_3D180 = np.vstack((map_3D180,np.vstack((x180,Phi180[0:(2*maxPos+1)],K,y180)).T))
+                                else:
+                                    x360,y360 = abs(RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos]), I[(2*maxPos-len(RC)-1):-1]/normalization_factor
+                                    K = np.full(len(x360),Kperp)
+                                    map_3D360 = np.vstack((map_3D360,np.vstack((x360,Phi360[(2*maxPos-len(RC)-1):-1],K,y360)).T))
+                                    x180,y180 = RC[(2*maxPos-len(RC)-1):-1]-RC[maxPos], I[(2*maxPos-len(RC)-1):-1]/normalization_factor
+                                    map_3D180 = np.vstack((map_3D180,np.vstack((x180,Phi180[(2*maxPos-len(RC)-1):-1],K,y180)).T))
+                            elif self.centralisationMethod == 0:
+                                x360,y360 = RC, I/normalization_factor
+                                K = np.full(len(x360),Kperp)
+                                map_3D360 = np.vstack((map_3D360,np.vstack((x360,Phi180,K,y360)).T))
+                                x180,y180 = RC,I/normalization_factor
+                                map_3D180 = np.vstack((map_3D180,np.vstack((x180,Phi180,K,y180)).T))
+                            elif self.centralisationMethod == 2:
+                                for iphi in range(0,len(RC)//2):
+                                    Phi360[iphi]=nimg*1.8+180
+                                x360,y360 = abs(RC - RC[len(RC)//2]), I/normalization_factor
+                                K = np.full(len(x360),Kperp)
+                                map_3D360 = np.vstack((map_3D360,np.vstack((x360,Phi360,K,y360)).T))
+                                x180,y180 = RC - RC[len(RC)//2],I/normalization_factor
+                                map_3D180 = np.vstack((map_3D180,np.vstack((x180,Phi180,K,y180)).T))
+                            if self.azimuthRange == 360:
+                                self.UPDATE_CHART.emit(x360,y360,"line")
+                            elif self.azimuthRange == 180:
+                                self.UPDATE_CHART.emit(x180,y180,"line")
                             self.PROGRESS_ADVANCE.emit(0,100,(i+nos*(nimg-self.startIndex))*100/((self.endIndex-self.startIndex+1)*nos))
                             self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                             QtCore.QCoreApplication.processEvents()
@@ -742,10 +800,10 @@ class ReciprocalSpaceMap(QtCore.QObject):
                             break
                     QtCore.QCoreApplication.processEvents()
                     if not self._abort:
-                        if self.IsCentered:
-                            map_3D_polar = np.delete(map_3D2,0,0)
-                        else:
-                            map_3D_polar = np.delete(map_3D1,0,0)
+                        if self.azimuthRange == 360:
+                            map_3D_polar = np.delete(map_3D360,0,0)
+                        elif self.azimuthRange == 180:
+                            map_3D_polar = np.delete(map_3D180,0,0)
                         map_3D_cart = np.empty(map_3D_polar.shape)
                         map_3D_cart[:,2] = map_3D_polar[:,2]
                         map_3D_cart[:,3] = map_3D_polar[:,3]

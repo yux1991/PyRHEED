@@ -39,7 +39,8 @@ class Window(QtCore.QObject):
         self.range = "5"
         self.startIndex = "0"
         self.endIndex = "100"
-        self.defaultFileName = "2D_Map"
+        self.defaultFileName = "2D_map"
+        self.normalization_factor = 1
         self.path = os.path.dirname(path)
         self.extension = os.path.splitext(path)[1]
         self.currentSource = self.path
@@ -60,7 +61,7 @@ class Window(QtCore.QObject):
         self.chooseSourceButton.clicked.connect(self.choose_source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
-        self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
+        self.chooseDestination = QtWidgets.QGroupBox("Save Options")
         self.chooseDestination.setStyleSheet('QGroupBox::title {color:blue;}')
         self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
         self.chooseDestinationLabel = QtWidgets.QLabel("The save destination is:\n"+self.currentSource)
@@ -70,9 +71,23 @@ class Window(QtCore.QObject):
         self.fileType = QtWidgets.QComboBox()
         self.fileType.addItem(".txt",".txt")
         self.fileType.addItem(".xlsx",".xlsx")
-        self.profileCentered = QtWidgets.QLabel("Centered?")
-        self.centeredCheck = QtWidgets.QCheckBox()
-        self.centeredCheck.setChecked(True)
+        self.azimuthRange = QtWidgets.QLabel("Azimuth range:")
+        self.azimuthRangeCombo = QtWidgets.QComboBox()
+        self.azimuthRangeCombo.addItem("0~180",180)
+        self.azimuthRangeCombo.addItem("0~360",360)
+        self.normalizationMethod = QtWidgets.QLabel("Normalization method:")
+        self.normalizationMethodCombo = QtWidgets.QComboBox()
+        self.normalizationMethodCombo.addItem("line profile peak",2)
+        self.normalizationMethodCombo.addItem("none",0)
+        self.normalizationMethodCombo.addItem("global maximum",1)
+        self.normalizationMethodCombo.addItem("image maximum",3)
+        self.normalizationMethodCombo.currentTextChanged.connect(self.normalization_method_changed)
+        self.centralisationMethod = QtWidgets.QLabel("Centralisation method:")
+        self.centralisationMethodCombo = QtWidgets.QComboBox()
+        self.centralisationMethodCombo.addItem("shift center to profile peak",1)
+        self.centralisationMethodCombo.addItem("none",0)
+        self.centralisationMethodCombo.addItem("shift center to region center",2)
+        self.centralisationMethodCombo.currentTextChanged.connect(self.centralisation_method_changed)
         self.saveResultsLabel = QtWidgets.QLabel("Save Results?")
         self.saveResults = QtWidgets.QCheckBox()
         self.saveResults.setChecked(False)
@@ -99,12 +114,16 @@ class Window(QtCore.QObject):
         self.destinationGrid.addWidget(self.fileType,2,1)
         self.destinationGrid.addWidget(self.coordinateLabel,3,0)
         self.destinationGrid.addWidget(self.coordinateFrame,3,1)
-        self.destinationGrid.addWidget(self.profileCentered,4,0)
-        self.destinationGrid.addWidget(self.centeredCheck,4,1)
-        self.destinationGrid.addWidget(self.saveResultsLabel,5,0)
-        self.destinationGrid.addWidget(self.saveResults,5,1)
+        self.destinationGrid.addWidget(self.azimuthRange,4,0)
+        self.destinationGrid.addWidget(self.azimuthRangeCombo,4,1)
+        self.destinationGrid.addWidget(self.normalizationMethod,5,0)
+        self.destinationGrid.addWidget(self.normalizationMethodCombo,5,1)
+        self.destinationGrid.addWidget(self.centralisationMethod,6,0)
+        self.destinationGrid.addWidget(self.centralisationMethodCombo,6,1)
+        self.destinationGrid.addWidget(self.saveResultsLabel,7,0)
+        self.destinationGrid.addWidget(self.saveResults,7,1)
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
-        self.parametersBox = QtWidgets.QGroupBox("Choose Image")
+        self.parametersBox = QtWidgets.QGroupBox("Image Options")
         self.parametersBox.setStyleSheet('QGroupBox::title {color:blue;}')
         self.parametersGrid = QtWidgets.QGridLayout(self.parametersBox)
         self.startImageIndexLabel = QtWidgets.QLabel("Start Image Index")
@@ -121,7 +140,8 @@ class Window(QtCore.QObject):
         self.threeD = QtWidgets.QCheckBox("3D")
         self.poleFigure = QtWidgets.QCheckBox("Pole Figure")
         self.twoD.setChecked(True)
-        self.threeD.stateChanged.connect(self.dimension_changed)
+        self.twoD.stateChanged.connect(self.two_dimension_changed)
+        self.threeD.stateChanged.connect(self.three_dimension_changed)
         self.poleFigure.stateChanged.connect(self.pole_figure_check_changed)
         self.coordnateGrid.addWidget(self.twoD,0,0)
         self.coordnateGrid.addWidget(self.threeD,0,1)
@@ -132,7 +152,7 @@ class Window(QtCore.QObject):
         self.rangeLabel = QtWidgets.QLabel("Range (\u212B\u207B\u00B9)")
         self.rangeEdit = QtWidgets.QLineEdit(self.range)
         self.rangeEdit.setEnabled(False)
-        self.groupingLabel = QtWidgets.QLabel("Bin Width:")
+        self.groupingLabel = QtWidgets.QLabel("Bin Width (px):")
         self.grouping = QtWidgets.QSpinBox()
         self.grouping.setMinimum(1)
         self.grouping.setMaximum(50)
@@ -203,7 +223,7 @@ class Window(QtCore.QObject):
         self.radiusMaxSlider.setMaximum(1000)
         self.radiusMaxSlider.setValue(1000)
         self.radiusMaxSlider.valueChanged.connect(self.refresh_radius_max)
-        self.numberOfContourLevelsLabel = QtWidgets.QLabel("Number of Contour Levels ({})".format(self.numberOfContourLevels))
+        self.numberOfContourLevelsLabel = QtWidgets.QLabel("Number of Levels ({})".format(self.numberOfContourLevels))
         self.numberOfContourLevelsLabel.setFixedWidth(160)
         self.numberOfContourLevelsSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.numberOfContourLevelsSlider.setMinimum(5)
@@ -300,25 +320,52 @@ class Window(QtCore.QObject):
         self.SHOW_3D_GRAPH.emit(self.graphTextPath)
 
     def show_2D_contour_button_clicked(self):
-        self.SHOW_2D_CONTOUR.emit(self.graphTextPath, False, self.levelMinSlider.value()/100,self.levelMaxSlider.value()/100,\
+        self.SHOW_2D_CONTOUR.emit(self.graphTextPath, False, self.levelMinSlider.value()/100,self.levelMaxSlider.value()/100*self.normalization_factor,\
                                 self.radiusMinSlider.value()/100,self.radiusMaxSlider.value()/100,self.numberOfContourLevelsSlider.value(),\
                                 self.colormap.currentText())
 
-    def dimension_changed(self,state):
+    def three_dimension_changed(self,state):
         if state == 0:
             self.rangeEdit.setEnabled(False)
             self.grouping.setEnabled(False)
-            self.plotOptions.setEnabled(True)
         elif state ==2:
             self.rangeEdit.setEnabled(True)
             self.grouping.setEnabled(True)
+            self.destinationNameEdit.setText("3D_map")
+
+    def two_dimension_changed(self,state):
+        if state == 0:
             self.plotOptions.setEnabled(False)
+        elif state ==2:
+            self.plotOptions.setEnabled(True)
+            self.destinationNameEdit.setText("2D_map")
+
+    def centralisation_method_changed(self, text):
+        if text == "none":
+            self.azimuthRangeCombo.setCurrentText("0~180")
+            self.polar.setChecked(True)
+            self.cartesian.setEnabled(False)
+        else:
+            self.coordinateFrame.setEnabled(True)
+            self.cartesian.setEnabled(True)
+
+    def normalization_method_changed(self,text):
+        if text == "none":
+            self.normalization_factor = 255
+        else:
+            self.normalization_factor = 1
 
     def pole_figure_check_changed(self,state):
         if state == 0:
-            self.coordinateFrame.setEnabled(True)
+            self.plotOptions.setEnabled(False)
+            self.centralisationMethodCombo.setEnabled(True)
+            self.cartesian.setEnabled(True)
         elif state == 2:
-            self.coordinateFrame.setEnabled(False)
+            self.polar.setChecked(True)
+            self.cartesian.setEnabled(False)
+            self.plotOptions.setEnabled(True)
+            self.centralisationMethodCombo.setEnabled(False)
+            self.destinationNameEdit.setText("pole_figure")
 
     def update_log(self,message):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0"+message)
@@ -334,6 +381,9 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
+        self.chooseDestination.setEnabled(True)
+        self.chooseSource.setEnabled(True)
+        self.parametersBox.setEnabled(True)
 
     def process_finished(self):
         if self.saveResults.isChecked():
@@ -343,6 +393,9 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
+        self.chooseDestination.setEnabled(True)
+        self.chooseSource.setEnabled(True)
+        self.parametersBox.setEnabled(True)
 
     def set_chart_title(self,text):
         self.kperpLabel.setText(text)
@@ -364,8 +417,8 @@ class Window(QtCore.QObject):
         analysisRange = float(self.rangeEdit.text())
         saveFileName = self.destinationNameEdit.text()
         fileType = self.fileType.currentData()
-        self.reciprocal_space_worker = ReciprocalSpaceMap(self.status,path,self.windowDefault,self.poleFigure.isChecked(),self.centeredCheck.isChecked(),\
-                                                          self.saveResults.isChecked(),self.twoD.isChecked(),self.cartesian.isChecked(),\
+        self.reciprocal_space_worker = ReciprocalSpaceMap(self.status,path,self.windowDefault,self.poleFigure.isChecked(),self.azimuthRangeCombo.currentData(),\
+                                                          self.normalizationMethodCombo.currentData(),self.centralisationMethodCombo.currentData(),self.saveResults.isChecked(),self.twoD.isChecked(),self.cartesian.isChecked(),\
                                                           startIndex,endIndex,analysisRange,self.currentDestination,saveFileName,fileType,self.grouping.value())
         self.reciprocal_space_worker.PROGRESS_ADVANCE.connect(self.progress)
         self.reciprocal_space_worker.PROGRESS_END.connect(self.progress_reset)
@@ -395,6 +448,9 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(False)
+        self.chooseDestination.setEnabled(False)
+        self.chooseSource.setEnabled(False)
+        self.parametersBox.setEnabled(False)
 
     def stop(self):
         self.STOP_WORKER.emit()
@@ -408,6 +464,9 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
+        self.chooseDestination.setEnabled(True)
+        self.chooseSource.setEnabled(True)
+        self.parametersBox.setEnabled(True)
         self.progress_reset()
 
     def reset(self):
@@ -427,7 +486,9 @@ class Window(QtCore.QObject):
         self.endImageIndexEdit.setText(self.endIndex)
         self.fileType.setCurrentText(".txt")
         self.polar.setChecked(True)
-        self.centeredCheck.setChecked(True)
+        self.azimuthRangeCombo.setCurrentText("0~180")
+        self.normalizationMethodCombo.setCurrentText("own peak")
+        self.centralisationMethodCombo.setCurrentText("center at peak")
         self.logBox.clear()
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Reset Successful!")
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0Ready to Start!")
@@ -469,7 +530,7 @@ class Window(QtCore.QObject):
 
     def refresh_number_of_contour_levels(self):
         self.numberOfContourLevels = self.numberOfContourLevelsSlider.value()
-        self.numberOfContourLevelsLabel.setText("Number of Contour Levels ({})".format(self.numberOfContourLevels))
+        self.numberOfContourLevelsLabel.setText("Number of Levels ({})".format(self.numberOfContourLevels))
 
     def set_status(self,status):
         self.status = status
