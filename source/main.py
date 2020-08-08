@@ -136,6 +136,7 @@ class Window():
         """Signal Connection"""
         self.reciprocal_space_mapping.DRAW_LINE_REQUESTED.connect(self.window.mainTab.currentWidget().draw_line)
         self.reciprocal_space_mapping.DRAW_RECT_REQUESTED.connect(self.window.mainTab.currentWidget().draw_rect)
+        self.reciprocal_space_mapping.REFRESH_CANVAS.connect(self.window.refresh_image)
 
 if __name__ == '__main__':
     Window()

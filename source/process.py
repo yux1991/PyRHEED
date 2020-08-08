@@ -489,11 +489,12 @@ class ReciprocalSpaceMap(QtCore.QObject):
     SET_TITLE = QtCore.pyqtSignal(str)
     DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    REFRESH_CANVAS = QtCore.pyqtSignal(str)
     ERROR = QtCore.pyqtSignal(str)
     ATTENTION = QtCore.pyqtSignal(str)
     ABORTED = QtCore.pyqtSignal()
 
-    def __init__(self,status,path,default,IsPoleFigure,azimuthRange,normalizationMethod,centralisationMethod,IsSaveResult,Is2D,IsCartesian,startIndex,endIndex,analysisRange,destination,saveFileName,fileType,group):
+    def __init__(self,status,path,default,IsPoleFigure,azimuthRange,normalizationMethod,centralisationMethod,IsSaveResult,Is2D,IsCartesian,startIndex,endIndex,analysisRange,destination,saveFileName,fileType,group,enableSync=False,sleepTime=0):
         super(ReciprocalSpaceMap,self).__init__()
         self.path = path
         self.status = status
@@ -514,6 +515,8 @@ class ReciprocalSpaceMap(QtCore.QObject):
         self.group = group
         self.image_worker = Image()
         self.convertor_worker = Convertor()
+        self.enableSync = enableSync
+        self.sleepTime = max(sleepTime,1)
         self._bit_depth = 16
         self._abort = False
 
@@ -552,6 +555,8 @@ class ReciprocalSpaceMap(QtCore.QObject):
                 for nimg in range(self.startIndex,self.endIndex+1):
                     qImg, img = self.image_worker.get_image(self._bit_depth,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                     RC,I = self.image_worker.get_chi_scan(start,radius*scale_factor,width,chiRange,tiltAngle,img,chiStep,normalize_to_img_max=False)
+                    if self.enableSync:
+                        self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex])
                     Phi360 = np.full(len(RC),nimg*1.8)
                     Phi180 = np.full(len(RC),nimg*1.8)
                     for iphi in range(0,int(len(RC)/2)):
@@ -573,6 +578,8 @@ class ReciprocalSpaceMap(QtCore.QObject):
                     self.PROGRESS_ADVANCE.emit(0,100,(nimg+1-self.startIndex)*100/(self.endIndex-self.startIndex+1))
                     self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                     QtCore.QCoreApplication.processEvents()
+                    if self.enableSync:
+                        time.sleep(self.sleepTime)
                     if self._abort:
                         break
                 if not self._abort:
@@ -631,6 +638,8 @@ class ReciprocalSpaceMap(QtCore.QObject):
                     QtCore.QCoreApplication.processEvents()
                     for nimg in range(self.startIndex,self.endIndex+1):
                         qImg, img = self.image_worker.get_image(self._bit_depth,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
+                        if self.enableSync:
+                            self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex])
                         if width==0.0:
                             RC,I = self.image_worker.get_line_scan(start,end,img,scale_factor,normalize_to_img_max=False)
                         else:
@@ -678,6 +687,8 @@ class ReciprocalSpaceMap(QtCore.QObject):
                         self.PROGRESS_ADVANCE.emit(0,100,(nimg+1-self.startIndex)*100/(self.endIndex-self.startIndex+1))
                         self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                         QtCore.QCoreApplication.processEvents()
+                        if self.enableSync:
+                            time.sleep(self.sleepTime)
                         if self._abort:
                             break
                     if not self._abort:
@@ -709,6 +720,8 @@ class ReciprocalSpaceMap(QtCore.QObject):
                         x0,y0,xn,yn = start.x(),start.y(),end.x(),end.y()
                         newStart = QtCore.QPointF()
                         newEnd = QtCore.QPointF()
+                        if self.enableSync:
+                            self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex])
                         if width==0.0:
                             if origin.y() < (y0 + yn) /2:
                                 step = 5
@@ -796,6 +809,8 @@ class ReciprocalSpaceMap(QtCore.QObject):
                             self.PROGRESS_ADVANCE.emit(0,100,(i+nos*(nimg-self.startIndex))*100/((self.endIndex-self.startIndex+1)*nos))
                             self.UPDATE_LOG.emit("The file being processed right now is: "+image_list[nimg-self.startIndex])
                             QtCore.QCoreApplication.processEvents()
+                            if self.enableSync:
+                                time.sleep(self.sleepTime)
                         if self._abort:
                             break
                     QtCore.QCoreApplication.processEvents()

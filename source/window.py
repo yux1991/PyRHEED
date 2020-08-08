@@ -8,6 +8,7 @@ import numpy as np
 import os
 import profile_chart
 import properties
+import time
 
 class Window(QtWidgets.QMainWindow):
 
@@ -522,6 +523,20 @@ class Window(QtWidgets.QMainWindow):
                 return path
         else:
             return ''
+
+    def refresh_image(self,path, bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+        if not path == '':
+            canvas_widget = self.mainTab.currentWidget()
+            img_array = self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel)
+            self.photoList.pop()
+            self.photoList.append(img_array)
+            self.pathList.pop()
+            self.pathList.append(path)
+            self.mainTab.setTabText(self.mainTab.currentIndex(), os.path.basename(path))
+            canvas_widget.fit_canvas()
+            canvas_widget.toggle_mode(self._mode)
+            self.currentPath = path
+            self.FILE_OPENED.emit(path)
 
     def open_image(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':

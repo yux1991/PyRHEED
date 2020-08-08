@@ -14,6 +14,7 @@ class Window(QtCore.QObject):
     FONTS_CHANGED = QtCore.pyqtSignal(str,int)
     DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
+    REFRESH_CANVAS = QtCore.pyqtSignal(str)
     CONNECT_TO_CANVAS = QtCore.pyqtSignal()
     STOP_WORKER = QtCore.pyqtSignal()
 
@@ -91,6 +92,13 @@ class Window(QtCore.QObject):
         self.saveResultsLabel = QtWidgets.QLabel("Save Results?")
         self.saveResults = QtWidgets.QCheckBox()
         self.saveResults.setChecked(False)
+        self.synchronizeLabel = QtWidgets.QLabel("Synchronize View?")
+        self.synchronize = QtWidgets.QCheckBox()
+        self.synchronize.setChecked(False)
+        self.synchronize.stateChanged.connect(self.sync_state_changed)
+        self.sleepTimeLabel = QtWidgets.QLabel("Sleep Time (s)")
+        self.sleepTimeEdit = QtWidgets.QLineEdit("1")
+        self.sleepTimeEdit.setEnabled(False)
         self.coordinateLabel = QtWidgets.QLabel("Choose coordinate system:")
         self.coordinate = QtWidgets.QButtonGroup()
         self.coordinate.setExclusive(True)
@@ -122,6 +130,10 @@ class Window(QtCore.QObject):
         self.destinationGrid.addWidget(self.centralisationMethodCombo,6,1)
         self.destinationGrid.addWidget(self.saveResultsLabel,7,0)
         self.destinationGrid.addWidget(self.saveResults,7,1)
+        self.destinationGrid.addWidget(self.synchronizeLabel,8,0)
+        self.destinationGrid.addWidget(self.synchronize,8,1)
+        self.destinationGrid.addWidget(self.sleepTimeLabel,9,0)
+        self.destinationGrid.addWidget(self.sleepTimeEdit,9,1)
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
         self.parametersBox = QtWidgets.QGroupBox("Image Options")
         self.parametersBox.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -354,6 +366,12 @@ class Window(QtCore.QObject):
             self.normalization_factor = 255
         else:
             self.normalization_factor = 1
+    
+    def sync_state_changed(self,state):
+        if state == 0:
+            self.sleepTimeEdit.setEnabled(False)
+        elif state ==2:
+            self.sleepTimeEdit.setEnabled(True)
 
     def pole_figure_check_changed(self,state):
         if state == 0:
@@ -419,7 +437,7 @@ class Window(QtCore.QObject):
         fileType = self.fileType.currentData()
         self.reciprocal_space_worker = ReciprocalSpaceMap(self.status,path,self.windowDefault,self.poleFigure.isChecked(),self.azimuthRangeCombo.currentData(),\
                                                           self.normalizationMethodCombo.currentData(),self.centralisationMethodCombo.currentData(),self.saveResults.isChecked(),self.twoD.isChecked(),self.cartesian.isChecked(),\
-                                                          startIndex,endIndex,analysisRange,self.currentDestination,saveFileName,fileType,self.grouping.value())
+                                                          startIndex,endIndex,analysisRange,self.currentDestination,saveFileName,fileType,self.grouping.value(),self.synchronize.isChecked(),float(self.sleepTimeEdit.text()))
         self.reciprocal_space_worker.PROGRESS_ADVANCE.connect(self.progress)
         self.reciprocal_space_worker.PROGRESS_END.connect(self.progress_reset)
         self.reciprocal_space_worker.CONNECT_TO_CANVAS.connect(self.CONNECT_TO_CANVAS)
@@ -429,6 +447,7 @@ class Window(QtCore.QObject):
         self.reciprocal_space_worker.SET_TITLE.connect(self.set_chart_title)
         self.reciprocal_space_worker.DRAW_LINE_REQUESTED.connect(self.DRAW_LINE_REQUESTED)
         self.reciprocal_space_worker.DRAW_RECT_REQUESTED.connect(self.DRAW_RECT_REQUESTED)
+        self.reciprocal_space_worker.REFRESH_CANVAS.connect(self.REFRESH_CANVAS)
         self.reciprocal_space_worker.ERROR.connect(self.raise_error)
         self.reciprocal_space_worker.ATTENTION.connect(self.raise_attention)
         self.reciprocal_space_worker.ABORTED.connect(self.worker_aborted)
@@ -436,7 +455,7 @@ class Window(QtCore.QObject):
 
         self.thread = QtCore.QThread()
         self.reciprocal_space_worker.moveToThread(self.thread)
-        self.reciprocal_space_worker.FINISHED.connect(self.thread.quit)
+        self.reciprocal_space_worker.FINISHED.connect(self.worker_finished)
         self.thread.started.connect(self.reciprocal_space_worker.run)
         self.STOP_WORKER.connect(self.reciprocal_space_worker.stop)
 
@@ -454,6 +473,12 @@ class Window(QtCore.QObject):
 
     def stop(self):
         self.STOP_WORKER.emit()
+        if self.thread.isRunning():
+            self.thread.terminate()
+            self.thread.wait()
+        
+    def worker_finished(self):
+        self.thread.quit()
         if self.thread.isRunning():
             self.thread.terminate()
             self.thread.wait()
