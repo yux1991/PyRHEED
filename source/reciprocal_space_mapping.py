@@ -14,7 +14,7 @@ class Window(QtCore.QObject):
     FONTS_CHANGED = QtCore.pyqtSignal(str,int)
     DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
-    REFRESH_CANVAS = QtCore.pyqtSignal(str)
+    REFRESH_CANVAS = QtCore.pyqtSignal(str,list)
     CONNECT_TO_CANVAS = QtCore.pyqtSignal()
     STOP_WORKER = QtCore.pyqtSignal()
 
@@ -45,6 +45,7 @@ class Window(QtCore.QObject):
         self.path = os.path.dirname(path)
         self.extension = os.path.splitext(path)[1]
         self.currentSource = self.path
+        self.currentOffset = self.path
         self.currentDestination = self.currentSource
         self.Dialog = QtWidgets.QWidget()
         self.Grid = QtWidgets.QGridLayout(self.Dialog)
@@ -142,6 +143,17 @@ class Window(QtCore.QObject):
         self.startImageIndexEdit = QtWidgets.QLineEdit(self.startIndex)
         self.endImageIndexLabel = QtWidgets.QLabel("End Image Index")
         self.endImageIndexEdit = QtWidgets.QLineEdit(self.endIndex)
+
+        self.chooseOffset = QtWidgets.QGroupBox("Offset File Directory")
+        self.chooseOffset.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.offsetGrid = QtWidgets.QGridLayout(self.chooseOffset)
+        self.offsetGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.chooseOffsetLabel = QtWidgets.QLabel("The offset file directory is:\n"+self.currentOffset)
+        self.chooseOffsetButton = QtWidgets.QPushButton("Browse...")
+        self.chooseOffsetButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.chooseOffsetButton.clicked.connect(self.choose_offset)
+        self.offsetGrid.addWidget(self.chooseOffsetLabel,0,0)
+        self.offsetGrid.addWidget(self.chooseOffsetButton,0,1)
 
         self.dimensionLabel = QtWidgets.QLabel("Choose Type:")
         self.dimension = QtWidgets.QButtonGroup()
@@ -311,10 +323,11 @@ class Window(QtCore.QObject):
         self.kperpLabel = QtWidgets.QLabel("")
         self.LeftGrid.addWidget(self.chooseSource,0,0)
         self.LeftGrid.addWidget(self.chooseDestination,1,0)
-        self.LeftGrid.addWidget(self.parametersBox,2,0)
-        self.LeftGrid.addWidget(self.appearance,3,0)
-        self.LeftGrid.addWidget(self.plotOptions,4,0)
-        self.LeftGrid.addWidget(self.ButtonBox,5,0)
+        self.LeftGrid.addWidget(self.chooseOffset,2,0)
+        self.LeftGrid.addWidget(self.parametersBox,3,0)
+        self.LeftGrid.addWidget(self.appearance,4,0)
+        self.LeftGrid.addWidget(self.plotOptions,5,0)
+        self.LeftGrid.addWidget(self.ButtonBox,6,0)
         self.RightGrid.addWidget(self.kperpLabel,0,0)
         self.RightGrid.addWidget(self.chart,1,0)
         self.RightGrid.addWidget(self.statusBar,2,0)
@@ -401,9 +414,14 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         self.chooseDestination.setEnabled(True)
         self.chooseSource.setEnabled(True)
+        self.chooseOffset.setEnabled(True)
         self.parametersBox.setEnabled(True)
 
     def process_finished(self):
+        self.thread.quit()
+        if self.thread.isRunning():
+            self.thread.terminate()
+            self.thread.wait()
         if self.saveResults.isChecked():
             self.Show3DGraphButton.setEnabled(True)
             self.Show2DContourButton.setEnabled(True)
@@ -413,6 +431,7 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         self.chooseDestination.setEnabled(True)
         self.chooseSource.setEnabled(True)
+        self.chooseOffset.setEnabled(True)
         self.parametersBox.setEnabled(True)
 
     def set_chart_title(self,text):
@@ -437,7 +456,7 @@ class Window(QtCore.QObject):
         fileType = self.fileType.currentData()
         self.reciprocal_space_worker = ReciprocalSpaceMap(self.status,path,self.windowDefault,self.poleFigure.isChecked(),self.azimuthRangeCombo.currentData(),\
                                                           self.normalizationMethodCombo.currentData(),self.centralisationMethodCombo.currentData(),self.saveResults.isChecked(),self.twoD.isChecked(),self.cartesian.isChecked(),\
-                                                          startIndex,endIndex,analysisRange,self.currentDestination,saveFileName,fileType,self.grouping.value(),self.synchronize.isChecked(),float(self.sleepTimeEdit.text()))
+                                                          startIndex,endIndex,analysisRange,self.currentDestination,saveFileName,fileType,self.grouping.value(),self.synchronize.isChecked(),float(self.sleepTimeEdit.text()),self.currentOffset)
         self.reciprocal_space_worker.PROGRESS_ADVANCE.connect(self.progress)
         self.reciprocal_space_worker.PROGRESS_END.connect(self.progress_reset)
         self.reciprocal_space_worker.CONNECT_TO_CANVAS.connect(self.CONNECT_TO_CANVAS)
@@ -455,10 +474,8 @@ class Window(QtCore.QObject):
 
         self.thread = QtCore.QThread()
         self.reciprocal_space_worker.moveToThread(self.thread)
-        self.reciprocal_space_worker.FINISHED.connect(self.worker_finished)
         self.thread.started.connect(self.reciprocal_space_worker.run)
         self.STOP_WORKER.connect(self.reciprocal_space_worker.stop)
-
 
     def start(self):
         self.prepare()
@@ -469,6 +486,7 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(False)
         self.chooseDestination.setEnabled(False)
         self.chooseSource.setEnabled(False)
+        self.chooseOffset.setEnabled(False)
         self.parametersBox.setEnabled(False)
 
     def stop(self):
@@ -477,12 +495,6 @@ class Window(QtCore.QObject):
             self.thread.terminate()
             self.thread.wait()
         
-    def worker_finished(self):
-        self.thread.quit()
-        if self.thread.isRunning():
-            self.thread.terminate()
-            self.thread.wait()
-
     def worker_aborted(self):
         self.update_log("Process aborted!")
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
@@ -491,6 +503,7 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         self.chooseDestination.setEnabled(True)
         self.chooseSource.setEnabled(True)
+        self.chooseOffset.setEnabled(True)
         self.parametersBox.setEnabled(True)
         self.progress_reset()
 
@@ -499,6 +512,7 @@ class Window(QtCore.QObject):
         self.levelMax = 100
         self.numberOfContourLevels = 5
         self.currentSource = self.path
+        self.currentOffset = self.path
         self.currentDestination = self.currentSource
         self.levelMinSlider.setValue(self.levelMin)
         self.levelMaxSlider.setValue(self.levelMax)
@@ -525,6 +539,11 @@ class Window(QtCore.QObject):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose source directory",self.currentSource,QtWidgets.QFileDialog.ShowDirsOnly)
         self.currentSource = path
         self.chooseSourceLabel.setText("The source directory is:\n"+self.currentSource)
+
+    def choose_offset(self):
+        path = QtWidgets.QFileDialog.getOpenFileName(None,"choose the offset file",self.currentOffset,filter="Excel (*.xlsx)")[0]
+        self.currentOffset = path
+        self.chooseOffsetLabel.setText("The offset file directory is:\n"+self.currentOffset)
 
     def choose_destination(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",self.currentDestination,QtWidgets.QFileDialog.ShowDirsOnly)

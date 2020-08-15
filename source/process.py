@@ -4,6 +4,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pandas
 import PIL.Image as pilImage
 import rawpy
 import random
@@ -53,7 +54,11 @@ class Image(object):
             img_raw = rawpy.imread(img_path)
             img_rgb = img_raw.postprocess(demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD, output_bps = bit_depth, use_auto_wb = EnableAutoWB,bright=Brightness/100,user_black=UserBlack)
             img_bw = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
-            img_array = img_bw[image_crop[0]:image_crop[1],image_crop[2]:image_crop[3]]
+            crop0 = max(0,image_crop[0])
+            crop1 = min(len(img_bw)-1,image_crop[1])
+            crop2 = max(0,image_crop[2])
+            crop3 = min(len(img_bw[0])-1,image_crop[3])
+            img_array = img_bw[crop0:crop1,crop2:crop3]
             if bit_depth == 16:
                 img_array = np.uint8(img_array/256)
             if bit_depth == 8:
@@ -65,7 +70,6 @@ class Image(object):
             img_rgb = np.fromstring(img.tobytes(),dtype=np.uint8)
             img_rgb = img_rgb.reshape((img.size[1],img.size[0],3))
             img_array = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
-            #img_array = img_bw[image_crop[0]:image_crop[1],image_crop[2]:image_crop[3]]
             qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
             return qImg, img_array
 
@@ -160,7 +164,10 @@ class Image(object):
         RotationTensor = np.array([[[-np.sin((theta-ChiAngle[0])*np.pi/180),np.cos((theta-ChiAngle[0])*np.pi/180)],\
                                     [np.cos((theta-ChiAngle[0])*np.pi/180), np.sin((theta-ChiAngle[0])*np.pi/180)]] for theta in ChiAngle])
         ImageIndices =np.tensordot(RotationTensor,(indices[1:-1]-[y0,x0]).T,axes=1).astype(int)
-        ChiProfile = np.sum([img[ImageIndices[i,1,:]+int(y0),ImageIndices[i,0,:]+int(x0)] for i in range(ChiTotalSteps+1)], axis=1)/cit
+        try:
+            ChiProfile = np.sum([img[ImageIndices[i,1,:]+int(y0),ImageIndices[i,0,:]+int(x0)] for i in range(ChiTotalSteps+1)], axis=1)/cit
+        except IndexError:
+            ChiProfile = []
         normalization_factor = np.amax(np.amax(img)) if normalize_to_img_max else 1
         return np.flip(ChiAngle2,axis=0),ChiProfile/normalization_factor
 
@@ -489,12 +496,12 @@ class ReciprocalSpaceMap(QtCore.QObject):
     SET_TITLE = QtCore.pyqtSignal(str)
     DRAW_LINE_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     DRAW_RECT_REQUESTED = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,float,bool)
-    REFRESH_CANVAS = QtCore.pyqtSignal(str)
+    REFRESH_CANVAS = QtCore.pyqtSignal(str,list)
     ERROR = QtCore.pyqtSignal(str)
     ATTENTION = QtCore.pyqtSignal(str)
     ABORTED = QtCore.pyqtSignal()
 
-    def __init__(self,status,path,default,IsPoleFigure,azimuthRange,normalizationMethod,centralisationMethod,IsSaveResult,Is2D,IsCartesian,startIndex,endIndex,analysisRange,destination,saveFileName,fileType,group,enableSync=False,sleepTime=0):
+    def __init__(self,status,path,default,IsPoleFigure,azimuthRange,normalizationMethod,centralisationMethod,IsSaveResult,Is2D,IsCartesian,startIndex,endIndex,analysisRange,destination,saveFileName,fileType,group,enableSync=False,sleepTime=0,offsetFilePath=''):
         super(ReciprocalSpaceMap,self).__init__()
         self.path = path
         self.status = status
@@ -519,6 +526,7 @@ class ReciprocalSpaceMap(QtCore.QObject):
         self.sleepTime = max(sleepTime,1)
         self._bit_depth = 16
         self._abort = False
+        self.offsetFilePath = offsetFilePath
 
     def run(self):
         image_list = []
@@ -526,6 +534,10 @@ class ReciprocalSpaceMap(QtCore.QObject):
         brightness = self.status["brightness"]
         blackLevel = self.status["blackLevel"]
         mode = self.status["mode"]
+        use_external_offset = False
+        if os.path.isfile(self.offsetFilePath):
+            self.offset_df = pandas.read_excel(self.offsetFilePath, index_col=0)
+            use_external_offset = True
         VS = int(self.windowDefault["vs"])
         HS = int(self.windowDefault["hs"])
         image_crop = [1200+VS,2650+VS,500+HS,3100+HS]
@@ -553,10 +565,14 @@ class ReciprocalSpaceMap(QtCore.QObject):
                 self.SET_TITLE.emit("Chi Scan at R = {:3.2f} \u212B\u207B\u00B9".format(radius))
                 QtCore.QCoreApplication.processEvents()
                 for nimg in range(self.startIndex,self.endIndex+1):
+                    if use_external_offset:
+                        offset_x = int(self.offset_df.at[nimg,'offset_x']*scale_factor)
+                        offset_y = int(self.offset_df.at[nimg,'offset_y']*scale_factor)
+                        image_crop = [1200+VS+offset_y,2650+VS+offset_y,500+HS+offset_x,3100+HS+offset_x]
                     qImg, img = self.image_worker.get_image(self._bit_depth,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                     RC,I = self.image_worker.get_chi_scan(start,radius*scale_factor,width,chiRange,tiltAngle,img,chiStep,normalize_to_img_max=False)
                     if self.enableSync:
-                        self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex])
+                        self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex],image_crop)
                     Phi360 = np.full(len(RC),nimg*1.8)
                     Phi180 = np.full(len(RC),nimg*1.8)
                     for iphi in range(0,int(len(RC)/2)):
@@ -637,9 +653,13 @@ class ReciprocalSpaceMap(QtCore.QObject):
                     self.SET_TITLE.emit("Line Profile at Kperp = {:4.2f} (\u212B\u207B\u00B9)".format(Kperp))
                     QtCore.QCoreApplication.processEvents()
                     for nimg in range(self.startIndex,self.endIndex+1):
+                        if use_external_offset:
+                            offset_x = int(self.offset_df.at[nimg,'offset_x']*scale_factor)
+                            offset_y = int(self.offset_df.at[nimg,'offset_y']*scale_factor)
+                            image_crop = [1200+VS+offset_y,2650+VS+offset_y,500+HS+offset_x,3100+HS+offset_x]
                         qImg, img = self.image_worker.get_image(self._bit_depth,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                         if self.enableSync:
-                            self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex])
+                            self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex],image_crop)
                         if width==0.0:
                             RC,I = self.image_worker.get_line_scan(start,end,img,scale_factor,normalize_to_img_max=False)
                         else:
@@ -716,12 +736,16 @@ class ReciprocalSpaceMap(QtCore.QObject):
                     map_3D360=np.array([0,0,0,0])
                     map_3D180=np.array([0,0,0,0])
                     for nimg in range(self.startIndex,self.endIndex+1):
+                        if use_external_offset:
+                            offset_x = int(self.offset_df.at[nimg,'offset_x']*scale_factor)
+                            offset_y = int(self.offset_df.at[nimg,'offset_y']*scale_factor)
+                            image_crop = [1200+VS+offset_y,2650+VS+offset_y,500+HS+offset_x,3100+HS+offset_x]
                         qImg, img = self.image_worker.get_image(self._bit_depth,image_list[nimg-self.startIndex],autoWB,brightness,blackLevel,image_crop)
                         x0,y0,xn,yn = start.x(),start.y(),end.x(),end.y()
                         newStart = QtCore.QPointF()
                         newEnd = QtCore.QPointF()
                         if self.enableSync:
-                            self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex])
+                            self.REFRESH_CANVAS.emit(image_list[nimg-self.startIndex],image_crop)
                         if width==0.0:
                             if origin.y() < (y0 + yn) /2:
                                 step = 5

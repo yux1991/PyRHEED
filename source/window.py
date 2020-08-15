@@ -524,10 +524,10 @@ class Window(QtWidgets.QMainWindow):
         else:
             return ''
 
-    def refresh_image(self,path, bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+    def refresh_image(self,path,crop, bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':
             canvas_widget = self.mainTab.currentWidget()
-            img_array = self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel)
+            img_array = self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel,crop)
             self.photoList.pop()
             self.photoList.append(img_array)
             self.pathList.pop()
@@ -640,13 +640,15 @@ class Window(QtWidgets.QMainWindow):
             self.photoList[self.mainTab.currentIndex()]=img_array
             self.apply_profile_options()
 
-    def load_image(self,canvas_widget,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+    def load_image(self,canvas_widget,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50, crop=[]):
         self.messageLoadingImage.setText("Processing ... ")
         self.messageLoadingImage.setVisible(True)
         QtWidgets.QApplication.sendPostedEvents()
         self.messageLoadingImage.setVisible(True)
         QtWidgets.QApplication.sendPostedEvents()
-        qImg,img_array = self.image_worker.get_image(bitDepth,path, enableAutoWB, brightness, blackLevel,self.image_crop)
+        if not crop:
+            crop = self.image_crop
+        qImg,img_array = self.image_worker.get_image(bitDepth,path, enableAutoWB, brightness, blackLevel,crop)
         qPixImg = QtGui.QPixmap(qImg.size())
         QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.MonoOnly)
         canvas_widget.set_photo(QtGui.QPixmap(qPixImg))
