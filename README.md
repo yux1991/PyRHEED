@@ -90,31 +90,48 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 
 ## Demonstrations
 1. Extract line profiles:
-https://user-images.githubusercontent.com/38077812/111375434-3c3aab80-866c-11eb-957e-6291f781d188.mp4
+
+![line](https://user-images.githubusercontent.com/38077812/111377405-9a688e00-866e-11eb-8ef2-b25386f10d27.gif)
+
 
 2. Extract features on a sphere:
-https://user-images.githubusercontent.com/38077812/111375539-5ffdf180-866c-11eb-9bf1-cc9b6de3fb6a.mp4
+
+![tilt](https://user-images.githubusercontent.com/38077812/111377452-aa806d80-866e-11eb-91eb-8a7f103c2077.gif)
+
 
 3. Construct azimuthal RHEED:
-https://user-images.githubusercontent.com/38077812/111375709-963b7100-866c-11eb-8100-7f7a9e9c3fdf.mp4
+
+![Azimuth](https://user-images.githubusercontent.com/38077812/111377562-cbe15980-866e-11eb-8c64-5fa6137a0d96.gif)
+
 
 4. Vertical scan:
-https://user-images.githubusercontent.com/38077812/111375791-ad7a5e80-866c-11eb-9711-a84210d5fdbd.mp4
+
+![Vertical](https://user-images.githubusercontent.com/38077812/111377572-ce43b380-866e-11eb-8b8f-e6ccd2e74a68.gif)
+
 
 5. 3D surface view:
-https://user-images.githubusercontent.com/38077812/111375880-c5ea7900-866c-11eb-9599-2eca77119cfc.mp4
+
+![surface](https://user-images.githubusercontent.com/38077812/111377787-1236b880-866f-11eb-8e52-60f3235085df.gif)
+
 
 6. Regression analysis:
-https://user-images.githubusercontent.com/38077812/111375960-e0bced80-866c-11eb-9fc7-e0073ca60807.mp4
+
+![fit](https://user-images.githubusercontent.com/38077812/111377799-16fb6c80-866f-11eb-96cd-f01dff3425ab.gif)
+
 
 7. Interactive data visualization:
-https://user-images.githubusercontent.com/38077812/111376010-f0d4cd00-866c-11eb-9eeb-e28b02729fb8.mp4
+
+![report](https://user-images.githubusercontent.com/38077812/111377803-18c53000-866f-11eb-94ff-4ea16daaef3e.gif)
+
 
 8. Kikuchi line simulation:
-https://user-images.githubusercontent.com/38077812/111376079-03e79d00-866d-11eb-9756-94f663681938.mp4
+
+![kikuchi](https://user-images.githubusercontent.com/38077812/111377813-1bc02080-866f-11eb-8043-28bc199f8cd5.gif)
+
 
 9. Domain boundary statistics:
-https://user-images.githubusercontent.com/38077812/111376173-1e217b00-866d-11eb-9915-3a06371bfa41.mp4
+
+![simulation](https://user-images.githubusercontent.com/38077812/111377823-1f53a780-866f-11eb-8b26-4638de0200c0.gif)
 
 
 ## Contact
