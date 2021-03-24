@@ -37,7 +37,6 @@ class ProfileChart(QtChart.QChartView):
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
         self.profileChart.setTheme(self.theme)
         self.setChart(self.profileChart)
-        self.image_worker = Image()
 
     def refresh(self,config):
         chartDefault = dict(config['chartDefault'].items())
@@ -61,12 +60,61 @@ class ProfileChart(QtChart.QChartView):
             self.raise_error("Wrong theme")
         self.profileChart.setTheme(self.theme)
 
-    def add_chart(self,radius,profile,type="line"):
+    def append_to_chart(self,x,y,a,b,angle,weights,colors,type="ellipse"):
+        ncomp = len(x)
+        series_length = len(self.profileChart.series()) 
+        chart_width = self.profileChart.plotArea().width()
+        scale = chart_width/16
+        if series_length > ncomp:
+            while series_length>1:
+                last_series = self.profileChart.series()[-1]
+                self.profileChart.removeSeries(last_series)
+                series_length -= 1
+        for n in range(ncomp):
+            series = QtChart.QScatterSeries()
+            series.setMarkerShape(QtChart.QScatterSeries.MarkerShapeRectangle)
+            ea, eb = a[n]*scale,b[n]*scale
+            delta_a = ea*(1-np.cos(angle[n]/180*np.pi))-eb*np.sin(angle[n]/180*np.pi)
+            delta_b = ea*np.sin(angle[n]/180*np.pi)+eb*(1-np.cos(angle[n]/180*np.pi))
+            msize = max(ea, eb)*np.sqrt(2)
+            series.setMarkerSize(msize)
+            series.setBorderColor(QtCore.Qt.transparent)
+            ellipsePath = QtGui.QPainterPath()
+            ellipsePath.addEllipse(0,0,ea,eb)
+            ellipse = QtGui.QImage(msize,msize,QtGui.QImage.Format_ARGB32)
+            ellipse.fill(QtCore.Qt.transparent)
+            ellipse_painter = QtGui.QPainter(ellipse)
+            ellipse_painter.translate(msize//2-ea//2+delta_a//2,msize//2-eb//2+delta_b//2)
+            ellipse_painter.rotate(-angle[n])
+            ellipse_painter.setRenderHint(QtGui.QPainter.Antialiasing)
+            painter_color = QtGui.QColor(colors[n])
+            painter_color.setAlphaF(weights[n])
+            pen_color = QtGui.QColor(QtCore.Qt.black)
+            pen_color.setAlphaF(weights[n])
+            ellipse_painter.setPen(pen_color)
+            ellipse_painter.setBrush(painter_color)
+            ellipse_painter.drawPath(ellipsePath)
+            ellipse_painter.end()
+            series.setBrush(QtGui.QBrush(ellipse))
+            #pen = QtGui.QPen(QtGui.QColor(QtCore.Qt.blue))
+            #series.setPen(pen)
+            series.append(x[n],y[n])
+            self.profileChart.addSeries(series)
+            series.attachAxis(self.axisX)
+            series.attachAxis(self.axisY)
+
+    def add_chart(self,radius,profile,type="line",slope=0):
         #pen = QtGui.QPen(QtCore.Qt.SolidLine)
         #pen.setColor(QtGui.QColor(QtCore.Qt.blue))
         #pen.setWidth(3)
-        series = QtChart.QLineSeries()
-        #series.setPen(pen)
+        if type == 'scatter':
+            series = QtChart.QScatterSeries()
+            pen = QtGui.QPen(QtGui.QColor(QtCore.Qt.blue))
+            series.setPen(pen)
+            series.setMarkerSize(5)
+        else:
+            series = QtChart.QLineSeries()
+            #series.setPen(pen)
         self.currentRadius = []
         self.currentProfile = []
         for x,y in zip(radius,profile):
@@ -74,16 +122,19 @@ class ProfileChart(QtChart.QChartView):
             self.currentRadius.append(x)
             self.currentProfile.append(y)
         self.profileChart = QtChart.QChart()
+        self.profileChart.removeAllSeries()
+        self.profileChart.addSeries(series)
         self.profileChart.setTheme(self.theme)
         self.profileChart.setBackgroundRoundness(0)
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
-        self.profileChart.removeAllSeries()
-        self.profileChart.addSeries(series)
         if type == "line" or type == "rectangle":
             self.axisX = QtChart.QValueAxis()
             self.axisX.setTickCount(10)
             self.axisY = QtChart.QValueAxis()
-            self.axisX.setTitleText("<b>k</b><sub>||</sub> (\u212B\u207B\u00B9)")
+            if slope > 1:
+                self.axisX.setTitleText("<b>k</b><sub>||</sub> (\u212B\u207B\u00B9)")
+            else:
+                self.axisX.setTitleText("<b>k</b><sub>\u27C2</sub> (\u212B\u207B\u00B9)")
             self.axisY.setTitleText("Intensity (arb. units)")
             self.axisY.setTickCount(10)
         elif type == "arc":
@@ -107,6 +158,20 @@ class ProfileChart(QtChart.QChartView):
             self.axisY.setTitleText("<b>k</b><sub>y</sub> (\u212B\u207B\u00B9)")
             self.axisY.setTickCount(10)
             self.axisY.setReverse(True)
+        elif type == "ELBO change":
+            self.axisX = QtChart.QValueAxis()
+            self.axisX.setTickCount(10)
+            self.axisY = QtChart.QLogValueAxis()
+            self.axisX.setTitleText("Number of Iterations")
+            self.axisY.setTitleText("Log of ELBO change")
+        elif type == 'scatter':
+            self.axisX = QtChart.QValueAxis()
+            self.axisX.setTickCount(10)
+            self.axisY = QtChart.QValueAxis()
+            self.axisX.setTitleText("X")
+            self.axisY.setTitleText("Y")
+            self.axisX.setRange(-8,8)
+            self.axisY.setRange(-8,8)
         self.axisX.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
         self.axisX.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
         self.axisY.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
@@ -158,11 +223,15 @@ class ProfileChart(QtChart.QChartView):
 
     def line_scan(self,start,end):
         x,y = self.image_worker.get_line_scan(start,end,self._img,self._scaleFactor)
-        self.add_chart(x,y,"line")
+        x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
+        slope=abs((x0-x1)/(y1-y0)) if y1!=y0 else 0
+        self.add_chart(x,y,"line",slope)
 
     def integral(self,start,end,width):
         x,y = self.image_worker.get_integral(start,end,width,self._img,self._scaleFactor)
-        self.add_chart(x,y,"rectangle")
+        x0,y0,x1,y1 = start.x(),start.y(),end.x(),end.y()
+        slope=abs((x0-x1)/(y1-y0)) if y1!=y0 else 0
+        self.add_chart(x,y,"rectangle",slope)
 
     def chi_scan(self,center,radius,width,chiRange,tilt,chiStep=1):
         x,y = self.image_worker.get_chi_scan(center,radius,width,chiRange,tilt,self._img,chiStep)

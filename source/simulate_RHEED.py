@@ -122,9 +122,9 @@ class Window(QtWidgets.QWidget):
         self.TAPD_add_epilayer_button = QtWidgets.QPushButton("Add Epilayer")
         self.TAPD_add_epilayer_button.clicked.connect(lambda text: self.load_cif(text='Choose Epilayer'))
         self.TAPD_X_max_label = QtWidgets.QLabel('Maximum length in a direction (\u212B)')
-        self.TAPD_X_max = QtWidgets.QLineEdit('50')
+        self.TAPD_X_max = QtWidgets.QLineEdit('100')
         self.TAPD_Y_max_label = QtWidgets.QLabel('Maximum length in b direction (\u212B)')
-        self.TAPD_Y_max = QtWidgets.QLineEdit('50')
+        self.TAPD_Y_max = QtWidgets.QLineEdit('100')
         self.TAPD_Z_min_label = QtWidgets.QLabel('Z minimum units in c direction')
         self.TAPD_Z_min = QtWidgets.QLineEdit('0')
         self.TAPD_Z_max_label = QtWidgets.QLabel('Z maximum units in c direction')
@@ -134,7 +134,7 @@ class Window(QtWidgets.QWidget):
         self.TAPD_Shift_Y_label = QtWidgets.QLabel('Y shift (\u212B)')
         self.TAPD_Shift_Y = QtWidgets.QLineEdit('0')
         self.TAPD_Shift_Z_label = QtWidgets.QLabel('Z shift (\u212B)')
-        self.TAPD_Shift_Z = QtWidgets.QLineEdit('-3.08')
+        self.TAPD_Shift_Z = QtWidgets.QLineEdit('8')
         self.TAPD_buffer_shift_X_label = QtWidgets.QLabel('Buffer X shift (\u212B)')
         self.TAPD_buffer_shift_X = QtWidgets.QLineEdit('0')
         self.TAPD_buffer_shift_Y_label = QtWidgets.QLabel('Buffer Y shift (\u212B)')
@@ -158,7 +158,7 @@ class Window(QtWidgets.QWidget):
         self.TAPD_add_atoms.setChecked(True)
         self.TAPD_add_substrate_label = QtWidgets.QLabel('Add substrate?')
         self.TAPD_add_substrate = QtWidgets.QCheckBox()
-        self.TAPD_add_substrate.setChecked(False)
+        self.TAPD_add_substrate.setChecked(True)
         self.TAPD_add_epilayer_label = QtWidgets.QLabel('Add epilayer?')
         self.TAPD_add_epilayer = QtWidgets.QCheckBox()
         self.TAPD_add_epilayer.setChecked(True)
@@ -189,7 +189,7 @@ class Window(QtWidgets.QWidget):
 
         self.TAPD_add_buffer_label = QtWidgets.QLabel('Add buffer layer?')
         self.TAPD_add_buffer = QtWidgets.QCheckBox()
-        self.TAPD_add_buffer.setChecked(True)
+        self.TAPD_add_buffer.setChecked(False)
         self.TAPD_add_buffer.stateChanged.connect(self.toggle_add_buffer)
         self.TAPD_buffer_atom_label = QtWidgets.QLabel('Specify the buffer layer atom')
         self.TAPD_buffer_atom = QtWidgets.QLineEdit('S')
@@ -216,7 +216,7 @@ class Window(QtWidgets.QWidget):
         self.distribution_parameters_grid = QtWidgets.QGridLayout(self.distribution_parameters)
         self.distribution_parameters_grid.setAlignment(QtCore.Qt.AlignTop)
         self.TAPD_completely_random_label = QtWidgets.QLabel('Density')
-        self.TAPD_completely_random = QtWidgets.QLineEdit('0.1')
+        self.TAPD_completely_random = QtWidgets.QLineEdit('0.01')
         self.distribution_parameters_grid.addWidget(self.TAPD_completely_random_label)
         self.distribution_parameters_grid.addWidget(self.TAPD_completely_random)
 
@@ -241,7 +241,7 @@ class Window(QtWidgets.QWidget):
         self.buffer_out_of_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_out_of_plane_low)
         self.buffer_out_of_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_out_of_plane_high_label)
         self.buffer_out_of_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_out_of_plane_high)
-        self.toggle_add_buffer(2)
+        self.toggle_add_buffer(0)
 
         self.plot_size_distribution_button = QtWidgets.QPushButton("Plot Size Distribution")
         self.plot_boundary_statistics_button = QtWidgets.QPushButton("Plot Boundary Statistics")
@@ -621,6 +621,32 @@ class Window(QtWidgets.QWidget):
         self.tab.addTab(self.view,"View")
         self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
 
+        self.gpu = QtWidgets.QWidget()
+        self.gpuGrid = QtWidgets.QVBoxLayout(self.gpu)
+        self.gpuGrid.setContentsMargins(5,5,5,5)
+        self.gpuGrid.setAlignment(QtCore.Qt.AlignTop)
+
+        self.useCUDAWidget = QtWidgets.QWidget()
+        self.useCUDAGrid = QtWidgets.QGridLayout(self.useCUDAWidget)
+        self.useCUDALabel = QtWidgets.QLabel('Use CUDA?')
+        self.useCUDA = QtWidgets.QCheckBox()
+        self.useCUDA.setChecked(True)
+        self.gstart_calculation = QtWidgets.QPushButton("Start Calculation")
+        self.gstart_calculation.clicked.connect(self.update_reciprocal_range)
+        self.gstart_calculation.setEnabled(False)
+        self.gstop_calculation = QtWidgets.QPushButton("Abort Calculation")
+        self.gstop_calculation.clicked.connect(self.stop_diffraction_calculation)
+        self.gstop_calculation.setEnabled(False)
+        self.useCUDA.stateChanged.connect(self.update_gpu)
+        self.useCUDAGrid.addWidget(self.useCUDALabel,0,0,1,1)
+        self.useCUDAGrid.addWidget(self.useCUDA,0,1,1,1)
+        self.useCUDAGrid.addWidget(self.gstart_calculation,1,0,1,2)
+        self.useCUDAGrid.addWidget(self.gstop_calculation,2,0,1,2)
+
+        self.gpuGrid.addWidget(self.useCUDAWidget)
+        self.tab.addTab(self.gpu,"GPU")
+        self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+
         self.colorTab = QtWidgets.QTabWidget()
         self.colorTab.setVisible(False)
         self.vLayout.addWidget(self.CIF_tab)
@@ -739,6 +765,9 @@ class Window(QtWidgets.QWidget):
     def update_coordinates(self,status):
         self.graph.update_coordinates(status)
 
+    def update_gpu(self,status):
+        self.graph.update_gpu(status)
+
     def update_colors(self,name,color,index):
         self.colorSheet[index][name] = color
         self.graph.update_colors(self.colorSheet,index)
@@ -776,7 +805,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['z_range'],\
                             self.real_space_specification_dict[index]['shape'],\
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
-                           self.real_space_specification_dict[index]['rotation'],self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
+                           self.real_space_specification_dict[index]['rotation'],self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked(),self.useCUDA.isChecked())
         self.data_index_set.add(index)
         self.update_log("New real space range for sample" + str(index+1) +" applied!")
 
@@ -784,6 +813,8 @@ class Window(QtWidgets.QWidget):
         self.update_log("Calculating diffraction pattern ......")
         self.apply_reciprocal_range.setEnabled(False)
         self.stop_calculation.setEnabled(True)
+        self.gstart_calculation.setEnabled(False)
+        self.gstop_calculation.setEnabled(True)
         self.show_XY_plot_button.setEnabled(False)
         self.show_XZ_plot_button.setEnabled(False)
         self.show_YZ_plot_button.setEnabled(False)
@@ -795,7 +826,11 @@ class Window(QtWidgets.QWidget):
         self.y_linear = np.linspace(self.KRange[1][0],self.KRange[1][1],self.number_of_steps_para.value())
         self.z_linear = np.linspace(self.KRange[2][0],self.KRange[2][1],self.number_of_steps_perp.value())
         self.Kx,self.Ky,self.Kz = np.meshgrid(self.x_linear,self.y_linear,self.z_linear)
-        self.graph.calculate(self.Kx,self.Ky,self.Kz,self.AFF)
+        if hasattr(self,'constant_af'):
+            af = self.constant_af
+        else:
+            af = self.TAPD_constant_af.isChecked()
+        self.graph.calculate(self.Kx,self.Ky,self.Kz,self.AFF,af)
 
     def finish_calculation(self,intensity):
         self.diffraction_intensity = intensity
@@ -808,11 +843,15 @@ class Window(QtWidgets.QWidget):
             self.save_FFT_button.setEnabled(True)
         self.apply_reciprocal_range.setEnabled(True)
         self.stop_calculation.setEnabled(False)
+        self.gstart_calculation.setEnabled(True)
+        self.gstop_calculation.setEnabled(False)
         self.RESULT_IS_READY.emit()
 
     def abort_calculation(self):
         self.apply_reciprocal_range.setEnabled(True)
         self.stop_calculation.setEnabled(False)
+        self.gstart_calculation.setEnabled(True)
+        self.gstop_calculation.setEnabled(False)
         self.update_log("Aborted Calculation!")
         self.show_XY_plot_button.setEnabled(False)
         self.show_XZ_plot_button.setEnabled(False)
@@ -1104,7 +1143,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['shape'], \
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],\
-                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
+                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked(),self.useCUDA.isChecked())
         self.data_index_set.add(index)
         self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1114,6 +1153,7 @@ class Window(QtWidgets.QWidget):
         self.update_log("Finished adding data for sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
         self.apply_reciprocal_range.setEnabled(True)
+        self.gstart_calculation.setEnabled(True)
 
     def replace_structure(self,index):
         self.update_log("Replacing sample" + str(index+1))
@@ -1161,7 +1201,7 @@ class Window(QtWidgets.QWidget):
                                 self.real_space_specification_dict[index]['shape'], \
                                np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                                self.real_space_specification_dict[index]['rotation'],\
-                                self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
+                                self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked(),self.useCUDA.isChecked())
             self.data_index_set.add(index)
             self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
             self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1219,7 +1259,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['shape'], \
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],\
-                           self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
+                           self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked(),self.useCUDA.isChecked())
         self.data_index_set.add(index)
         self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1237,7 +1277,7 @@ class Window(QtWidgets.QWidget):
         if not directory == '':
             self.convertor_worker.mtx2vtp(directory,name,self.diffraction_intensity,self.KRange,\
                         self.number_of_steps_para.value(),self.number_of_steps_perp.value(),\
-                        self.real_space_specification_dict,self.element_species,kwargs['save_vtp'])
+                        self.real_space_specification_dict,self.element_species,kwargs.get('save_vtp',False))
             self.PROGRESS_END.emit()
         else:
             self.raise_error("Save destination is empty!")
@@ -1364,8 +1404,10 @@ class Window(QtWidgets.QWidget):
         self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
         if scenario['constant_af'] == 'True':
             self.TAPD_constant_af.setChecked(True)
+            self.constant_af = True
         elif scenario['constant_af'] == 'False':
             self.TAPD_constant_af.setChecked(False)
+            self.constant_af = False
         if scenario['plot_log_scale'] == 'True':
             self.plot_log_scale.setChecked(True)
         elif scenario['plot_log_scale'] == 'False':
@@ -1428,8 +1470,10 @@ class Window(QtWidgets.QWidget):
             self.TAPD_add_epilayer.setChecked(False)
         if scenario['constant_af'] == 'True':
             self.TAPD_constant_af.setChecked(True)
+            self.constant_af=True
         elif scenario['constant_af'] == 'False':
             self.TAPD_constant_af.setChecked(False)
+            self.constant_af=False
         if scenario['add_atoms'] == 'True':
             self.TAPD_add_atoms.setChecked(True)
         elif scenario['add_atoms'] == 'False':
@@ -1622,7 +1666,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['z_range'],\
                             self.real_space_specification_dict[index]['shape'],\
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
-                           self.real_space_specification_dict[index]['rotation'],self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
+                           self.real_space_specification_dict[index]['rotation'],self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked(),self.useCUDA.isChecked())
         self.data_index_set.add(index)
         self.update_log("New real space range for TAPD" + str(index+1) +" applied!")
 
@@ -1652,7 +1696,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['shape'], \
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],\
-                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
+                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked(),self.useCUDA.isChecked())
         self.data_index_set.add(index)
         self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1709,7 +1753,7 @@ class Window(QtWidgets.QWidget):
                             self.real_space_specification_dict[index]['shape'], \
                            np.array([self.real_space_specification_dict[index]['x_shift'],self.real_space_specification_dict[index]['y_shift'],0]),\
                            self.real_space_specification_dict[index]['rotation'],\
-                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked())
+                            self.AR, self.TAPD_constant_af.isChecked(), self.TAPD_add_atoms.isChecked(),self.useCUDA.isChecked())
         self.data_index_set.add(index)
         self.graph.change_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.graph.change_shadow_quality(self.shadowQuality.currentIndex())
@@ -1718,6 +1762,7 @@ class Window(QtWidgets.QWidget):
         self.update_log("Finished adding data for sample " + str(index+1))
         QtCore.QCoreApplication.processEvents()
         self.apply_reciprocal_range.setEnabled(True)
+        self.gstart_calculation.setEnabled(True)
 
     def reload_TAPD(self, **kwargs):
         try:
@@ -1965,22 +2010,32 @@ class Window(QtWidgets.QWidget):
 
         xy_tree= cKDTree(np.array(xy_list))
         lattice_constant = max(self.structure_epi.lattice.a,self.structure_epi.lattice.b)
-        dict_xy = xy_tree.sparse_distance_matrix(xy_tree,lattice_constant*0.9999*2,output_type='dict')
+        dict_xy = xy_tree.sparse_distance_matrix(xy_tree,lattice_constant*1.99999,output_type='dict')
         xy_distance = []
+        r_dic = {}
         for key,value in dict_xy.items():
-            if value > lattice_constant*1.0001:
+            if value > lattice_constant*1.00001:
                 r = value/lattice_constant
                 x = (xy_list[key[0]][0] - xy_list[key[1]][0])/lattice_constant
                 y = (xy_list[key[0]][1] - xy_list[key[1]][1])/lattice_constant
                 angle = np.arcsin(np.abs(y/r)) + np.where(x>0,np.where(y>0,0,270),np.where(y>0,90,180))
                 xy_distance.append([x, y, r, angle])
+                r_round = np.around(r,5)
+                if r_round in r_dic:
+                    r_dic[r_round] += 1
+                else:
+                    r_dic[r_round] = 1
         if self.currentDestination:
             if kwargs.get('save_as_file',False):
-                output = open(kwargs['destination']+'boundary_statistics'+".txt",mode='w')
+                output1 = open(kwargs['destination']+'boundary_statistics'+".txt",mode='w')
+                output2 = open(kwargs['destination']+'boundary_statistics_1d'+".txt",mode='w')
             else:
-                output = open(self.currentDestination+'/'+'boundary_statistics'+".txt",mode='w')
-            output.write("\n".join(str(distance) for distance in np.array(xy_distance)))
-            output.close()
+                output1 = open(self.currentDestination+'/'+'boundary_statistics'+".txt",mode='w')
+                output2 = open(self.currentDestination+'/'+'boundary_statistics_1d'+".txt",mode='w')
+            output1.write("\n".join('\t'.join(str(d) for d in distance) for distance in np.array(xy_distance)))
+            output1.close()
+            output2.write("\n".join('\t'.join([str(k),str(r_dic[k])]) for k in r_dic))
+            output2.close()
         figure = plt.figure()
         ax = figure.add_subplot(111)
         x_min, x_max = np.amin(np.array(xy_distance)[:,0]), np.amax(np.array(xy_distance)[:,0])
@@ -2018,20 +2073,20 @@ class Window(QtWidgets.QWidget):
         figure = plt.figure()
         ax = figure.add_subplot(111)
         ax.set_aspect('equal')
-        ax.scatter(np.array(self.substrate_list)[:,0],np.array(self.substrate_list)[:,1],7,'black')
-        ax.scatter(np.array(self.epilayer_list)[:,0],np.array(self.epilayer_list)[:,1],7,'red')
+        ax.scatter(np.array(self.substrate_list)[:,0],np.array(self.substrate_list)[:,1],5,'lightblue')
+        ax.scatter(np.array(self.epilayer_list)[:,0],np.array(self.epilayer_list)[:,1],5,'pink')
         ax.set_xlabel('x (\u212B)' ,fontsize=20)
         ax.set_ylabel('y (\u212B)',fontsize=20)
         ax.set_title('2D translational antiphase boundary model\nMoS2/sapphire',fontsize=20)
         ax.tick_params(labelsize=20)
-        point_color = kwargs.get('point_color', 'blue')
-        point_size = kwargs.get('point_size', 10)
+        point_color = kwargs.get('point_color', 'orange')
+        point_size = kwargs.get('point_size', 20)
         vertex_color = kwargs.get('vertex_color', 'green')
         vertex_size  = kwargs.get('vertex_size', 3)
-        plot_domains = kwargs.get('plot_domains', True)
+        plot_domains = kwargs.get('plot_domains', False)
 
         if kwargs.get('show_points', True):
-            ax.plot(self.vor.points[:,0], self.vor.points[:,1], '.', markersize=point_size, markerfacecolor=point_color)
+            ax.plot(self.vor.points[:,0], self.vor.points[:,1], '.', markersize=point_size, markerfacecolor=point_color, markeredgecolor=point_color)
         if kwargs.get('show_vertices', False):
             ax.plot(self.vor.vertices[:,0], self.vor.vertices[:,1], 'o', markersize=vertex_size, markerfacecolor=vertex_color)
 
@@ -2097,6 +2152,7 @@ class Window(QtWidgets.QWidget):
         ax.set_ylim(-y_max,y_max)
         plt.tight_layout()
         if kwargs.get('save_as_file',False):
+            figure.set_size_inches(20,20)
             figure.savefig(kwargs['destination']+'voronoi.tif')
             figure.savefig(kwargs['destination']+'voronoi.svg')
         else:
@@ -2181,9 +2237,10 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         self.scene().activeCamera().zoomLevelChanged.connect(self.camera_position_changed)
         self.scene().activeCamera().setMaxZoomLevel(10000)
 
-    def add_data(self,index,data,colorSheet,range,z_range,shape,offset,rotation,AR,constant_af=False,add_series=True):
+    def add_data(self,index,data,colorSheet,range,z_range,shape,offset,rotation,AR,constant_af=False,add_series=True,useCUDA=True):
         self.colors_dict = colorSheet
         self.constant_af = constant_af
+        self.useCUDA = useCUDA
         element_species = list(re.compile('[a-zA-Z]{1,2}').match(str(site.specie)).group() for site in data)
         self.elements_dict[index] = element_species
         self.coords = (site.coords for site in data)
@@ -2294,15 +2351,17 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
     def update_elapsed_time(self,time):
         self.LOG_MESSAGE.emit('Time elapsed is: {:10.5f} s'.format(time))
 
-    def prepare(self,Kx,Ky,Kz,AFF):
+    def prepare(self,Kx,Ky,Kz,AFF,constant_af):
         atoms_list = self.flatten(self.atoms_dict)
-        self.diffraction_worker = DiffractionPattern(Kx,Ky,Kz,AFF,atoms_list, self.constant_af)
+        self.diffraction_worker = DiffractionPattern(Kx,Ky,Kz,AFF,atoms_list, constant_af,self.useCUDA)
         self.diffraction_worker.ERROR.connect(self.raise_error)
         self.diffraction_worker.PROGRESS_ADVANCE.connect(self.PROGRESS_ADVANCE)
         self.diffraction_worker.PROGRESS_END.connect(self.PROGRESS_END)
         self.diffraction_worker.ACCOMPLISHED.connect(self.CALCULATION_FINISHED)
         self.diffraction_worker.ABORTED.connect(self.process_aborted)
+        self.diffraction_worker.INSUFFICIENT_MEMORY.connect(self.stop)
         self.diffraction_worker.ELAPSED_TIME.connect(self.update_elapsed_time)
+        self.diffraction_worker.UPDATE_LOG.connect(self.LOG_MESSAGE)
 
         self.thread = QtCore.QThread()
         self.diffraction_worker.moveToThread(self.thread)
@@ -2310,8 +2369,8 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         self.thread.started.connect(self.diffraction_worker.run)
         self.STOP_WORKER.connect(self.diffraction_worker.stop)
 
-    def calculate(self,Kx,Ky,Kz,AFF):
-        self.prepare(Kx,Ky,Kz,AFF)
+    def calculate(self,Kx,Ky,Kz,AFF,constant_af):
+        self.prepare(Kx,Ky,Kz,AFF,constant_af)
         self.thread.start()
 
     def stop(self):
@@ -2349,6 +2408,12 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
         except:
             self.setAspectRatio(1)
             self.setHorizontalAspectRatio(1)
+
+    def update_gpu(self,status):
+        if status == 2:
+            self.useCUDA = True
+        elif status == 0:
+            self.useCUDA = False
 
     def update_coordinates(self,status):
         self.coordinateStatus = status

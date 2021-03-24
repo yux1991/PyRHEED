@@ -25,7 +25,7 @@ class Window(QtWidgets.QWidget):
         self.row = {}
 
         self.load_scenario()
-        default_destination = 'C:/Google Drive/Documents/RHEED/RHEED simulation results/RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy/')
+        default_destination = './RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy/')
         try:
             os.mkdir(default_destination)
         except FileExistsError:
@@ -43,7 +43,7 @@ class Window(QtWidgets.QWidget):
                 failed = True
                 suffix = 1
                 while failed:
-                    default_destination = 'C:/Google Drive/Documents/RHEED/RHEED simulation results/RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy') + ' (' + str(suffix) + ')/'
+                    default_destination = './RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy') + ' (' + str(suffix) + ')/'
                     try:
                         os.mkdir(default_destination)
                         failed = False
@@ -288,7 +288,7 @@ class Window(QtWidgets.QWidget):
         self.simulation.CLOSE.connect(self.scenario_is_closed)
         self.simulation.RESULT_IS_READY.connect(self.save_TAPD_results)
         self.simulation.main()
-        self.simulation.load_TPAD_scenario(self.config[section])
+        self.simulation.load_TAPD_scenario(self.config[section])
         self.simulation.reload_TAPD(density=density)
 
     def sub_CIF_scenario(self,Z_min):
@@ -348,7 +348,15 @@ class Window(QtWidgets.QWidget):
             self.simulation.plot_voronoi(destination=self.save_dir, save_as_file=True)
         if self.config[section]['save_scene'] == 'True':
             self.simulation.graph.save_scene(destination=self.save_dir, save_as_file=True)
-        self.simulation.update_reciprocal_range()
+        if self.config[section]['calculate_diffraction'] == 'True':
+            self.simulation.update_reciprocal_range()
+        else:
+            if self.density_index < self.density_length:
+                self.density_index+=1
+                self.simulation.deleteLater()
+                self.sub_TAPD_scenario(self.config[section]['density'].split(",")[self.density_index])
+            else:
+                self.simulation.setEnabled(True)
 
     def save_TAPD_results(self):
         section = self.tab.tabText(self.tab.currentIndex())

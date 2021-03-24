@@ -25,6 +25,7 @@ class Window(QtWidgets.QMainWindow):
     RECIPROCAL_SPACE_MAPPING_REQUESTED = QtCore.pyqtSignal(str)
     THREE_DIMENSIONAL_GRAPH_REQUESTED = QtCore.pyqtSignal(str)
     BROADENING_REQUESTED = QtCore.pyqtSignal(str)
+    GMM_REQUESTED = QtCore.pyqtSignal(str)
     MANUAL_FIT_REQUESTED = QtCore.pyqtSignal(str,int)
     STATISTICAL_FACTOR_REQUESTED = QtCore.pyqtSignal()
     DIFFRACTION_PATTERN_REQUESTED = QtCore.pyqtSignal()
@@ -101,6 +102,7 @@ class Window(QtWidgets.QMainWindow):
         self.Fit_Broadening = self.menuFit.addAction("Broadening",self.menu_actions_broadening)
         self.Fit_ManualFit = self.menuFit.addAction("Manual Fit", self.menu_actions_show_manual_fit)
         self.Fit_Report = self.menuFit.addAction("Generate Report", self.menu_actions_generate_report)
+        self.gmm = self.menuFit.addAction("Gaussian Mixture Modeling",self.menu_actions_gmm)
 
         #Simulation Menu
         self.Statistical_Factor = self.menuSimulation.addAction("Statistical Factor",self.menu_actions_statistical_factor)
@@ -363,6 +365,9 @@ class Window(QtWidgets.QMainWindow):
 
     def menu_actions_three_dimensional_graph(self):
         self.THREE_DIMENSIONAL_GRAPH_REQUESTED.emit('')
+
+    def menu_actions_gmm(self):
+        self.GMM_REQUESTED.emit(self.currentPath)
 
     def menu_actions_broadening(self):
         self.BROADENING_REQUESTED.emit(self.currentPath)

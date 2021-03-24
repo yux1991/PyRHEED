@@ -3,6 +3,7 @@
 #This code is written in Python 3.6.6 64-bit
 from PyQt5 import QtGui, QtWidgets, QtCore
 import broadening
+import gmm
 import configparser
 import generate_report
 import graph_3D_surface
@@ -26,11 +27,13 @@ class Window():
         app.setWindowIcon(icon)
         self.window = window.Window(config)    #Initialze the main window using the default values in the configuration
         self.window.showMaximized()
+        #self.window.setFixedSize(1600,1000)
         self.window.show()
         #Connect the signals emitted by the window object
         self.window.DEFAULT_PROPERTIES_REQUESTED.connect(self.run_preference)
         self.window.RECIPROCAL_SPACE_MAPPING_REQUESTED.connect(self.run_reciprocal_space_mapping)
         self.window.BROADENING_REQUESTED.connect(self.run_broadening)
+        self.window.GMM_REQUESTED.connect(self.run_gmm)
         self.window.MANUAL_FIT_REQUESTED.connect(self.run_manual_fit)
         self.window.GENERATE_REPORT_REQUESTED.connect(self.run_generate_report)
         self.window.STATISTICAL_FACTOR_REQUESTED.connect(self.run_statistical_factor)
@@ -70,6 +73,14 @@ class Window():
         self.window.RETURN_STATUS.connect(self.manual_fit.set_status)
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.manual_fit.refresh)
         self.manual_fit.main(path,nop)
+
+    def run_gmm(self,path):
+        self.gmm = gmm.Window()
+        self.gmm.STATUS_REQUESTED.connect(self.window.status)
+        self.gmm.CONNECT_TO_CANVAS.connect(self.connect_gmm_to_canvas)
+        self.window.RETURN_STATUS.connect(self.gmm.set_status)
+        self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.gmm.refresh)
+        self.gmm.main(path)
 
     def run_broadening(self,path):
         self.broadening = broadening.Window()
@@ -126,6 +137,11 @@ class Window():
         self.graph = graph_3D_surface.Graph()
         self.graph.show_2d_contour(path,insideGraph3D = insideGraph3D, min=min, max=max, radius_min=radius_min, radius_max=radius_max,\
                                    number_of_levels=number_of_levels, colormap=colormap)
+
+    def connect_gmm_to_canvas(self):
+        """Signal Connection"""
+        self.gmm.DRAW_LINE_REQUESTED.connect(self.window.mainTab.currentWidget().draw_line)
+        self.gmm.DRAW_RECT_REQUESTED.connect(self.window.mainTab.currentWidget().draw_rect)
 
     def connect_broadening_to_canvas(self):
         """Signal Connection"""

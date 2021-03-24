@@ -1,3 +1,4 @@
+from collections import Counter
 import glob
 import itertools
 import math
@@ -17,6 +18,8 @@ from math import pi as Pi
 from matplotlib.patches import Polygon as matPolygon
 from matplotlib.collections import PatchCollection
 from process_monitor import Monitor
+import pycuda.compiler as comp
+import pycuda.driver as drv
 from pymatgen.io.cif import CifParser
 from pymatgen.core import sites as pgSites
 from pymatgen.core import structure as pgStructure
@@ -27,6 +30,9 @@ from scipy.spatial import ConvexHull
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import cKDTree
+from scipy.stats import rv_discrete
+from scipy.interpolate import LinearNDInterpolator
+from scipy.interpolate import NearestNDInterpolator
 from shapely.geometry import LineString
 from shapely.geometry import MultiPoint 
 from shapely.geometry import Point
@@ -303,6 +309,61 @@ class FitFunctions(object):
             optim = least_squares(fun=self.errfunc,x0=guess,\
                     bounds=bounds,method=method,loss=loss, ftol=FTol,xtol=XTol,gtol=GTol,args=(x,y),verbose=2)
         return optim, self.cost_values, str(output)
+
+    def test(self):
+        raw_3d = pandas.read_csv(filepath_or_buffer="c:/users/yux20/documents/05042018 MoS2/3D_Map_04162019.txt",sep=" ",names=["x","y","z","intensity"],na_values="NaN")
+        length = raw_3d.index[-1]+1
+        x_min,x_max = raw_3d["x"].min(), raw_3d["x"].max()
+        y_min,y_max = raw_3d["y"].min(), raw_3d["y"].max()
+        z_min,z_max = raw_3d["z"].min(), raw_3d["z"].max()
+
+        nx,ny = 1000,1000
+        nz = int((z_max-z_min)/(x_max-x_min)*nx)
+
+        x_range = np.linspace(x_min,x_max,nx)
+        y_range = np.linspace(x_min,x_max,ny)
+        z_range = np.linspace(z_min,z_max,nz)
+
+        x,y,z=np.meshgrid(x_range,y_range,z_range)
+        subset = range(0,length)
+        print("finished meshgrid")
+
+        rawx = raw_3d.iloc[subset,[0]].T.to_numpy()*np.cos(raw_3d.iloc[subset,[1]].T.to_numpy()/np.pi)
+        rawy = raw_3d.iloc[subset,[0]].T.to_numpy()*np.sin(raw_3d.iloc[subset,[1]].T.to_numpy()/np.pi)
+        rawz = raw_3d.iloc[subset,[2]].T.to_numpy()
+        intensity = raw_3d.iloc[subset,[3]].T.to_numpy()
+        print("finished converting")
+
+        interp = LinearNDInterpolator(list(zip(rawx[0],rawy[0],rawz[0])),intensity[0])
+        print("finished generating interpolation model")
+        interp_3d = np.nan_to_num(interp(x,y,z),False)
+        print("finished interpolation")
+        intensity_sum = np.sum(np.concatenate(interp_3d))
+        output = open("c:/users/yux20/documents/05042018 MoS2/interpolated_3D_map.txt",mode='w')
+        for i in range(nx):
+            for j in range(ny):
+                for k in range(nz):
+                    print("writting {}, {} ,{}".format(i,j,k))
+                    row = "\t".join([str(np.around(x[j][i][k],4)),str(np.around(y[j][i][k],4)),str(np.around(z[j][i][k],4)),str(np.around(interp_3d[j][i][k]/intensity_sum,10))])+"\n"
+                    output.write(row)
+        output.close()
+
+        #grid_3d = pandas.read_csv(filepath_or_buffer="c:/users/yux20/documents/05042018 MoS2/interpolated_3D_map.txt",sep="\t",names=["x","y","z","probability"])
+        #draw = rv_discrete(name='custm',values=(grid_3d.index,grid_3d["probability"]))
+        #indices = draw.rvs(size=10000)
+        #selected = grid_3d.iloc[indices]
+        #r, theta = selected["x"].to_numpy(),selected["y"].to_numpy()
+        #fontsize=15
+        #figure = plt.figure()
+        #ax = figure.add_subplot(111)
+        #ax.set_aspect('equal')
+        #ax.scatter(r*np.cos(theta/np.pi),r*np.sin(theta/np.pi))
+        #ax.set_xlabel('x (\u212B)',fontsize=fontsize)
+        #ax.set_ylabel('y (\u212B)',fontsize=fontsize)
+        #ax.tick_params(labelsize=fontsize)
+        #plt.tight_layout()
+        #plt.show()
+        
 
 class Capture(list):
     def __enter__(self):
@@ -876,10 +937,12 @@ class DiffractionPattern(QtCore.QObject):
     ERROR = QtCore.pyqtSignal(str)
     ACCOMPLISHED = QtCore.pyqtSignal(np.ndarray)
     ABORTED = QtCore.pyqtSignal()
+    INSUFFICIENT_MEMORY = QtCore.pyqtSignal()
     FINISHED = QtCore.pyqtSignal()
     ELAPSED_TIME = QtCore.pyqtSignal(float)
+    UPDATE_LOG = QtCore.pyqtSignal(str)
 
-    def __init__(self,Kx,Ky,Kz,AFF,atoms, constant_atomic_structure_factor=False):
+    def __init__(self,Kx,Ky,Kz,AFF,atoms, constant_atomic_structure_factor=False,useCUDA=True):
         super(DiffractionPattern,self).__init__()
         self.Psi = np.multiply(Kx,0).astype('complex128')
         self.species_dict = set(AFF.index.tolist())
@@ -896,6 +959,7 @@ class DiffractionPattern(QtCore.QObject):
             self.XYZ = np.dstack((self.Kx,self.Ky,self.Kz)).reshape((self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2],3))
         self.AFF = AFF
         self.constant_atomic_structure_factor = constant_atomic_structure_factor
+        self.useCUDA = useCUDA
         self._abort = False
 
     def atomic_form_factor(self,specie):
@@ -925,43 +989,132 @@ class DiffractionPattern(QtCore.QObject):
                            +af_row.at['a4']*np.exp(-af_row.at['b4']*(np.multiply(self.Kx,self.Kx)+np.multiply(self.Ky,self.Ky)+np.multiply(self.Kz,self.Kz))/4/np.pi)
         return af
 
-    def exponent_gen(self):
-        n = 0
-        while n < len(self.atoms_list)-1 and (not self._abort):
-            n+=1
-            yield np.multiply(self.af_dict[list(self.atoms_list.values())[n]],np.exp(1j*(np.tensordot(self.XYZ,np.array(self.coord_list[n]).T,axes=1))))
-            self.PROGRESS_ADVANCE.emit(0,100,n/(len(self.atoms_list)-1)*100)
-            QtCore.QCoreApplication.processEvents()
-
     def run(self):
-        start_time = time.time()
-        itr = 0
-        number_of_atoms = len(self.atoms_list)
-        for specie in set(self.atoms_list.values()):
-            if self.constant_atomic_structure_factor:
-                self.af_dict[specie] = 1
+        if self.useCUDA:
+            start_time = time.time()
+            self.UPDATE_LOG.emit("Using CUDA...")
+            drv.init()
+            device = drv.Device(0)
+            try:
+                ctx = device.make_context()
+            except drv.MemoryError:
+                self.UPDATE_LOG.emit("[ERROR] Unable to make context for this device. Process will be aborted.")
+                self.ABORTED.emit()
+                self.INSUFFICIENT_MEMORY.emit()
+                self._abort = False
+                return
+
+            max_blkx = device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X)
+            max_blky = device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_Y)
+            max_blkz = device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_Z)
+            max_gridx = device.get_attribute(drv.device_attribute.MAX_GRID_DIM_X)
+            max_gridy = device.get_attribute(drv.device_attribute.MAX_GRID_DIM_Y)
+            max_gridz = device.get_attribute(drv.device_attribute.MAX_GRID_DIM_Z)
+
+            self.UPDATE_LOG.emit("Maximum block dimension: "+"({},{},{})".format(max_blkx,max_blky,max_blkz))
+            self.UPDATE_LOG.emit("Maximum grid dimension: "+"({},{},{})".format(max_gridx,max_gridy,max_gridz))
+
+            for specie in set(self.atoms_list.values()):
+                if self.constant_atomic_structure_factor:
+                    self.af_dict[specie] = 1
+                else:
+                    self.af_dict[specie] = self.atomic_form_factor(specie)
+
+            nb_atoms = len(self.atoms_list)
+            nkx,nky,nkz = self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2]
+            self.UPDATE_LOG.emit("Number of atoms: "+ str(nb_atoms))
+            self.UPDATE_LOG.emit("Reciprocal space dimension: "+"({},{},{})".format(nkx,nky,nkz))
+            
+            host_K_tensor = np.array([self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2] for coord in self.atoms_list.keys()]).astype(np.float32)
+            host_atom_struct_fact = np.array([self.af_dict[specie] for specie in self.atoms_list.values()]).astype(np.float32)
+            self.UPDATE_LOG.emit("Total GPU memory (MB): "+"{:6.2f}".format(drv.mem_get_info()[1]/1024/1024))
+            self.UPDATE_LOG.emit("Available GPU memory (MB): "+"{:6.2f}".format(drv.mem_get_info()[0]/1024/1024))
+            self.UPDATE_LOG.emit("Requested GPU memory (MB): "+"{:6.2f}".format(host_atom_struct_fact.nbytes*2/1024/1024))
+
+            if host_atom_struct_fact.nbytes*2 > drv.mem_get_info()[0]*0.95:
+                self.UPDATE_LOG.emit("[ERROR] Insufficient GPU memory. Process will be aborted")
+                self.ABORTED.emit()
+                self.INSUFFICIENT_MEMORY.emit()
+                self._abort = False
+                return
             else:
-                self.af_dict[specie] = self.atomic_form_factor(specie)
-        #for coord,specie in self.atoms_list.items():
-        #    QtCore.QCoreApplication.processEvents()
-        #    if self._abort:
-        #        break
-        #    else:
-        #        self.Psi += np.multiply(self.af_dict[specie],np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2])))
-        #        itr+=1
-        #        self.PROGRESS_ADVANCE.emit(0,100,itr/number_of_atoms*100)
-        #        QtCore.QCoreApplication.processEvents()
-        self.Psi = np.sum(e for e in self.exponent_gen())
-        #self.Psi = np.sum(np.multiply(np.dstack(np.array(self.af_list)).reshape(self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2],len(self.af_list)),np.exp(1j*(np.tensordot(self.XYZ,np.array(self.coord_list).T,axes=1)))),axis=3)
+                start = drv.Event()
+                end = drv.Event()
+
+                device_atom_struct_fact = drv.mem_alloc(host_atom_struct_fact.nbytes)
+                device_K_tensor = drv.mem_alloc(host_K_tensor.nbytes)
+                #device_Psi_tensor = drv.mem_alloc(host_Psi_tensor.nbytes)
+
+                drv.memcpy_htod(device_atom_struct_fact,host_atom_struct_fact)
+                drv.memcpy_htod(device_K_tensor,host_K_tensor)
+                #drv.memcpy_htod(device_Psi_tensor,host_Psi_tensor)
+
+                mod = comp.SourceModule("""
+                #include <stdio.h>
+                #include <math.h>
+                __global__ void kernal(float *d_a, float *d_b)
+                {
+                    const int blockId = blockIdx.x + blockIdx.y * gridDim.x + gridDim.x*gridDim.y*blockIdx.z;
+                    const int threadId = blockId* (blockDim.x *blockDim.y*blockDim.z) + (threadIdx.z*(blockDim.z*blockDim.y)) + (threadIdx.y*blockDim.x) + threadIdx.x;
+                    const float d_a_temp = d_a[threadId];
+                    d_a[threadId] = d_a_temp * cos(d_b[threadId]);
+                    d_b[threadId] = d_a_temp * sin(d_b[threadId]);
+                }
+                """)
+
+                kernal = mod.get_function("kernal")
+                start.record()
+                #kernal(device_Psi_tensor, device_atom_struct_fact,device_K_tensor, block=(nkz,1,1), grid=(nb_atoms,nky,nkx))
+                kernal(device_atom_struct_fact,device_K_tensor, block=(nkz,1,1), grid=(nb_atoms,nky,nkx))
+                end.record()
+                end.synchronize()
+                secs = start.time_till(end)*1e-3
+                self.UPDATE_LOG.emit("GPU processing time = %fs" % (secs))
+                drv.memcpy_dtoh(host_atom_struct_fact,device_atom_struct_fact)
+                drv.memcpy_dtoh(host_K_tensor,device_K_tensor)
+                ctx.pop()
+                self.Psi_real = np.sum(host_atom_struct_fact,axis=0)
+                self.Psi_img = np.sum(host_K_tensor,axis=0)
+                self.intensity = self.Psi_real**2+self.Psi_img**2
+        else:
+            start_time = time.time()
+            itr = 0
+            number_of_atoms = len(self.atoms_list)
+            self.UPDATE_LOG.emit("Number of atoms: "+ str(number_of_atoms))
+            for specie in set(self.atoms_list.values()):
+                if self.constant_atomic_structure_factor:
+                    self.af_dict[specie] = 1
+                else:
+                    self.af_dict[specie] = self.atomic_form_factor(specie)
+            for coord,specie in self.atoms_list.items():
+                QtCore.QCoreApplication.processEvents()
+                if self._abort:
+                    break
+                else:
+                    self.Psi += np.multiply(self.af_dict[specie],np.exp(1j*(self.Kx*coord[0]+self.Ky*coord[1]+self.Kz*coord[2])))
+                    itr+=1
+                    self.PROGRESS_ADVANCE.emit(0,100,itr/number_of_atoms*100)
+                    QtCore.QCoreApplication.processEvents()
+            #self.Psi = np.sum(e for e in self.exponent_gen())
+            self.intensity = np.multiply(self.Psi.astype('complex64'),np.conj(self.Psi.astype('complex64')))
+
         elapsed_time = time.time() - start_time
         self.ELAPSED_TIME.emit(elapsed_time)
         if not self._abort:
-            self.intensity = np.multiply(self.Psi.astype('complex64'),np.conj(self.Psi.astype('complex64')))
             self.PROGRESS_END.emit()
             self.ACCOMPLISHED.emit(self.intensity)
         else:
             self.ABORTED.emit()
             self._abort = False
+
+    #def exponent_gen(self):
+    #    n = 0
+    #    while n < len(self.atoms_list)-1 and (not self._abort):
+    #        n+=1
+    #        exponent = np.multiply(self.af_dict[list(self.atoms_list.values())[n]],np.exp(1j*(np.tensordot(self.XYZ,np.array(list(self.atoms_list.keys())[n]).T,axes=1))))
+    #        yield exponent
+    #        self.PROGRESS_ADVANCE.emit(0,100,n/(len(self.atoms_list)-1)*100)
+    #        QtCore.QCoreApplication.processEvents()
 
     def stop(self):
         self._abort = True
@@ -1767,3 +1920,32 @@ class TAPD_Simulation(QtCore.QObject):
             return 2*math.pi+angle, lenvector
         return angle, lenvector
 
+
+def cuda_test():
+    device = pycuda.autoinit.device
+    print(device.get_attribute(drv.device_attribute.MAX_THREADS_PER_BLOCK))
+    print(device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X))
+    print(device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_Y))
+    print(device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_Z))
+    print(device.get_attribute(drv.device_attribute.MAX_GRID_DIM_X))
+    print(device.get_attribute(drv.device_attribute.MAX_GRID_DIM_Y))
+    print(device.get_attribute(drv.device_attribute.MAX_GRID_DIM_Z))
+    mod = comp.SourceModule(
+        """
+        __global__ void multiply_them(float *dest, float *a, float *b)
+        {
+            const int i = threadIdx.x;
+            dest[i] = a[i]*b[i];
+        }
+        """
+    )
+    multiply_them = mod.get_function("multiply_them")
+    a = np.random.randn(400).astype(np.float32)
+    b = np.random.randn(400).astype(np.float32)
+    dest = np.zeros_like(a)
+    multiply_them(drv.Out(dest),drv.In(a),drv.In(b),block=(400,1,1))
+    print(dest - a*b)
+
+if __name__ == '__main__':
+    fit = FitFunctions()
+    fit.test()
