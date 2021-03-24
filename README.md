@@ -88,5 +88,51 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 - window: the main window of the application
 - write_scenario: write the default scenario
 
+## Demonstrations
+1. Extract line profiles:
+
+![line](https://user-images.githubusercontent.com/38077812/111377405-9a688e00-866e-11eb-8ef2-b25386f10d27.gif)
+
+
+2. Extract features on a sphere:
+
+![tilt](https://user-images.githubusercontent.com/38077812/111377452-aa806d80-866e-11eb-91eb-8a7f103c2077.gif)
+
+
+3. Construct azimuthal RHEED:
+
+![Azimuth](https://user-images.githubusercontent.com/38077812/111377562-cbe15980-866e-11eb-8c64-5fa6137a0d96.gif)
+
+
+4. Vertical scan:
+
+![Vertical](https://user-images.githubusercontent.com/38077812/111377572-ce43b380-866e-11eb-8b8f-e6ccd2e74a68.gif)
+
+
+5. 3D surface view:
+
+![surface](https://user-images.githubusercontent.com/38077812/111377787-1236b880-866f-11eb-8e52-60f3235085df.gif)
+
+
+6. Regression analysis:
+
+![fit](https://user-images.githubusercontent.com/38077812/111377799-16fb6c80-866f-11eb-96cd-f01dff3425ab.gif)
+
+
+7. Interactive data visualization:
+
+![report](https://user-images.githubusercontent.com/38077812/111377803-18c53000-866f-11eb-94ff-4ea16daaef3e.gif)
+
+
+8. Kikuchi line simulation:
+
+![kikuchi](https://user-images.githubusercontent.com/38077812/111377813-1bc02080-866f-11eb-8043-28bc199f8cd5.gif)
+
+
+9. Domain boundary statistics:
+
+![simulation](https://user-images.githubusercontent.com/38077812/111377823-1f53a780-866f-11eb-8b26-4638de0200c0.gif)
+
+
 ## Contact
 Please contact Yu Xiang at [yux1991@gmail.com](mailto:yux1991@gmail.com) if you have any questions or suggestions.
