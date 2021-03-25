@@ -33,6 +33,7 @@ class BarChart(QtChart.QChartView):
         self.barChart.setMargins(QtCore.QMargins(0,0,0,0))
         self.barChart.setTheme(self.theme)
         self.barChart.legend().setVisible(False)
+        self.ncomp = 0
         self.setChart(self.barChart)
 
     def add_chart(self,weights,colors,type="bar"):
@@ -50,12 +51,15 @@ class BarChart(QtChart.QChartView):
             self.axisY.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
             self.barChart.addAxis(self.axisX, QtCore.Qt.AlignBottom)
             self.barChart.addAxis(self.axisY, QtCore.Qt.AlignLeft)
-
-        ncomp = len(weights)
+        elif len(weights)!=self.ncomp:
+            self.axisX.clear()
+            for n in range(len(weights)):
+                self.axisX.append("<span style=\"color: "+colors[n]+";\">{}</span>".format(n+1))
+        self.ncomp = len(weights)
         self.barChart.removeAllSeries()
         series = QtChart.QBarSeries()
         barset = QtChart.QBarSet("Weight")
-        for n in range(ncomp):
+        for n in range(self.ncomp):
             barset.append(weights[n]*100)
         series.append(barset)
         self.barChart.addSeries(series)

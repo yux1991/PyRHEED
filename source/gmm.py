@@ -4,6 +4,8 @@ from process_monitor import Monitor
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 from sys import getsizeof
 from sklearn.mixture import BayesianGaussianMixture
+from sklearn.mixture._gaussian_mixture import _estimate_gaussian_parameters
+from sklearn.mixture._gaussian_mixture import _compute_precision_cholesky
 import configparser
 import generate_report
 import glob
@@ -53,7 +55,12 @@ class Window(QtCore.QObject):
                                [.0, .0],
                                [.5, 1.30],
                                [1.0, .70]])
-        self.fit_colors = list(mcolors.XKCD_COLORS.values())[20:]
+        primary_colors = ['salmon','bright green','bright pink','robin egg blue','bright lavender','deep sky blue','irish green','golden','greenish teal','light blue','butter yellow',\
+                                                                            'turquoise green','iris','off blue','plum','mauve','burgundy','coral','clay','emerald green','cadet blue','avocado','rose pink','aqua green','scarlet']
+        self.fit_colors = [mcolors.XKCD_COLORS['xkcd:'+name] for name in primary_colors]
+        for color in mcolors.XKCD_COLORS.keys():
+            if not color in primary_colors:
+                self.fit_colors.append(mcolors.XKCD_COLORS[color])
 
     def refresh(self,config):
             self.config = config
@@ -67,28 +74,25 @@ class Window(QtCore.QObject):
         self.startIndex = "0"
         self.endIndex = "3"
         self.range = "5"
-        self.nsamp = '10000'
+        self.nsamp = '10'
+        self.ndraw = '2'
         self.nfeature = '2'
-        self.ncomp = '4'
+        self.ncomp = '7'
         self.tol = '0.001'
         self.reg_covar = '1e-6'
         self.max_itr = '1500'
         self.n_init = '1'
         self.wc_prior = '1000'
         self.mean_precision_prior = '0.8'
-        self.mean_prior = ''
         self.dof = ''
         self.rs = '2'
         self.vb = '0'
         self.vb_interval = '10'
-        self.FTol = '1e-6'
-        self.XTol = '1e-4'
-        self.GTol = '1e-6'
-        self.numberOfSteps = "20"
         self.defaultFileName = "GMM Fit"
         self.cost_series_X = [1]
         self.cost_series_Y = [1]
         self.file_has_been_created = False
+        self.scatter_exist = False
         self.path = os.path.dirname(path)
         self.extension = os.path.splitext(path)[1]
         self.currentSource = self.path
@@ -174,13 +178,22 @@ class Window(QtCore.QObject):
         self.sampleOptionsGrid = QtWidgets.QGridLayout(self.sampleOptions)
         self.numberOfSamplesLabel = QtWidgets.QLabel("Number of Samples")
         self.numberOfSamplesEdit = QtWidgets.QLineEdit(self.nsamp)
+        self.numberOfDrawsLabel = QtWidgets.QLabel("Number of Draws")
+        self.numberOfDrawsEdit = QtWidgets.QLineEdit(self.ndraw)
         self.drawSampleButton = QtWidgets.QPushButton("Draw")
         self.drawSampleButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.drawSampleButton.clicked.connect(self.draw_sample)
         self.drawSampleButton.setEnabled(False)
+        self.plotSampleButton = QtWidgets.QPushButton("Plot")
+        self.plotSampleButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.plotSampleButton.clicked.connect(self.plot_sample)
+        self.plotSampleButton.setEnabled(False)
         self.sampleOptionsGrid.addWidget(self.numberOfSamplesLabel,0,0,1,2)
         self.sampleOptionsGrid.addWidget(self.numberOfSamplesEdit,0,2,1,4)
-        self.sampleOptionsGrid.addWidget(self.drawSampleButton,1,0,1,6)
+        self.sampleOptionsGrid.addWidget(self.numberOfDrawsLabel,1,0,1,2)
+        self.sampleOptionsGrid.addWidget(self.numberOfDrawsEdit,1,2,1,4)
+        self.sampleOptionsGrid.addWidget(self.drawSampleButton,2,0,1,3)
+        self.sampleOptionsGrid.addWidget(self.plotSampleButton,2,3,1,3)
 
         self.fitOptions = QtWidgets.QGroupBox("Parameters")
         self.fitOptions.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -189,11 +202,15 @@ class Window(QtCore.QObject):
         self.numberOfFeaturesEdit = QtWidgets.QLineEdit(self.nfeature)
         self.fitOptionsGrid.addWidget(self.numberOfFeaturesLabel,10,0,1,2)
         self.fitOptionsGrid.addWidget(self.numberOfFeaturesEdit,10,2,1,4)
+        self.numberOfFeaturesEdit.textChanged.connect(self.covar_prior_table_change_features)
+        self.numberOfFeaturesEdit.textChanged.connect(self.mean_prior_table_change_features)
 
         self.numberOfComponentsLabel = QtWidgets.QLabel("Number of Components")
         self.numberOfComponentsEdit = QtWidgets.QLineEdit(self.ncomp)
         self.fitOptionsGrid.addWidget(self.numberOfComponentsLabel,20,0,1,2)
         self.fitOptionsGrid.addWidget(self.numberOfComponentsEdit,20,2,1,4)
+        self.numberOfComponentsEdit.textChanged.connect(self.mean_prior_table_initialize)
+        self.numberOfComponentsEdit.textChanged.connect(self.covar_prior_table_initialize)
 
         self.tolLabel = QtWidgets.QLabel("Convergence Threshold")
         self.tolEdit = QtWidgets.QLineEdit(self.tol)
@@ -265,19 +282,6 @@ class Window(QtCore.QObject):
         self.fitOptionsGrid.addWidget(self.meanPrecPriorCheck,100,2,1,1)
         self.fitOptionsGrid.addWidget(self.meanPrecPriorEdit,100,3,1,3)
 
-        self.meanPriorLabel = QtWidgets.QLabel("Mean Prior")
-        self.meanPriorCheck = QtWidgets.QCheckBox()
-        self.meanPriorCheck.stateChanged.connect(self.mean_prior_check_changed)
-        self.meanPriorEdit = QtWidgets.QLineEdit(self.mean_prior)
-        if not self.mean_prior:
-            self.meanPriorCheck.setChecked(False)
-            self.meanPriorEdit.setEnabled(False)
-        else:
-            self.meanPriorCheck.setChecked(True)
-        self.fitOptionsGrid.addWidget(self.meanPriorLabel,110,0,1,2)
-        self.fitOptionsGrid.addWidget(self.meanPriorCheck,110,2,1,1)
-        self.fitOptionsGrid.addWidget(self.meanPriorEdit,110,3,1,3)
-
         self.dofLabel = QtWidgets.QLabel("Deg. of Freedom Prior")
         self.dofCheck = QtWidgets.QCheckBox()
         self.dofCheck.stateChanged.connect(self.dof_check_changed)
@@ -320,30 +324,35 @@ class Window(QtCore.QObject):
         self.fitOptionsGrid.addWidget(self.warmStartLabel,160,0,1,2)
         self.fitOptionsGrid.addWidget(self.warmStartCheck,160,2,1,4)
 
-        self.covarPriorLabel = QtWidgets.QLabel("Covariance Prior")
+        self.meanPriorTable = QtWidgets.QGroupBox("Mean Prior")
+        self.meanPriorTable.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.meanPriorTableGrid = QtWidgets.QGridLayout(self.meanPriorTable)
+        self.meanPriorLabel = QtWidgets.QLabel("Use Mean Prior?")
+        self.meanPriorCheck = QtWidgets.QCheckBox()
+        self.meanPriorCheck.setChecked(False)
+        self.meanPriorCheck.stateChanged.connect(self.mean_prior_table_check_changed)
+        self.mean_prior_table = QtWidgets.QTableWidget()
+        self.mean_prior_table.setMinimumHeight(200)
+        self.mean_prior_table_initialize(int(self.ncomp))
+        self.meanPriorTableGrid.addWidget(self.meanPriorLabel,0,0,1,2)
+        self.meanPriorTableGrid.addWidget(self.meanPriorCheck,0,2,1,4)
+        self.meanPriorTableGrid.addWidget(self.mean_prior_table,1,0,1,6)
+
+        self.covarPriorTable = QtWidgets.QGroupBox("Covariance Prior")
+        self.covarPriorTable.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.covarPriorTableGrid = QtWidgets.QGridLayout(self.covarPriorTable)
+        self.covarPriorLabel = QtWidgets.QLabel("Use Covariance Prior?")
         self.covarPriorCheck = QtWidgets.QCheckBox()
         self.covarPriorCheck.setChecked(False)
         self.covarPriorCheck.stateChanged.connect(self.covar_prior_check_changed)
         self.covarTab = QtWidgets.QTabWidget()
         self.covarTab.setContentsMargins(0,0,0,0)
         self.covarTab.setTabsClosable(False)
-        for i in range(int(self.ncomp)):
-            covar_prior_table = QtWidgets.QTableWidget()
-            covar_prior_table.setColumnCount(int(self.nfeature))
-            for j in range(int(self.nfeature)):
-                covar_prior_table.setHorizontalHeaderItem(j,QtWidgets.QTableWidgetItem('C{}'.format(j)))
-            covar_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-            covar_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
-            covar_prior_table.setMinimumHeight(200)
-            covar_prior_table.setRowCount(int(self.nfeature))
-            for j in range(int(self.nfeature)):
-                item = QtWidgets.QTableWidgetItem('R{}'.format(j))
-                covar_prior_table.setVerticalHeaderItem(j,item)
-            self.covarTab.addTab(covar_prior_table,"Component {}".format(i+1))
-        self.covarTab.setEnabled(self.covarPriorCheck.isChecked())
-        self.fitOptionsGrid.addWidget(self.covarPriorLabel,170,0,1,2)
-        self.fitOptionsGrid.addWidget(self.covarPriorCheck,170,2,1,4)
-        self.fitOptionsGrid.addWidget(self.covarTab,180,0,1,6)
+        self.covar_prior_table_initialize(int(self.ncomp))
+        self.covarTab.widget(0).setEnabled(self.covarPriorCheck.isChecked())
+        self.covarPriorTableGrid.addWidget(self.covarPriorLabel,0,0,1,2)
+        self.covarPriorTableGrid.addWidget(self.covarPriorCheck,0,2,1,4)
+        self.covarPriorTableGrid.addWidget(self.covarTab,1,0,1,6)
        
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -406,7 +415,9 @@ class Window(QtCore.QObject):
         self.LeftGrid.addWidget(self.appearance,3,0)
         self.LeftGrid.addWidget(self.sampleOptions,4,0)
         self.LeftGrid.addWidget(self.fitOptions,5,0)
-        self.LeftGrid.addWidget(self.ButtonBox,6,0)
+        self.LeftGrid.addWidget(self.meanPriorTable,6,0)
+        self.LeftGrid.addWidget(self.covarPriorTable,7,0)
+        self.LeftGrid.addWidget(self.ButtonBox,8,0)
         self.RightGrid.addWidget(self.distributionChartTitle,0,0)
         self.RightGrid.addWidget(self.costChartTitle,0,1)
         self.RightGrid.addWidget(self.distributionChart,1,0)
@@ -416,16 +427,13 @@ class Window(QtCore.QObject):
         self.RightGrid.addWidget(self.progressBar,4,0,1,2)
         self.Grid.addWidget(self.hSplitter,0,0)
         self.leftScroll.setWidget(self.LeftFrame)
+        self.leftScroll.setMinimumWidth(800)
         self.leftScroll.setWidgetResizable(True)
         self.leftScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.Dialog.setWindowTitle("Gaussian Mixture Modeling")
-        self.Dialog.setMinimumHeight(2000)
-        self.Dialog.setMinimumWidth(3000)
         self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
-        self.Dialog.showNormal()
-        desktopRect = QtWidgets.QApplication.desktop().availableGeometry(self.Dialog)
-        center = desktopRect.center()
-        self.Dialog.move(center.x()-self.Dialog.width()*0.5,center.y()-self.Dialog.height()*0.5)
+        self.Dialog.showMaximized()
+        self.set_default_mean_priors()
 
     def wc_prior_check_changed(self,state):
         if state == 0:
@@ -439,12 +447,6 @@ class Window(QtCore.QObject):
         elif state == 2:
             self.meanPrecPriorEdit.setEnabled(True)
 
-    def mean_prior_check_changed(self,state):
-        if state == 0:
-            self.meanPriorEdit.setEnabled(False)
-        elif state == 2:
-            self.meanPriorEdit.setEnabled(True)
-
     def dof_check_changed(self,state):
         if state == 0:
             self.dofEdit.setEnabled(False)
@@ -457,11 +459,211 @@ class Window(QtCore.QObject):
         elif state == 2:
             self.rsEdit.setEnabled(True)
 
+    def mean_prior_table_check_changed(self,state):
+        if state == 0:
+            for c in range(self.mean_prior_table.columnCount()):
+                if self.mean_prior_table.item(0,2*c):
+                    self.mean_prior_table.item(0,2*c).setBackground(QtCore.Qt.lightGray)
+        elif state == 2:
+            for c in range(self.mean_prior_table.columnCount()):
+                if self.mean_prior_table.item(0,2*c):
+                    self.mean_prior_table.item(0,2*c).setBackground(QtCore.Qt.transparent)
+
     def covar_prior_check_changed(self,state):
         if state == 0:
-            self.covarTab.setEnabled(False)
+            self.covarTab.widget(0).setEnabled(False)
         elif state == 2:
-            self.covarTab.setEnabled(True)
+            self.covarTab.widget(0).setEnabled(True)
+
+    def mean_prior_table_change_features(self,text):
+        ncomp = int(self.numberOfComponentsEdit.text())
+        nfeatures = int(text)
+        if nfeatures > 3:
+            self.mean_prior_table.clear()
+            self.raise_error('Dimension > 3 not supported')
+        else:
+            self.mean_prior_table.clear()
+            self.mean_prior_table.setColumnCount(2*nfeatures)
+            coords = ['Prior X', 'Posterior X', 'Prior Y', 'Posterior Y', 'Prior Z', 'Posterior Z']
+            for n in range(2*nfeatures):
+                header_item = QtWidgets.QTableWidgetItem(coords[n])
+                self.mean_prior_table.setHorizontalHeaderItem(n,header_item)
+            self.mean_prior_table.setRowCount(ncomp)
+            self.mean_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+            self.mean_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+            for i in range(ncomp):
+                icon_pm = QtGui.QPixmap(50,50)
+                icon_pm.fill(QtGui.QColor(self.fit_colors[i]))
+                icon = QtGui.QIcon(icon_pm)
+                item = QtWidgets.QTableWidgetItem(icon,'{}'.format(i+1))
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                self.mean_prior_table.setVerticalHeaderItem(i,item)
+
+    def mean_prior_table_initialize(self,text):
+        ncomp = int(text)
+        nfeatures = int(self.numberOfFeaturesEdit.text())
+        if nfeatures > 3:
+            self.mean_prior_table.clear()
+            self.raise_error('Dimension > 3 not supported')
+        else:
+            self.mean_prior_table.clear()
+            self.mean_prior_table.setColumnCount(2*nfeatures)
+            coords = ['Prior X', 'Posterior X', 'Prior Y', 'Posterior Y', 'Prior Z', 'Posterior Z']
+            for n in range(2*nfeatures):
+                header_item = QtWidgets.QTableWidgetItem(coords[n])
+                self.mean_prior_table.setHorizontalHeaderItem(n,header_item)
+            self.mean_prior_table.setRowCount(ncomp)
+            self.mean_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+            self.mean_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+            for i in range(ncomp):
+                icon_pm = QtGui.QPixmap(50,50)
+                icon_pm.fill(QtGui.QColor(self.fit_colors[i]))
+                icon = QtGui.QIcon(icon_pm)
+                item = QtWidgets.QTableWidgetItem(icon,'{}'.format(i+1))
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                self.mean_prior_table.setVerticalHeaderItem(i,item)
+
+    def get_mean_posteriors(self):
+        means = []
+        for i in range(self.mean_prior_table.rowCount()):
+            row = []
+            for j in range(int(self.numberOfFeaturesEdit.text())):
+                if not self.mean_prior_table.item(i,j*2+1):
+                    row.append(0)
+                else:
+                    row.append(float(self.mean_prior_table.item(i,j*2+1).text()))
+            means.append(row)
+        return means
+
+    def get_mean_priors(self):
+        means = []
+        for i in range(self.mean_prior_table.rowCount()):
+            row = []
+            for j in range(int(self.numberOfFeaturesEdit.text())):
+                if not self.mean_prior_table.item(i,j*2):
+                    row.append(0)
+                else:
+                    row.append(float(self.mean_prior_table.item(i,j*2).text()))
+            means.append(row)
+        return means
+
+    def set_default_mean_priors(self):
+        means = [[0,0],[2.3,0],[1.15,2],[-1.15,2],[-2.3,0],[-1.15,-2],[1.15,-2]]
+        for i in range(len(means)):
+            for j in range(int(self.numberOfFeaturesEdit.text())):
+                if not self.mean_prior_table.item(i,j*2):
+                    item = QtWidgets.QTableWidgetItem('{:.2f}'.format(means[i][j]))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.mean_prior_table.setItem(i,2*j,item)
+                else:
+                    self.mean_prior_table.item(i,2*j).setText('{:.2f}'.format(means[i][j]))
+
+    def update_mean_posteriors(self,means):
+        for i in range(int(self.numberOfComponentsEdit.text())):
+            for j in range(int(self.numberOfFeaturesEdit.text())):
+                if not self.mean_prior_table.item(i,2*j+1):
+                    item = QtWidgets.QTableWidgetItem('{:.2f}'.format(means[i,j]))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.mean_prior_table.setItem(i,2*j+1,item)
+                else:
+                    self.mean_prior_table.item(i,2*j+1).setText('{:.2f}'.format(means[i,j]))
+
+    def covar_prior_table_initialize(self,text):
+        ncomp = int(text)
+        nfeatures = int(self.numberOfFeaturesEdit.text())
+        self.covarTab.clear()
+        if nfeatures > 3:
+            self.mean_prior_table.clear()
+            self.raise_error('Dimension > 3 not supported')
+        else:
+            for i in range(int(ncomp)+1):
+                covar_prior_table = QtWidgets.QTableWidget()
+                covar_prior_table.setColumnCount(nfeatures)
+                for j in range(nfeatures):
+                    header_item = QtWidgets.QTableWidgetItem('C{}'.format(j))
+                    covar_prior_table.setHorizontalHeaderItem(j,header_item)
+                covar_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+                covar_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+                covar_prior_table.setMinimumHeight(200)
+                covar_prior_table.setRowCount(nfeatures)
+                for j in range(nfeatures):
+                    item = QtWidgets.QTableWidgetItem('R{}'.format(j))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    covar_prior_table.setVerticalHeaderItem(j,item)
+                if i == 0:
+                    self.covarTab.addTab(covar_prior_table,"Prior")
+                else:
+                    icon_pm = QtGui.QPixmap(50,50)
+                    icon_pm.fill(QtGui.QColor(self.fit_colors[i-1]))
+                    icon = QtGui.QIcon(icon_pm)
+                    self.covarTab.addTab(covar_prior_table,icon,"{}".format(i))
+
+    def covar_prior_table_change_features(self,text):
+        nfeatures = int(text)
+        self.covarTab.clear()
+        if nfeatures > 3:
+            self.mean_prior_table.clear()
+            self.raise_error('Dimension > 3 not supported')
+        else:
+            for i in range(int(self.numberOfComponentsEdit.text())+1):
+                covar_prior_table = QtWidgets.QTableWidget()
+                covar_prior_table.setColumnCount(nfeatures)
+                for j in range(nfeatures):
+                    header_item = QtWidgets.QTableWidgetItem('C{}'.format(j))
+                    covar_prior_table.setHorizontalHeaderItem(j,header_item)
+                covar_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+                covar_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+                covar_prior_table.setMinimumHeight(200)
+                covar_prior_table.setRowCount(nfeatures)
+                for j in range(nfeatures):
+                    item = QtWidgets.QTableWidgetItem('R{}'.format(j))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    covar_prior_table.setVerticalHeaderItem(j,item)
+                if i == 0:
+                    self.covarTab.addTab(covar_prior_table,"Prior")
+                else:
+                    icon_pm = QtGui.QPixmap(50,50)
+                    icon_pm.fill(QtGui.QColor(self.fit_colors[i-1]))
+                    icon = QtGui.QIcon(icon_pm)
+                    self.covarTab.addTab(covar_prior_table,icon,"{}".format(i+1))
+
+    def get_covar_posteriors(self):
+        covars = []
+        for i in range(int(self.numberOfComponentsEdit.text())+1):
+            component = []
+            for j in range(int(self.numberOfFeaturesEdit.text())):
+                row = []
+                for k in range(int(self.numberOfFeaturesEdit.text())):
+                    if not self.covarTab.widget(i).item(j,k):
+                        row.append(0)
+                    else:
+                        row.append(float(self.covarTab.widget(i).item(j,k).text()))
+                component.append(row)
+            covars.append(component)
+        return covars
+
+    def update_covar_posteriors(self,covars):
+        for i in range(1,int(self.numberOfComponentsEdit.text())+1):
+            for j in range(int(self.numberOfFeaturesEdit.text())):
+                for k in range(int(self.numberOfFeaturesEdit.text())):
+                    if not self.covarTab.widget(i).item(j,k):
+                        item = QtWidgets.QTableWidgetItem('{:.2f}'.format(covars[i-1,j,k]))
+                        item.setTextAlignment(QtCore.Qt.AlignCenter)
+                        self.covarTab.widget(i).setItem(j,k,item)
+                    else:
+                        self.covarTab.widget(i).item(j,k).setText('{:.2f}'.format(covars[i-1,j,k]))
+
+    def get_covar_priors(self):
+        covars = []
+        for j in range(int(self.numberOfFeaturesEdit.text())):
+            row = []
+            for k in range(int(self.numberOfFeaturesEdit.text())):
+                if not self.covarTab.widget(0).item(j,k):
+                    row.append(0)
+                else:
+                    row.append(float(self.covarTab.widget(0).item(j,k).text()))
+            covars.append(row)
+        return covars
 
     def choose_source(self):
         path = QtWidgets.QFileDialog.getOpenFileName(None,"choose the input data file","c:/users/yux20/documents/05042018 MoS2/interpolated_3D_map.txt",filter="TXT (*.txt)")[0]
@@ -470,9 +672,14 @@ class Window(QtCore.QObject):
         self.loadButton.setEnabled(True)
 
     def load_data(self):
+        self.update_log("Loading Data ... ")
+        self.loadButton.setEnabled(False)
+        QtCore.QCoreApplication.processEvents()
         try:
             self.grid_3d = pandas.read_csv(filepath_or_buffer=self.currentSource,sep="\t",names=["x","y","z","probability"])
             self.drawSampleButton.setEnabled(True)
+            self.loadButton.setEnabled(True)
+            self.update_log("Loading Complete")
         except:
             self.raise_error("Wrong Input!")
 
@@ -481,10 +688,17 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(False)
+        self.plotSampleButton.setEnabled(False)
+        self.drawSampleButton.setEnabled(False)
         self.update_log("Drawing Samples... ")
         QtCore.QCoreApplication.processEvents()
-        draw = rv_discrete(name='custm',values=(self.grid_3d.index,self.grid_3d["probability"]))
-        indices = draw.rvs(size=int(self.numberOfSamplesEdit.text()))
+        indices = []
+        for _ in range(int(self.numberOfDrawsEdit.text())):
+            draw = rv_discrete(name='custm',values=(self.grid_3d.index,self.grid_3d["probability"]))
+            indices.append(draw.rvs(size=int(self.numberOfSamplesEdit.text())))
+            self.update_log("Draw {} finished".format(_+1))
+            QtCore.QCoreApplication.processEvents()
+        indices = np.concatenate(indices)
         selected = self.grid_3d.iloc[indices]
         x, y = selected["x"].to_numpy(),selected["y"].to_numpy()
         self.inputdata = np.vstack([x,y]).T
@@ -494,6 +708,15 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
+        self.plotSampleButton.setEnabled(True)
+        self.drawSampleButton.setEnabled(True)
+
+    def plot_sample(self):
+        self.update_log("Plotting Samples... ")
+        QtCore.QCoreApplication.processEvents()
+        self.distributionChart.add_chart(self.inputdata[:,0],self.inputdata[:,1],'scatter')
+        self.update_log("Plotting Complete")
+        self.scatter_exist = True
 
     def choose_destination(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",self.currentDestination,QtWidgets.QFileDialog.ShowDirsOnly)
@@ -509,8 +732,16 @@ class Window(QtCore.QObject):
         
     def prepare(self):
         # mean_precision_prior= 0.8 to minimize the influence of the prior
+        if self.meanPriorCheck.isChecked():
+            mean_priors = self.get_mean_priors()
+        else:
+            mean_priors = None
+        if self.covarPriorCheck.isChecked():
+            covar_priors = self.get_covar_priors()
+        else:
+            covar_priors = None
         self.estimator = My_GMM(
-            n_components=2 * int(self.numberOfComponentsEdit.text()), 
+            n_components= int(self.numberOfComponentsEdit.text()), 
             covariance_type=self.covarianceTypeCombo.currentText(),
             tol=float(self.tolEdit.text()),
             reg_covar=float(self.regCovarEdit.text()), 
@@ -519,26 +750,20 @@ class Window(QtCore.QObject):
             init_params=self.initMethodTypeCombo.currentText(),
             weight_concentration_prior_type=self.wcPriorTypeCombo.currentText(),
             mean_precision_prior=float(self.meanPrecPriorEdit.text()),
+            mean_prior=None,
+            mean_priors=mean_priors,
             degrees_of_freedom_prior=int(self.dofEdit.text()) if self.dofEdit.text() != '' else None,
+            covariance_prior=covar_priors,
             random_state=int(self.rsEdit.text()), 
             warm_start=self.warmStartCheck.isChecked(),
             verbose=int(self.vbEdit.text()), 
             verbose_interval=int(self.vbIntvEdit.text()),
             weight_concentration_prior=float(self.wcPriorEdit.text()))
 
-        ## Generate data
-        #rng = np.random.RandomState(int(self.rsEdit.text()))
-        #self.inputdata = np.vstack([
-        #    rng.multivariate_normal(self.means[j], self.covars[j], self.samples[j])
-        #    for j in range(int(self.numberOfComponentsEdit.text()))])
-        #self.label = np.concatenate([np.full(self.samples[j], j, dtype=int)
-        #                    for j in range(int(self.numberOfComponentsEdit.text()))])
-        #print(self.inputdata)
-        
-        self.distributionChart.add_chart(self.inputdata[:,0],self.inputdata[:,1],'scatter')
         self.cost_series_X = [1]
         self.cost_series_Y = [1]
-
+        if not self.scatter_exist:
+            self.distributionChart.add_chart(self.inputdata[:,0],self.inputdata[:,1],'scatter')
         self.estimator.load_input(self.inputdata,self.label)
         self.estimator.UPDATE_LOG.connect(self.update_log)
         self.estimator.SEND_UPDATE.connect(self.update_plots)
@@ -577,13 +802,6 @@ class Window(QtCore.QObject):
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         self.fitOptions.setEnabled(True)
-        #title = "Infinite mixture with a Dirichlet process\n prior and" r"$\gamma_0=$" + self.wcPriorEdit.text()
-        #plt.figure(figsize=(4.7 * 3, 8))
-        #plt.subplots_adjust(bottom=.04, top=0.90, hspace=.05, wspace=.05,
-        #                    left=.03, right=.99)
-        #gs = gridspec.GridSpec(3, 1)
-        #self.plot_results(plt.subplot(gs[0:2, 0]), plt.subplot(gs[2, 0]), title, plot_title = True)
-        #plt.show()
 
     def reset(self):
         pass
@@ -619,57 +837,12 @@ class Window(QtCore.QObject):
                 colors.append(self.fit_colors[i])
 
             self.cost_series_X.append(n_iter)
-            self.cost_series_Y.append(change)
+            self.cost_series_Y.append(np.abs(change))
             self.costChart.add_chart(self.cost_series_X, self.cost_series_Y,'ELBO change')
             self.distributionChart.append_to_chart(x=means[:,0],y=means[:,1],a=a,b=b,angle=angle,weights=weights,colors=colors,type='ellipse')
             self.weightChart.add_chart(weights=weights,colors=colors,type='bar')
-
-    def plot_ellipses(self,ax, weights, means, covars):
-        for n in range(means.shape[0]):
-            eig_vals, eig_vecs = np.linalg.eigh(covars[n])
-            unit_eig_vec = eig_vecs[0] / np.linalg.norm(eig_vecs[0])
-            angle = np.arctan2(unit_eig_vec[1], unit_eig_vec[0])
-            # Ellipse needs degrees
-            angle = 180 * angle / np.pi
-            # eigenvector normalization
-            eig_vals = 2 * np.sqrt(2) * np.sqrt(eig_vals)
-            ell = mpl.patches.Ellipse(means[n], eig_vals[0], eig_vals[1],
-                                    180 + angle, edgecolor='black')
-            ell.set_clip_box(ax.bbox)
-            ell.set_alpha(weights[n])
-            ell.set_facecolor(self.fit_colors[n])
-            ax.add_artist(ell)
-
-    def plot_results(self,ax1, ax2, title, plot_title=False):
-        estimator = self.estimator
-        X = self.inputdata
-        y = self.label
-        ax1.set_title(title)
-        ax1.scatter(X[:, 0], X[:, 1], s=5, marker='o', color='lightgray', alpha=0.8)
-        ax1.set_xlim(-2., 2.)
-        ax1.set_ylim(-2., 2.)
-        ax1.set_xticks(())
-        ax1.set_yticks(())
-        self.plot_ellipses(ax1, estimator.weights_, estimator.means_,estimator.covariances_)
-        ax1.set_aspect(1)
-
-        ax2.get_xaxis().set_tick_params(direction='out')
-        ax2.yaxis.grid(True, alpha=0.7)
-        for n in range(estimator.means_.shape[0]):
-            k,w = n, estimator.weights_[n]
-            ax2.bar(k, w, width=0.9, color=self.fit_colors[k], zorder=3,
-                    align='center', edgecolor='black')
-            ax2.text(k, w + 0.007, "%.1f%%" % (w * 100.),
-                    horizontalalignment='center')
-        ax2.set_xlim(-.6, 2 * int(self.numberOfComponentsEdit.text()) - .4)
-        ax2.set_ylim(0., 1.1)
-        ax2.tick_params(axis='y', which='both', left=False,
-                        right=False, labelleft=False)
-        ax2.tick_params(axis='x', which='both', top=False)
-
-        if plot_title:
-            ax1.set_ylabel('Estimated Mixtures')
-            ax2.set_ylabel('Weight of each component')
+            self.update_covar_posteriors(covars)
+            self.update_mean_posteriors(means)
 
     def write_results(self,results):
         self.fitting_results.append(results)
@@ -697,36 +870,6 @@ class Window(QtCore.QObject):
                 para.append(float(self.table.item(i,j).text()))
         para.append(float(self.offset.get_value()))
         return para
-
-    def change_fit_function(self,function):
-        if function == 'Gaussian':
-            self.table.setColumnCount(9)
-            self.table.setHorizontalHeaderItem(0,QtWidgets.QTableWidgetItem('C'))
-            self.table.setHorizontalHeaderItem(1,QtWidgets.QTableWidgetItem('C_Low'))
-            self.table.setHorizontalHeaderItem(2,QtWidgets.QTableWidgetItem('C_High'))
-            self.table.setHorizontalHeaderItem(3,QtWidgets.QTableWidgetItem('H'))
-            self.table.setHorizontalHeaderItem(4,QtWidgets.QTableWidgetItem('H_Low'))
-            self.table.setHorizontalHeaderItem(5,QtWidgets.QTableWidgetItem('H_High'))
-            self.table.setHorizontalHeaderItem(6,QtWidgets.QTableWidgetItem('W'))
-            self.table.setHorizontalHeaderItem(7,QtWidgets.QTableWidgetItem('W_Low'))
-            self.table.setHorizontalHeaderItem(8,QtWidgets.QTableWidgetItem('W_High'))
-            self.fit_function = self.fit_worker.gaussian
-        elif function == 'Voigt':
-            self.table.setColumnCount(12)
-            self.table.setHorizontalHeaderItem(0,QtWidgets.QTableWidgetItem('C'))
-            self.table.setHorizontalHeaderItem(1,QtWidgets.QTableWidgetItem('C_Low'))
-            self.table.setHorizontalHeaderItem(2,QtWidgets.QTableWidgetItem('C_High'))
-            self.table.setHorizontalHeaderItem(3,QtWidgets.QTableWidgetItem('A'))
-            self.table.setHorizontalHeaderItem(4,QtWidgets.QTableWidgetItem('A_Low'))
-            self.table.setHorizontalHeaderItem(5,QtWidgets.QTableWidgetItem('A_High'))
-            self.table.setHorizontalHeaderItem(6,QtWidgets.QTableWidgetItem('FL'))
-            self.table.setHorizontalHeaderItem(7,QtWidgets.QTableWidgetItem('FL_Low'))
-            self.table.setHorizontalHeaderItem(8,QtWidgets.QTableWidgetItem('FL_High'))
-            self.table.setHorizontalHeaderItem(9,QtWidgets.QTableWidgetItem('FG'))
-            self.table.setHorizontalHeaderItem(10,QtWidgets.QTableWidgetItem('FG_Low'))
-            self.table.setHorizontalHeaderItem(11,QtWidgets.QTableWidgetItem('FG_High'))
-            self.fit_function = self.fit_worker.voigt
-        self.table_auto_initialize()
 
     def update_results(self,results):
         self.offset.set_value(results[-1])
@@ -829,7 +972,7 @@ class My_GMM(QtCore.QObject, BayesianGaussianMixture,metaclass=Meta_QT_GMM):
                  reg_covar=1e-6, max_iter=100, n_init=1, init_params='kmeans',
                  weight_concentration_prior_type='dirichlet_process',
                  weight_concentration_prior=None,
-                 mean_precision_prior=None, mean_prior=None,
+                 mean_precision_prior=None, mean_prior=None,mean_priors=None,
                  degrees_of_freedom_prior=None, covariance_prior=None,
                  random_state=None, warm_start=False, verbose=0,
                  verbose_interval=10):
@@ -841,7 +984,175 @@ class My_GMM(QtCore.QObject, BayesianGaussianMixture,metaclass=Meta_QT_GMM):
                  degrees_of_freedom_prior=degrees_of_freedom_prior, covariance_prior=covariance_prior,
                  random_state=random_state, warm_start=warm_start, verbose=verbose,
                  verbose_interval=verbose_interval)
-        
+        self.mean_priors = mean_priors
+
+    def _initialize(self, X, resp):
+        """Initialization of the mixture parameters.
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+        resp : array-like of shape (n_samples, n_components)
+        """
+        nk, xk, sk = _estimate_gaussian_parameters(X, resp, self.reg_covar,
+                                                   self.covariance_type)
+
+        self._estimate_weights(nk)
+        self._estimate_means(nk, xk,True)
+        self._estimate_precisions(nk, xk, sk,True)
+
+    def _estimate_precisions(self, nk, xk, sk,initialize=True):
+        """Estimate the precisions parameters of the precision distribution.
+        Parameters
+        ----------
+        nk : array-like of shape (n_components,)
+        xk : array-like of shape (n_components, n_features)
+        sk : array-like
+            The shape depends of `covariance_type`:
+            'full' : (n_components, n_features, n_features)
+            'tied' : (n_features, n_features)
+            'diag' : (n_components, n_features)
+            'spherical' : (n_components,)
+        """
+        {"full": self._estimate_wishart_full,
+         "tied": self._estimate_wishart_tied,
+         "diag": self._estimate_wishart_diag,
+         "spherical": self._estimate_wishart_spherical
+         }[self.covariance_type](nk, xk, sk,initialize)
+
+        self.precisions_cholesky_ = _compute_precision_cholesky(
+            self.covariances_, self.covariance_type)
+
+    def _estimate_means(self, nk, xk,initial=False):
+        """Estimate the parameters of the Gaussian distribution.
+        Parameters
+        ----------
+        nk : array-like of shape (n_components,)
+        xk : array-like of shape (n_components, n_features)
+        """
+        if self.mean_priors and initial:
+            self.mean_precision_ = self.mean_precision_prior_ + nk
+            self.means_=np.array(self.mean_priors)
+        else:
+            self.mean_precision_ = self.mean_precision_prior_ + nk
+            self.means_ = ((self.mean_precision_prior_ * self.mean_prior_ +
+                            nk[:, np.newaxis] * xk) /
+                        self.mean_precision_[:, np.newaxis])
+
+    def _estimate_wishart_full(self, nk, xk, sk,initialize=False):
+        """Estimate the full Wishart distribution parameters.
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+        nk : array-like of shape (n_components,)
+        xk : array-like of shape (n_components, n_features)
+        sk : array-like of shape (n_components, n_features, n_features)
+        """
+        _, n_features = xk.shape
+
+        # Warning : in some Bishop book, there is a typo on the formula 10.63
+        # `degrees_of_freedom_k = degrees_of_freedom_0 + Nk` is
+        # the correct formula
+        self.degrees_of_freedom_ = self.degrees_of_freedom_prior_ + nk
+
+        self.covariances_ = np.empty((self.n_components, n_features,
+                                      n_features))
+
+        if not initialize:
+            for k in range(self.n_components):
+                diff = xk[k] - self.mean_prior_
+                self.covariances_[k] = (self.covariance_prior_ + nk[k] * sk[k] +
+                                        nk[k] * self.mean_precision_prior_ /
+                                        self.mean_precision_[k] * np.outer(diff,
+                                                                        diff))
+            # Contrary to the original bishop book, we normalize the covariances
+            self.covariances_ /= (
+                self.degrees_of_freedom_[:, np.newaxis, np.newaxis])
+        else:
+            for k in range(self.n_components):
+                self.covariances_[k] = self.covariance_prior_
+
+    def _estimate_wishart_tied(self, nk, xk, sk,initialize=False):
+        """Estimate the tied Wishart distribution parameters.
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+        nk : array-like of shape (n_components,)
+        xk : array-like of shape (n_components, n_features)
+        sk : array-like of shape (n_features, n_features)
+        """
+        _, n_features = xk.shape
+
+        # Warning : in some Bishop book, there is a typo on the formula 10.63
+        # `degrees_of_freedom_k = degrees_of_freedom_0 + Nk`
+        # is the correct formula
+        self.degrees_of_freedom_ = (
+            self.degrees_of_freedom_prior_ + nk.sum() / self.n_components)
+
+        diff = xk - self.mean_prior_
+        if not initialize:
+            self.covariances_ = (
+                self.covariance_prior_ + sk * nk.sum() / self.n_components +
+                self.mean_precision_prior_ / self.n_components * np.dot(
+                    (nk / self.mean_precision_) * diff.T, diff))
+            # Contrary to the original bishop book, we normalize the covariances
+            self.covariances_ /= self.degrees_of_freedom_
+        else:
+            self.covariances_ = self.covariance_prior_
+
+    def _estimate_wishart_diag(self, nk, xk, sk,initialize=False):
+        """Estimate the diag Wishart distribution parameters.
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+        nk : array-like of shape (n_components,)
+        xk : array-like of shape (n_components, n_features)
+        sk : array-like of shape (n_components, n_features)
+        """
+        _, n_features = xk.shape
+
+        # Warning : in some Bishop book, there is a typo on the formula 10.63
+        # `degrees_of_freedom_k = degrees_of_freedom_0 + Nk`
+        # is the correct formula
+        self.degrees_of_freedom_ = self.degrees_of_freedom_prior_ + nk
+
+        diff = xk - self.mean_prior_
+        if not initialize:
+            self.covariances_ = (
+                self.covariance_prior_ + nk[:, np.newaxis] * (
+                    sk + (self.mean_precision_prior_ /
+                        self.mean_precision_)[:, np.newaxis] * np.square(diff)))
+            # Contrary to the original bishop book, we normalize the covariances
+            self.covariances_ /= self.degrees_of_freedom_[:, np.newaxis]
+        else:
+            self.covariances_ = self.covariance_prior_
+
+    def _estimate_wishart_spherical(self, nk, xk, sk,initialize=False):
+        """Estimate the spherical Wishart distribution parameters.
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+        nk : array-like of shape (n_components,)
+        xk : array-like of shape (n_components, n_features)
+        sk : array-like of shape (n_components,)
+        """
+        _, n_features = xk.shape
+
+        # Warning : in some Bishop book, there is a typo on the formula 10.63
+        # `degrees_of_freedom_k = degrees_of_freedom_0 + Nk`
+        # is the correct formula
+        self.degrees_of_freedom_ = self.degrees_of_freedom_prior_ + nk
+
+        diff = xk - self.mean_prior_
+        if not initialize:
+            self.covariances_ = (
+                self.covariance_prior_ + nk * (
+                    sk + self.mean_precision_prior_ / self.mean_precision_ *
+                    np.mean(np.square(diff), 1)))
+            # Contrary to the original bishop book, we normalize the covariances
+            self.covariances_ /= self.degrees_of_freedom_
+        else:
+            self.covariances_ = self.covariance_prior_
+
 
     def load_input(self,X,y):
         self.inputdata = X

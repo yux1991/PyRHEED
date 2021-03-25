@@ -64,8 +64,8 @@ class ProfileChart(QtChart.QChartView):
         ncomp = len(x)
         series_length = len(self.profileChart.series()) 
         chart_width = self.profileChart.plotArea().width()
-        scale = chart_width/16
-        if series_length > ncomp:
+        scale = chart_width/14
+        if series_length > 2*ncomp:
             while series_length>1:
                 last_series = self.profileChart.series()[-1]
                 self.profileChart.removeSeries(last_series)
@@ -73,12 +73,12 @@ class ProfileChart(QtChart.QChartView):
         for n in range(ncomp):
             series = QtChart.QScatterSeries()
             series.setMarkerShape(QtChart.QScatterSeries.MarkerShapeRectangle)
+            series.setBorderColor(QtCore.Qt.transparent)
             ea, eb = a[n]*scale,b[n]*scale
             delta_a = ea*(1-np.cos(angle[n]/180*np.pi))-eb*np.sin(angle[n]/180*np.pi)
             delta_b = ea*np.sin(angle[n]/180*np.pi)+eb*(1-np.cos(angle[n]/180*np.pi))
             msize = max(ea, eb)*np.sqrt(2)
             series.setMarkerSize(msize)
-            series.setBorderColor(QtCore.Qt.transparent)
             ellipsePath = QtGui.QPainterPath()
             ellipsePath.addEllipse(0,0,ea,eb)
             ellipse = QtGui.QImage(msize,msize,QtGui.QImage.Format_ARGB32)
@@ -96,8 +96,29 @@ class ProfileChart(QtChart.QChartView):
             ellipse_painter.drawPath(ellipsePath)
             ellipse_painter.end()
             series.setBrush(QtGui.QBrush(ellipse))
-            #pen = QtGui.QPen(QtGui.QColor(QtCore.Qt.blue))
-            #series.setPen(pen)
+
+            if weights[n] > 0.01:
+                label_series = QtChart.QScatterSeries()
+                label_series.setMarkerShape(QtChart.QScatterSeries.MarkerShapeRectangle)
+                label_series.setMarkerSize(1000)
+                label_series.setBorderColor(QtCore.Qt.transparent)
+                label = QtGui.QImage(1000,1000,QtGui.QImage.Format_ARGB32)
+                label.fill(QtCore.Qt.transparent)
+                label_painter = QtGui.QPainter(label)
+                label_painter_color = QtGui.QColor(colors[n])
+                label_pen_color = QtGui.QColor(colors[n])
+                label_painter.setPen(label_pen_color)
+                label_painter.setBrush(label_painter_color)
+                label_painter.setFont(QtGui.QFont("Times",20))
+                region = QtCore.QRect(ellipse.rect().center().x(), ellipse.rect().center().y(),1000,1000) 
+                label_painter.drawText(region,QtCore.Qt.AlignCenter,"({:.2f},{:.2f})".format(x[n],y[n]))
+                label_painter.end()
+                label_series.setBrush(QtGui.QBrush(label))
+                label_series.append(x[n],y[n])
+                self.profileChart.addSeries(label_series)
+                label_series.attachAxis(self.axisX)
+                label_series.attachAxis(self.axisY)
+
             series.append(x[n],y[n])
             self.profileChart.addSeries(series)
             series.attachAxis(self.axisX)
@@ -109,9 +130,12 @@ class ProfileChart(QtChart.QChartView):
         #pen.setWidth(3)
         if type == 'scatter':
             series = QtChart.QScatterSeries()
-            pen = QtGui.QPen(QtGui.QColor(QtCore.Qt.blue))
+            scatter_pen_color = QtGui.QColor(QtCore.Qt.black)
+            scatter_pen_color.setAlphaF(0.1)
+            pen = QtGui.QPen(scatter_pen_color)
             series.setPen(pen)
-            series.setMarkerSize(5)
+            series.setMarkerSize(2)
+            series.setBorderColor(QtCore.Qt.transparent)
         else:
             series = QtChart.QLineSeries()
             #series.setPen(pen)
@@ -170,8 +194,8 @@ class ProfileChart(QtChart.QChartView):
             self.axisY = QtChart.QValueAxis()
             self.axisX.setTitleText("X")
             self.axisY.setTitleText("Y")
-            self.axisX.setRange(-8,8)
-            self.axisY.setRange(-8,8)
+            self.axisX.setRange(-7,7)
+            self.axisY.setRange(-7,7)
         self.axisX.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
         self.axisX.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
         self.axisY.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
@@ -336,4 +360,3 @@ class ProfileChart(QtChart.QChartView):
         info.setStandardButtons(QtWidgets.QMessageBox.Ok)
         info.setEscapeButton(QtWidgets.QMessageBox.Close)
         info.exec()
-
