@@ -7,6 +7,7 @@ import numpy as np
 import os
 import pandas
 import PIL.Image as pilImage
+import PIL.ImageQt as pilQtImage
 import rawpy
 import random
 import sys
@@ -73,10 +74,17 @@ class Image(object):
             return qImg, img_array
         elif pathExtension in self.supportedImageFormats:
             img = pilImage.open(img_path)
-            img_rgb = np.fromstring(img.tobytes(),dtype=np.uint8)
-            img_rgb = img_rgb.reshape((img.size[1],img.size[0],3))
-            img_array = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
-            qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
+            if img.mode == 'RGB':
+                img_rgb = np.fromstring(img.tobytes(),dtype=np.uint8)
+                img_rgb = img_rgb.reshape((img.size[1],img.size[0],3))
+                img_array = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
+                qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
+            elif img.mode == 'L':
+                img_array = np.array(img)
+                qImg = pilQtImage.ImageQt(img)
+            else:
+                self.raise_error("Wrong format!")
+                return None, None
             return qImg, img_array
 
     def get_line_scan(self,start,end,img,scale_factor,normalize_to_img_max=True):

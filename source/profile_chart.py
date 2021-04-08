@@ -37,6 +37,7 @@ class ProfileChart(QtChart.QChartView):
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
         self.profileChart.setTheme(self.theme)
         self.setChart(self.profileChart)
+        self.image_worker = Image()
 
     def refresh(self,config):
         chartDefault = dict(config['chartDefault'].items())
@@ -110,8 +111,8 @@ class ProfileChart(QtChart.QChartView):
                 label_painter.setPen(label_pen_color)
                 label_painter.setBrush(label_painter_color)
                 label_painter.setFont(QtGui.QFont("Times",20))
-                region = QtCore.QRect(ellipse.rect().center().x(), ellipse.rect().center().y(),1000,1000) 
-                label_painter.drawText(region,QtCore.Qt.AlignCenter,"({:.2f},{:.2f})".format(x[n],y[n]))
+                region = QtCore.QRect(500,500,1000,1000) 
+                label_painter.drawText(region,QtCore.Qt.AlignLeft,"({:.2f},{:.2f})".format(x[n],y[n]))
                 label_painter.end()
                 label_series.setBrush(QtGui.QBrush(label))
                 label_series.append(x[n],y[n])

@@ -45,22 +45,15 @@ class Window(QtCore.QObject):
         self.config.read('./configuration.ini')
         self.image_worker = Image()
         self.fit_worker = FitFunctions()
+        self.stopped = False
 
-        self.covars = np.array([[[.1, .0], [.0, .1]],
-                                [[.1, .0], [.0, .1]],
-                                [[.1, .0], [.0, .1]],
-                                [[.1, .0], [.0, .1]]])
-        self.samples = np.array([1500, 1500, 1500, 1500])
-        self.means = np.array([[-1.0, -.70],
-                               [.0, .0],
-                               [.5, 1.30],
-                               [1.0, .70]])
         primary_colors = ['salmon','bright green','bright pink','robin egg blue','bright lavender','deep sky blue','irish green','golden','greenish teal','light blue','butter yellow',\
                                                                             'turquoise green','iris','off blue','plum','mauve','burgundy','coral','clay','emerald green','cadet blue','avocado','rose pink','aqua green','scarlet']
         self.fit_colors = [mcolors.XKCD_COLORS['xkcd:'+name] for name in primary_colors]
         for color in mcolors.XKCD_COLORS.keys():
             if not color in primary_colors:
                 self.fit_colors.append(mcolors.XKCD_COLORS[color])
+        self.default_means = [[0,0],[2.3,0],[1.15,2],[-1.15,2],[-2.3,0],[-1.15,-2],[1.15,-2],[4.6,0],[2.3,4],[-2.3,4],[-4.6,0],[-2.3,-4],[2.3,-4],[3.45,2],[0,4],[-3.45,2],[-3.45,-2],[0,-4],[3.45,-2]]
 
     def refresh(self,config):
             self.config = config
@@ -70,14 +63,15 @@ class Window(QtCore.QObject):
             except:
                 pass
 
-    def main(self,path='./'):
+    def main(self,path="c:/users/yux20/documents/05042018 MoS2/interpolated_2D_stack_large.csv"):
         self.startIndex = "0"
         self.endIndex = "3"
         self.range = "5"
         self.nsamp = '10'
         self.ndraw = '2'
+        self.nzslices = '10'
         self.nfeature = '2'
-        self.ncomp = '7'
+        self.ncomp = '19'
         self.tol = '0.001'
         self.reg_covar = '1e-6'
         self.max_itr = '1500'
@@ -91,6 +85,7 @@ class Window(QtCore.QObject):
         self.defaultFileName = "GMM Fit"
         self.cost_series_X = [1]
         self.cost_series_Y = [1]
+        self.thread = QtCore.QThread(parent=self)
         self.file_has_been_created = False
         self.scatter_exist = False
         self.path = os.path.dirname(path)
@@ -111,6 +106,7 @@ class Window(QtCore.QObject):
         self.hSplitter.setCollapsible(0,False)
         self.hSplitter.setCollapsible(1,False)
         self.leftScroll = QtWidgets.QScrollArea(self.hSplitter)
+
         self.chooseSource = QtWidgets.QGroupBox("Input")
         self.chooseSource.setStyleSheet('QGroupBox::title {color:blue;}')
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
@@ -127,6 +123,15 @@ class Window(QtCore.QObject):
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0,2,1)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1,1,1)
         self.sourceGrid.addWidget(self.loadButton,1,1,1,1)
+
+        self.information = QtWidgets.QGroupBox("Information")
+        self.information.setStyleSheet('QGroupBox::title {color:blue;}')
+        self.informationGrid = QtWidgets.QGridLayout(self.information)
+        self.informationGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.informationLabel = QtWidgets.QLabel("")
+        self.informationLabel.setWordWrap(True)
+        self.informationGrid.addWidget(self.informationLabel,0,0)
+
         self.chooseDestination = QtWidgets.QGroupBox("Output")
         self.chooseDestination.setStyleSheet('QGroupBox::title {color:blue;}')
         self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
@@ -180,11 +185,13 @@ class Window(QtCore.QObject):
         self.numberOfSamplesEdit = QtWidgets.QLineEdit(self.nsamp)
         self.numberOfDrawsLabel = QtWidgets.QLabel("Number of Draws")
         self.numberOfDrawsEdit = QtWidgets.QLineEdit(self.ndraw)
-        self.drawSampleButton = QtWidgets.QPushButton("Draw")
+        self.numberOfZsLabel = QtWidgets.QLabel("Number of Z Slices")
+        self.numberOfZsEdit = QtWidgets.QLineEdit(self.nzslices)
+        self.drawSampleButton = QtWidgets.QPushButton("Draw Z=0")
         self.drawSampleButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.drawSampleButton.clicked.connect(self.draw_sample)
         self.drawSampleButton.setEnabled(False)
-        self.plotSampleButton = QtWidgets.QPushButton("Plot")
+        self.plotSampleButton = QtWidgets.QPushButton("Plot Z=0")
         self.plotSampleButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.plotSampleButton.clicked.connect(self.plot_sample)
         self.plotSampleButton.setEnabled(False)
@@ -192,8 +199,10 @@ class Window(QtCore.QObject):
         self.sampleOptionsGrid.addWidget(self.numberOfSamplesEdit,0,2,1,4)
         self.sampleOptionsGrid.addWidget(self.numberOfDrawsLabel,1,0,1,2)
         self.sampleOptionsGrid.addWidget(self.numberOfDrawsEdit,1,2,1,4)
-        self.sampleOptionsGrid.addWidget(self.drawSampleButton,2,0,1,3)
-        self.sampleOptionsGrid.addWidget(self.plotSampleButton,2,3,1,3)
+        self.sampleOptionsGrid.addWidget(self.numberOfZsLabel,2,0,1,2)
+        self.sampleOptionsGrid.addWidget(self.numberOfZsEdit,2,2,1,4)
+        self.sampleOptionsGrid.addWidget(self.drawSampleButton,3,0,1,3)
+        self.sampleOptionsGrid.addWidget(self.plotSampleButton,3,3,1,3)
 
         self.fitOptions = QtWidgets.QGroupBox("Parameters")
         self.fitOptions.setStyleSheet('QGroupBox::title {color:blue;}')
@@ -331,11 +340,14 @@ class Window(QtCore.QObject):
         self.meanPriorCheck = QtWidgets.QCheckBox()
         self.meanPriorCheck.setChecked(False)
         self.meanPriorCheck.stateChanged.connect(self.mean_prior_table_check_changed)
+        self.resetMeanPriorButton = QtWidgets.QPushButton("Reset")
+        self.resetMeanPriorButton.clicked.connect(self.set_default_mean_priors)
         self.mean_prior_table = QtWidgets.QTableWidget()
         self.mean_prior_table.setMinimumHeight(200)
         self.mean_prior_table_initialize(int(self.ncomp))
         self.meanPriorTableGrid.addWidget(self.meanPriorLabel,0,0,1,2)
-        self.meanPriorTableGrid.addWidget(self.meanPriorCheck,0,2,1,4)
+        self.meanPriorTableGrid.addWidget(self.meanPriorCheck,0,2,1,2)
+        self.meanPriorTableGrid.addWidget(self.resetMeanPriorButton,0,4,1,2)
         self.meanPriorTableGrid.addWidget(self.mean_prior_table,1,0,1,6)
 
         self.covarPriorTable = QtWidgets.QGroupBox("Covariance Prior")
@@ -411,7 +423,8 @@ class Window(QtCore.QObject):
         self.weightChart.set_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.FONTS_CHANGED.connect(self.weightChart.adjust_fonts)
         self.LeftGrid.addWidget(self.chooseSource,0,0)
-        self.LeftGrid.addWidget(self.chooseDestination,1,0)
+        self.LeftGrid.addWidget(self.information,1,0)
+        self.LeftGrid.addWidget(self.chooseDestination,2,0)
         self.LeftGrid.addWidget(self.appearance,3,0)
         self.LeftGrid.addWidget(self.sampleOptions,4,0)
         self.LeftGrid.addWidget(self.fitOptions,5,0)
@@ -548,15 +561,15 @@ class Window(QtCore.QObject):
         return means
 
     def set_default_mean_priors(self):
-        means = [[0,0],[2.3,0],[1.15,2],[-1.15,2],[-2.3,0],[-1.15,-2],[1.15,-2]]
-        for i in range(len(means)):
+        self.numberOfComponentsEdit.setText(str(len(self.default_means)))
+        for i in range(len(self.default_means)):
             for j in range(int(self.numberOfFeaturesEdit.text())):
                 if not self.mean_prior_table.item(i,j*2):
-                    item = QtWidgets.QTableWidgetItem('{:.2f}'.format(means[i][j]))
+                    item = QtWidgets.QTableWidgetItem('{:.2f}'.format(self.default_means[i][j]))
                     item.setTextAlignment(QtCore.Qt.AlignCenter)
                     self.mean_prior_table.setItem(i,2*j,item)
                 else:
-                    self.mean_prior_table.item(i,2*j).setText('{:.2f}'.format(means[i][j]))
+                    self.mean_prior_table.item(i,2*j).setText('{:.2f}'.format(self.default_means[i][j]))
 
     def update_mean_posteriors(self,means):
         for i in range(int(self.numberOfComponentsEdit.text())):
@@ -567,6 +580,17 @@ class Window(QtCore.QObject):
                     self.mean_prior_table.setItem(i,2*j+1,item)
                 else:
                     self.mean_prior_table.item(i,2*j+1).setText('{:.2f}'.format(means[i,j]))
+
+    def update_mean_priors(self):
+        for i in range(int(self.numberOfComponentsEdit.text())):
+            for j in range(int(self.numberOfFeaturesEdit.text())):
+                value = float(self.mean_prior_table.item(i,j*2+1).text())
+                if not self.mean_prior_table.item(i,2*j):
+                    item = QtWidgets.QTableWidgetItem('{:.2f}'.format(value))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.mean_prior_table.setItem(i,2*j,item)
+                else:
+                    self.mean_prior_table.item(i,2*j).setText('{:.2f}'.format(value))
 
     def covar_prior_table_initialize(self,text):
         ncomp = int(text)
@@ -653,6 +677,20 @@ class Window(QtCore.QObject):
                     else:
                         self.covarTab.widget(i).item(j,k).setText('{:.2f}'.format(covars[i-1,j,k]))
 
+    def update_covar_priors(self):
+        for j in range(int(self.numberOfFeaturesEdit.text())):
+            for k in range(int(self.numberOfFeaturesEdit.text())):
+                value = 0
+                for i in range(1,int(self.numberOfComponentsEdit.text())+1):
+                    value += float(self.covarTab.widget(i).item(j,k).text())
+                value /= int(self.numberOfComponentsEdit.text())
+                if not self.covarTab.widget(0).item(j,k):
+                    item = QtWidgets.QTableWidgetItem('{:.2f}'.format(value))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.covarTab.widget(0).setItem(j,k,item)
+                else:
+                    self.covarTab.widget(0).item(j,k).setText('{:.2f}'.format(value))
+
     def get_covar_priors(self):
         covars = []
         for j in range(int(self.numberOfFeaturesEdit.text())):
@@ -666,7 +704,7 @@ class Window(QtCore.QObject):
         return covars
 
     def choose_source(self):
-        path = QtWidgets.QFileDialog.getOpenFileName(None,"choose the input data file","c:/users/yux20/documents/05042018 MoS2/interpolated_3D_map.txt",filter="TXT (*.txt)")[0]
+        path = QtWidgets.QFileDialog.getOpenFileName(None,"choose the input data file","c:/users/yux20/documents/05042018 MoS2/interpolated_2D_stack_large.csv",filter="CSV (*.csv)")[0]
         self.currentSource = path
         self.chooseSourceLabel.setText("The source directory is:\n"+self.currentSource)
         self.loadButton.setEnabled(True)
@@ -676,45 +714,60 @@ class Window(QtCore.QObject):
         self.loadButton.setEnabled(False)
         QtCore.QCoreApplication.processEvents()
         try:
-            self.grid_3d = pandas.read_csv(filepath_or_buffer=self.currentSource,sep="\t",names=["x","y","z","probability"])
+            self.grid_3d = pandas.read_csv(filepath_or_buffer=self.currentSource)
+            self.nz = 0
+            self.z_levels = np.unique(self.grid_3d["z"].to_numpy())
+            if int(self.numberOfZsEdit.text()) > len(self.z_levels):
+                self.numberOfZsEdit.setText(str(len(self.z_levels)))
+                self.update_log("Number of Z levels truncated")
+            self.informationLabel.setText(self.grid_3d.describe(include='all').applymap(lambda x: np.around(x,3)).to_string())
             self.drawSampleButton.setEnabled(True)
             self.loadButton.setEnabled(True)
             self.update_log("Loading Complete")
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
         except:
             self.raise_error("Wrong Input!")
 
-    def draw_sample(self):
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(False)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(False)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(False)
-        self.plotSampleButton.setEnabled(False)
-        self.drawSampleButton.setEnabled(False)
-        self.update_log("Drawing Samples... ")
+    def draw_sample(self,level=0,change_buttons = True):
+        if change_buttons:
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(False)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(False)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(False)
+            self.plotSampleButton.setEnabled(False)
+            self.drawSampleButton.setEnabled(False)
+        self.update_log("Drawing Samples for level {}".format(level))
         QtCore.QCoreApplication.processEvents()
         indices = []
+        mask = self.grid_3d["z"]==list(self.z_levels)[level]
         for _ in range(int(self.numberOfDrawsEdit.text())):
-            draw = rv_discrete(name='custm',values=(self.grid_3d.index,self.grid_3d["probability"]))
-            indices.append(draw.rvs(size=int(self.numberOfSamplesEdit.text())))
-            self.update_log("Draw {} finished".format(_+1))
-            QtCore.QCoreApplication.processEvents()
+            if self.stopped:
+                break
+            else:
+                draw = rv_discrete(name='custm',values=(self.grid_3d[mask].index,self.grid_3d[mask]["intensity"]))
+                indices.append(draw.rvs(size=int(self.numberOfSamplesEdit.text())))
+                self.update_log("Draw {} finished".format(_+1))
+                QtCore.QCoreApplication.processEvents()
         indices = np.concatenate(indices)
         selected = self.grid_3d.iloc[indices]
         x, y = selected["x"].to_numpy(),selected["y"].to_numpy()
         self.inputdata = np.vstack([x,y]).T
-        self.label = np.full(len(self.inputdata),1)
-        self.update_log("Drawing Completed")
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
-        self.plotSampleButton.setEnabled(True)
-        self.drawSampleButton.setEnabled(True)
+        self.update_log("Drawing for level {} Completed".format(level))
+        if change_buttons:
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
+            self.plotSampleButton.setEnabled(True)
+            self.drawSampleButton.setEnabled(True)
 
-    def plot_sample(self):
+    def plot_sample(self,level=0):
         self.update_log("Plotting Samples... ")
         QtCore.QCoreApplication.processEvents()
-        self.distributionChart.add_chart(self.inputdata[:,0],self.inputdata[:,1],'scatter')
+        self.distributionChart.add_chart(self.inputdata[level][:,0],self.inputdata[level][:,1],'scatter')
         self.update_log("Plotting Complete")
         self.scatter_exist = True
 
@@ -764,10 +817,9 @@ class Window(QtCore.QObject):
         self.cost_series_Y = [1]
         if not self.scatter_exist:
             self.distributionChart.add_chart(self.inputdata[:,0],self.inputdata[:,1],'scatter')
-        self.estimator.load_input(self.inputdata,self.label)
+        self.estimator.load_input(self.inputdata)
         self.estimator.UPDATE_LOG.connect(self.update_log)
         self.estimator.SEND_UPDATE.connect(self.update_plots)
-        self.thread = QtCore.QThread()
         self.estimator.moveToThread(self.thread)
         self.estimator.FINISHED.connect(self.thread.quit)
         self.estimator.FINISHED.connect(self.process_finished)
@@ -776,6 +828,14 @@ class Window(QtCore.QObject):
         return True
 
     def start(self):
+        if self.stopped:
+            self.stopped = False
+            self.nz  = 0
+        if self.nz == int(self.numberOfZsEdit.text()):
+            self.nz = 0
+        self.update_log("Z level {} started".format(self.nz))
+        if not hasattr(self,'inputdata'):
+            self.draw_sample(0)
         ready = self.prepare()
         if ready:
             self.thread.start()
@@ -786,6 +846,8 @@ class Window(QtCore.QObject):
             self.fitOptions.setEnabled(False)
 
     def stop(self):
+        self.stopped = True
+        self.nz = int(self.numberOfZsEdit.text()) + 1
         self.STOP_WORKER.emit()
         if self.thread.isRunning():
             self.thread.terminate()
@@ -797,11 +859,27 @@ class Window(QtCore.QObject):
         self.fitOptions.setEnabled(True)
 
     def process_finished(self):
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
-        self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
-        self.fitOptions.setEnabled(True)
+        if not self.stopped:
+            self.update_log("Z level {} finished".format(self.nz))
+            self.nz += 1
+            if self.thread.isRunning():
+                self.thread.terminate()
+                self.thread.wait()
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
+            QtCore.QCoreApplication.processEvents()
+            time.sleep(0.5)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(True)
+            if self.nz < int(self.numberOfZsEdit.text()):
+                self.draw_sample(self.nz,False)
+                #self.update_mean_priors()
+                #self.update_covar_priors()
+                self.start()
+        if self.stopped or self.nz == int(self.numberOfZsEdit.text()):
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].setEnabled(True)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].setEnabled(False)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[2].setEnabled(True)
+            self.ButtonBox.findChildren(QtWidgets.QPushButton)[3].setEnabled(True)
+            self.fitOptions.setEnabled(True)
 
     def reset(self):
         pass
@@ -1000,7 +1078,7 @@ class My_GMM(QtCore.QObject, BayesianGaussianMixture,metaclass=Meta_QT_GMM):
         self._estimate_means(nk, xk,True)
         self._estimate_precisions(nk, xk, sk,True)
 
-    def _estimate_precisions(self, nk, xk, sk,initialize=True):
+    def _estimate_precisions(self, nk, xk, sk,initialize=False):
         """Estimate the precisions parameters of the precision distribution.
         Parameters
         ----------
@@ -1154,7 +1232,7 @@ class My_GMM(QtCore.QObject, BayesianGaussianMixture,metaclass=Meta_QT_GMM):
             self.covariances_ = self.covariance_prior_
 
 
-    def load_input(self,X,y):
+    def load_input(self,X,y=None):
         self.inputdata = X
         self.label = y
 
