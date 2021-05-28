@@ -19,8 +19,12 @@ from math import pi as Pi
 from matplotlib.patches import Polygon as matPolygon
 from matplotlib.collections import PatchCollection
 from process_monitor import Monitor
-import pycuda.compiler as comp
-import pycuda.driver as drv
+try:
+    import pycuda.compiler as comp
+    import pycuda.driver as drv
+    CUDA_EXIST = True
+except:
+    CUDA_EXIST = False
 from pymatgen.io.cif import CifParser
 from pymatgen.core import sites as pgSites
 from pymatgen.core import structure as pgStructure
@@ -967,7 +971,7 @@ class DiffractionPattern(QtCore.QObject):
             self.XYZ = np.dstack((self.Kx,self.Ky,self.Kz)).reshape((self.Kx.shape[0],self.Kx.shape[1],self.Kx.shape[2],3))
         self.AFF = AFF
         self.constant_atomic_structure_factor = constant_atomic_structure_factor
-        self.useCUDA = useCUDA
+        self.useCUDA = useCUDA and CUDA_EXIST
         self._abort = False
 
     def atomic_form_factor(self,specie):
@@ -1927,32 +1931,6 @@ class TAPD_Simulation(QtCore.QObject):
         if angle < 0:
             return 2*math.pi+angle, lenvector
         return angle, lenvector
-
-
-def cuda_test():
-    device = pycuda.autoinit.device
-    print(device.get_attribute(drv.device_attribute.MAX_THREADS_PER_BLOCK))
-    print(device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X))
-    print(device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_Y))
-    print(device.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_Z))
-    print(device.get_attribute(drv.device_attribute.MAX_GRID_DIM_X))
-    print(device.get_attribute(drv.device_attribute.MAX_GRID_DIM_Y))
-    print(device.get_attribute(drv.device_attribute.MAX_GRID_DIM_Z))
-    mod = comp.SourceModule(
-        """
-        __global__ void multiply_them(float *dest, float *a, float *b)
-        {
-            const int i = threadIdx.x;
-            dest[i] = a[i]*b[i];
-        }
-        """
-    )
-    multiply_them = mod.get_function("multiply_them")
-    a = np.random.randn(400).astype(np.float32)
-    b = np.random.randn(400).astype(np.float32)
-    dest = np.zeros_like(a)
-    multiply_them(drv.Out(dest),drv.In(a),drv.In(b),block=(400,1,1))
-    print(dest - a*b)
 
 if __name__ == '__main__':
     fit = FitFunctions()
