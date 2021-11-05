@@ -86,6 +86,9 @@ class Image(object):
             elif img.mode == 'L':
                 img_array = np.array(img)
                 qImg = pilQtImage.ImageQt(img)
+            elif img.mode == 'P':
+                img_array = np.array(img.convert(mode='L'))
+                qImg = pilQtImage.ImageQt(img)
             else:
                 self.raise_error("Wrong format!")
                 return None, None

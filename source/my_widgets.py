@@ -810,12 +810,22 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     QtCore.QCoreApplication.processEvents()
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),200,cmap=self.colormap)
+                    #from mpl_toolkits.mplot3d import axes3d, Axes3D
+                    #fig, ax = plt.subplots(subplot_kw=dict(projection="3d"))
+                    #surf_X, surf_Y = np.meshgrid(self.x_linear,self.y_linear)
+                    #surf = ax.plot_surface(surf_X, surf_Y,np.clip(np.log10(matrix.T/max_intensity),self.log_min,self.log_max),linewidth=0, antialiased=False,cmap=self.colormap,rcount=200, ccount=200)
+                    #plt.show()
             else:
                 if self.plot_IV:
                     self.UPDATE_LOG.emit('Invalid data. Please use YZ plot or XZ plot!')
                     QtCore.QCoreApplication.processEvents()
                 else:
                     self.cs = self.figure.axes.contourf(self.x_linear,self.y_linear,matrix.T/max_intensity,100,cmap=self.colormap)
+                    #from mpl_toolkits.mplot3d import axes3d, Axes3D
+                    #fig, ax = plt.subplots(subplot_kw=dict(projection="3d"))
+                    #surf_X, surf_Y = np.meshgrid(self.x_linear,self.y_linear)
+                    #surf = ax.plot_surface(surf_X, surf_Y,matrix.T/max_intensity,linewidth=0, antialiased=False,cmap=self.colormap,rcount=200, ccount=200)
+                    #plt.show()
         elif self.type == 'XZ':
             matrix = self.intensity[:,self.nkz,:]
             max_intensity = np.amax(np.amax(matrix))

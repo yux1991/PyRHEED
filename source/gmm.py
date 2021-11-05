@@ -63,6 +63,9 @@ class Window(QtCore.QObject):
             except:
                 pass
 
+    def set_status(self,status):
+        self.status = status
+
     def main(self,path="c:/users/yux20/documents/05042018 MoS2/interpolated_2D_stack_large.csv"):
         self.startIndex = "0"
         self.endIndex = "3"
