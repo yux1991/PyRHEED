@@ -33,11 +33,13 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 - numpy 1.14.5
 - pandas 0.24.2
 - pillow 5.2.0
+- pycuda 2020.1+cuda102 (optional)
 - pymatgen 2019.4.11
 - pyqt5 5.12
 - pyqtchart 5.12
 - pyqtdatavisualization 5.12
 - rawpy 0.11.0
+- scikit-learn 0.24.1
 - scipy 1.1.0
 - shapely 1.6.4.post2
 - xlrd 1.2.0
