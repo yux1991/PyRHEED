@@ -23,6 +23,7 @@ class Window():
         config = configparser.ConfigParser()
         config.read('./configuration.ini')  #Read the configuration file
         app = QtWidgets.QApplication(sys.argv)
+        self.screenScaleFactor = (app.primaryScreen().geometry().width()/1920 + app.primaryScreen().geometry().height()/1080)//2
         icon = QtGui.QIcon('./icons/icon.png')
         app.setWindowIcon(icon)
         self.window = window.Window(config)    #Initialze the main window using the default values in the configuration
@@ -47,9 +48,11 @@ class Window():
 
     def run_preference(self):
         self.preference.main()
+        self.preference.DefaultSettings_Dialog.setFont(QtGui.QFont(self.preference.DefaultSettings_Dialog.font().family(),self.preference.DefaultSettings_Dialog.font().pointSize()*self.screenScaleFactor))
 
     def run_scenario(self):
         self.scenario_window = scenario.Window()
+        self.scenario_window.setFont(QtGui.QFont(self.scenario_window.font().family(),self.scenario_window.font().pointSize()*self.screenScaleFactor))
 
     def run_reciprocal_space_mapping(self,path):
         self.reciprocal_space_mapping = reciprocal_space_mapping.Window()
@@ -60,12 +63,14 @@ class Window():
         self.window.RETURN_STATUS.connect(self.reciprocal_space_mapping.set_status)
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.reciprocal_space_mapping.refresh)
         self.reciprocal_space_mapping.main(path)
+        self.reciprocal_space_mapping.Dialog.setFont(QtGui.QFont(self.reciprocal_space_mapping.Dialog.font().family(),self.reciprocal_space_mapping.Dialog.font().pointSize()*self.screenScaleFactor))
 
     def run_generate_report(self,path):
         self.generate_report = generate_report.Window()
         self.generate_report.STATUS_REQUESTED.connect(self.window.status)
         self.window.RETURN_STATUS.connect(self.generate_report.set_status)
         self.generate_report.main(path)
+        self.generate_report.Dialog.setFont(QtGui.QFont(self.generate_report.Dialog.font().family(),self.generate_report.Dialog.font().pointSize()*self.screenScaleFactor))
 
     def run_manual_fit(self,path,nop):
         self.manual_fit = manual_fit.Window()
@@ -73,6 +78,7 @@ class Window():
         self.window.RETURN_STATUS.connect(self.manual_fit.set_status)
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.manual_fit.refresh)
         self.manual_fit.main(path,nop)
+        self.manual_fit.Dialog.setFont(QtGui.QFont(self.manual_fit.Dialog.font().family(),self.manual_fit.Dialog.font().pointSize()*self.screenScaleFactor))
 
     def run_gmm(self,path):
         self.gmm = gmm.Window()
@@ -81,6 +87,7 @@ class Window():
         self.window.RETURN_STATUS.connect(self.gmm.set_status)
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.gmm.refresh)
         self.gmm.main(path)
+        self.gmm.Dialog.setFont(QtGui.QFont(self.gmm.Dialog.font().family(),self.gmm.Dialog.font().pointSize()*self.screenScaleFactor))
 
     def run_broadening(self,path):
         self.broadening = broadening.Window()
@@ -89,18 +96,22 @@ class Window():
         self.window.RETURN_STATUS.connect(self.broadening.set_status)
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.broadening.refresh)
         self.broadening.main(path)
+        self.broadening.Dialog.setFont(QtGui.QFont(self.broadening.Dialog.font().family(),self.broadening.Dialog.font().pointSize()*self.screenScaleFactor))
 
     def run_statistical_factor(self):
         self.statistical_factor = statistical_factor.Window()
         self.statistical_factor.main()
+        self.statistical_factor.setFont(QtGui.QFont(self.statistical_factor.font().family(),self.statistical_factor.font().pointSize()*self.screenScaleFactor))
 
     def run_simulate_RHEED(self):
         self.simulation = simulate_RHEED.Window()
         self.simulation.main()
+        self.simulation.setFont(QtGui.QFont(self.simulation.font().family(),self.simulation.font().pointSize()*self.screenScaleFactor))
 
     def run_kikuchi(self):
         self.kikuchi = kikuchi.Window()
         self.kikuchi.main()
+        self.kikuchi.Dialog.setFont(QtGui.QFont(self.kikuchi.Dialog.font().family(),self.kikuchi.Dialog.font().pointSize()*self.screenScaleFactor))
 
     def run_3D_graph(self,path=''):
         """The window to show a 3D surface
@@ -110,6 +121,7 @@ class Window():
                 The path of the text file that contains the 2D reciprocal space mapping data. Default is ''.
         """
         self.graph = graph_3D_surface.Graph()
+        self.graph.setFont(QtGui.QFont(self.graph.font().family(),self.graph.font().pointSize()*self.screenScaleFactor))
         self.graph.run_3D_graph(path)
 
     def run_2D_contour(self, path=None, insideGraph3D = False, min=0.0, max=1.0, radius_min=0, radius_max=10, number_of_levels=50, colormap='jet'):
@@ -156,4 +168,3 @@ class Window():
 
 if __name__ == '__main__':
     Window()
-

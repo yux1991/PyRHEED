@@ -203,7 +203,7 @@ class Window(QtCore.QObject):
         self.parametersGrid.addWidget(self.grouping,4,1)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
-        self.appearance.setMaximumHeight(100)
+        #self.appearance.setMaximumHeight(100)
         self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
         self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
         self.fontListLabel = QtWidgets.QLabel("Change Font")
@@ -285,7 +285,7 @@ class Window(QtCore.QObject):
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
-        self.statusBar.setFixedHeight(150)
+        #self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.progressBar = QtWidgets.QProgressBar()
         self.progressBar.setVisible(False)
