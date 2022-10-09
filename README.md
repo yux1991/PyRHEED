@@ -135,6 +135,10 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 
 ![simulation](https://user-images.githubusercontent.com/38077812/111377823-1f53a780-866f-11eb-8b26-4638de0200c0.gif)
 
+10. 3D Reciprocal Space Structure:
+
+![MoS2_3D](https://user-images.githubusercontent.com/38077812/194733820-9a23a9fd-70cc-4351-8e6c-ded2137aa885.gif)
+
 
 ## Contact
 Please contact Yu Xiang at [yux1991@gmail.com](mailto:yux1991@gmail.com) if you have any questions or suggestions.
