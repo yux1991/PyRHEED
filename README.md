@@ -1,4 +1,4 @@
-# <img src="https://github.com/yux1991/PyRHEED/blob/master/source/icons/icon.png" width="48"/> PyRHEED
+# <img src="https://github.com/yux1991/PyRHEED/blob/master/src/icons/icon.png" width="48"/> PyRHEED
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/yux1991/PyRHEED/graphs/commit-activity) [![GitHub license](https://img.shields.io/github/license/yux1991/PyRHEED.svg)](https://github.com/yux1991/PyRHEED/blob/master/LICENSE) [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](mailto:yux1991@gmail.com)
 
 ## Table of Content
@@ -26,40 +26,27 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 5. Read the crystal structure from a CIF file and create a customized structure by stacking different crystalline materials together. Calculate the diffraction pattern from this structure based on the kinematic diffraction theory.
 6. Simulate the reciprocal 3D structure from a given structure. The atomic model can be created within this program. It is especially designed to simulate the diffraction from a 2D translational antiphase domain model, see details in the paper by [Lu et al.](https://www.sciencedirect.com/science/article/pii/0039602881905410).
 
-## Requirements
-- astropy 3.2.1
-- lxml 4.2.3
-- matplotlib 2.2.2
-- numpy 1.14.5
-- pandas 0.24.2
-- pillow 5.2.0
-- pycuda 2020.1+cuda102 (optional)
-- pymatgen 2019.4.11
-- pyqt5 5.12
-- pyqtchart 5.12
-- pyqtdatavisualization 5.12
-- rawpy 0.11.0
-- scikit-learn 0.24.1
-- scipy 1.1.0
-- shapely 1.6.4.post2
-- xlrd 1.2.0
-
 ## Usage
 1. Installation
     ```
     git clone https://github.com/yux1991/PyRHEED.git
-    cd source
+    cd PyRHEED
+    python setup.py install
+    ```
+2. Usage
+    ```
+    cd src
     python main.py
     ```
-2. Load data
+3. Load data
 
     The RHEED data are often images. Both raw image and compressed image files could be directly opened through the open file dialog. The image is automatically converted to a gray scale image. Note that JPEG only supports up to 8-bit RGB data. Please use other image formats if a higher dynamic range is desiered.
     
-3. Analysis
+4. Analysis
 
     Depending on the purpose, several kinds of data analysis can be done with this application. The RHEED pattern simulation, structure factor simulation are modules that does not depend on the experimental data.
 
-4. Run Scenario
+5. Run Scenario
 
     Load the predefined scenario or create a customized one, then run the scenario to automatically generate the results
     
