@@ -1,6 +1,9 @@
 #don't track those folders
 .idea/
 .vscode/
+build/
+dist/
+PyRHEED.egg-info/
 src/.idea
 src/__pycache__
 src/venv

@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-with open('requirements.txt') as f:
+with open('requirements.txt', encoding='UTF-8') as f:
     required = f.read().splitlines()
 
 setup(
@@ -11,5 +11,6 @@ setup(
    author='Yu Xiang',
    author_email='yux1991@gmail.com',
    packages=find_packages(),
+   setup_requires=['numpy == 1.21.6','scipy == 1.7.3'],
    install_requires=required
 )
