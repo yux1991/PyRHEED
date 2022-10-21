@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtWidgets
 import configparser
+import os
 
 class Window(QtCore.QObject):
 
@@ -10,7 +11,8 @@ class Window(QtCore.QObject):
         super(Window,self).__init__()
         self.twoDimensionalMappingRegion = [0,0,0,0,0]
         self.config = configparser.ConfigParser()
-        self.config.read('./configuration.ini')
+        dirname = os.path.dirname(__file__)
+        self.config.read(os.path.join(dirname,'configuration.ini'))
         self.defaultLineValueList = [['0', '0', '20', '0', '5', '60', '0.4', '100', '5', '20', '10', '0', '10'], \
                                      ['361.13', '20', '0', '5', '20', '0', '100', '50', '0', '500', '0.4', '0', '1',\
                                       '100', '60', '0', '180', '5', '0', '20', '10', '0', '-15', '15', '10'], \

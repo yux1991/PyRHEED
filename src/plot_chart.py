@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart, QtSvg
 import numpy as np
+import os
 
 class PlotChart(QtWidgets.QWidget):
 
@@ -7,6 +8,7 @@ class PlotChart(QtWidgets.QWidget):
 
     def __init__(self,theme,coord):
         super(PlotChart,self).__init__()
+        self.dirname = os.path.dirname(__file__)
         self.type = coord
         if theme == 0:
             self.theme = QtChart.QChart.ChartThemeLight
@@ -260,7 +262,7 @@ class PlotChart(QtWidgets.QWidget):
 
     def save_polar_as_text(self):
         if self.CHART_IS_PRESENT:
-            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./polar.txt","Text (*.txt)")
+            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.join(self.dirname,"polar.txt"),"Text (*.txt)")
             if not self.filename[0] == "":
                 np.savetxt(self.filename[0],np.vstack((self.currentRadius,self.currentProfile)).transpose(),fmt='%5.3f')
             else:
@@ -270,7 +272,7 @@ class PlotChart(QtWidgets.QWidget):
 
     def save_polar_as_image(self):
         if self.CHART_IS_PRESENT:
-            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./plot.png","PNG (*.png);;JPEG (*.jpeg);;GIF (*.gif);;BMP (*.bmp)")
+            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.join(self.dirname,"plot.png"),"PNG (*.png);;JPEG (*.jpeg);;GIF (*.gif);;BMP (*.bmp)")
             if not self.filename[0] == "":
                 output_size = QtCore.QSize(int(self.profileChart.size().width()),int(self.profileChart.size().height()))
                 output_rect = QtCore.QRectF(QtCore.QPointF(0,0),QtCore.QSizeF(output_size))
@@ -289,7 +291,7 @@ class PlotChart(QtWidgets.QWidget):
 
     def save_polar_as_SVG(self):
         if self.CHART_IS_PRESENT:
-            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./plot.svg","SVG (*.svg)")
+            self.filename = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.join(self.dirname,"plot.svg"),"SVG (*.svg)")
             if not self.filename[0] == "":
                 output_size = QtCore.QSize(int(self.profileChart.size().width()),int(self.profileChart.size().height()))
                 output_rect = QtCore.QRectF(QtCore.QPointF(0,0),QtCore.QSizeF(output_size))

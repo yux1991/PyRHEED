@@ -1,4 +1,5 @@
 import configparser
+import os
 
 config = configparser.ConfigParser()
 config['CIF'] =  {'cif_path':'C:/Google Drive/Documents/Manuscripts/TMDCs on sapphire/DFT/Buffer Layer/S-CONTCAR-No-Buffer.cif',
@@ -90,5 +91,6 @@ config['TAPD'] = {'epi_cif_path':'C:/Google Drive/Documents/CIF/MoS2_3.15.cif',
                   'buffer_out_of_plane_high':0.5
                   }
 
-with open('./default_scenario.ini','w') as configfile:
+dirname = os.path.dirname(__file__)
+with open(os.path.join(dirname,'default_scenario.ini'),'w') as configfile:
     config.write(configfile)

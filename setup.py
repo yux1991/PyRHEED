@@ -1,8 +1,13 @@
-import os
+import sys
+import subprocess
 from setuptools import setup, find_packages
 
 with open('requirements.txt', encoding='UTF-8') as f:
     required = f.read().splitlines()
+
+subprocess.check_call([sys.executable, "-m", "pip", "install", 'numpy==1.21.6'])
+subprocess.check_call([sys.executable, "-m", "pip", "install", 'pyqtdatavisualization==5.15.5'])
+subprocess.check_call([sys.executable, "-m", "pip", "install", 'pyqtchart==5.15.6'])
 
 setup(
    name='PyRHEED',
@@ -11,6 +16,5 @@ setup(
    author='Yu Xiang',
    author_email='yux1991@gmail.com',
    packages=find_packages(),
-   setup_requires=['numpy == 1.21.6','scipy == 1.7.3'],
    install_requires=required
 )

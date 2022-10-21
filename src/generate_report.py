@@ -23,7 +23,8 @@ class Window(QtCore.QObject):
     def __init__(self):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
-        self.config.read('./configuration.ini')
+        self.dirname = os.path.dirname(__file__)
+        self.config.read(os.path.join(self.dirname,'configuration.ini'))
 
     def set_status(self,status):
         self.status = status
@@ -529,7 +530,7 @@ class Window(QtCore.QObject):
         return F,K,Ferror
 
     def linear_fit(self):
-        file_name = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./linear_fit_results.txt","TXT (*.txt)")
+        file_name = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.path.join(self.dirname,"linear_fit_results.txt"),"TXT (*.txt)")
         if file_name:
             output = open(file_name[0],mode='w')
             for i in range(self.AZmin,self.AZmax+1):

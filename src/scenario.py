@@ -24,8 +24,9 @@ class Window(QtWidgets.QWidget):
         self.key_dict = {}
         self.row = {}
 
+        self.dirname = os.path.dirname(__file__)
         self.load_scenario()
-        default_destination = './RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy/')
+        default_destination = os.path.join(self.dirname,'RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy'))
         try:
             os.mkdir(default_destination)
         except FileExistsError:
@@ -43,7 +44,7 @@ class Window(QtWidgets.QWidget):
                 failed = True
                 suffix = 1
                 while failed:
-                    default_destination = './RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy') + ' (' + str(suffix) + ')/'
+                    default_destination = os.path.join(self.dirname,'RHEED scenario '+QtCore.QDateTime().currentDateTime().toString('MMddyyyy') + ' (' + str(suffix) + ')')
                     try:
                         os.mkdir(default_destination)
                         failed = False
@@ -168,7 +169,7 @@ class Window(QtWidgets.QWidget):
             scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
             self.tab.addTab(scroll,section)
 
-        self.scenario_path_label = QtWidgets.QLabel("The scenario is:\n"+'./default_scenario.ini')
+        self.scenario_path_label = QtWidgets.QLabel("The scenario is:\n"+os.path.join(self.dirname,'default_scenario.ini'))
         self.choose_scenario_button = QtWidgets.QPushButton("Choose Scenario")
         self.choose_scenario_button.pressed.connect(self.choose_scenario)
         self.save_scenario_button = QtWidgets.QPushButton("Save Scenario")
@@ -196,19 +197,19 @@ class Window(QtWidgets.QWidget):
         self.showNormal()
 
     def choose_path(self,row,section):
-        self.path_dict[section][row] = QtWidgets.QFileDialog.getOpenFileName(None,"Choose the "+self.key_dict[section][row],'./',filter="CIF (*.cif);;All Files (*.*)")[0]
+        self.path_dict[section][row] = QtWidgets.QFileDialog.getOpenFileName(None,"Choose the "+self.key_dict[section][row],self.dirname,filter="CIF (*.cif);;All Files (*.*)")[0]
         self.label_dict[section][row].setText("The " + self.key_dict[section][row] +" is:\n"+self.path_dict[section][row])
         if self.path_dict[section][row]:
             self.update_scenario
 
     def choose_dir(self,row,section):
-        self.dir_dict[section][row] = QtWidgets.QFileDialog.getOpenFileName(None,"Choose the "+self.key_dict[section][row],'./',filter="CIF (*.cif);;All Files (*.*)")[0]
+        self.dir_dict[section][row] = QtWidgets.QFileDialog.getOpenFileName(None,"Choose the "+self.key_dict[section][row],self.dirname,filter="CIF (*.cif);;All Files (*.*)")[0]
         self.label_dict[section][row].setText("The " + self.key_dict[section][row] +" is:\n"+self.path_dict[section][row])
         if self.dir_dict[section][row]:
             self.update_scenario
 
     def choose_scenario(self):
-        self.scenario_path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose scenario",'./',filter="INI (*.ini);;All Files (*.*)")[0]
+        self.scenario_path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose scenario",self.dirname,filter="INI (*.ini);;All Files (*.*)")[0]
         self.scenario_path_label.setText("The scenario path is:\n"+self.scenario_path)
         self.load_scenario(self.scenario_path)
         self.apply_scenario()
@@ -231,18 +232,18 @@ class Window(QtWidgets.QWidget):
     def save_scenario(self):
         current_date = QtCore.QDateTime().currentDateTime().toString('MMddyyyy_')
         filename = current_date + 'scenario.ini'
-        path = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./"+filename,"INI (*.ini)")[0]
+        path = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.path.join(self.dirname,filename),"INI (*.ini)")[0]
         with open(path,'w') as configfile:
             self.config.write(configfile)
 
     def save_as_default_scenario(self):
-        with open('./default_scenario.ini','w') as configfile:
+        with open(os.path.join(self.dirname,'default_scenario.ini'),'w') as configfile:
             self.config.write(configfile)
 
     def load_scenario(self,path=None):
         self.config = configparser.ConfigParser()
         if path == None:
-            self.config.read('./default_scenario.ini')
+            self.config.read(os.path.join(self.dirname,'default_scenario.ini'))
         else:
             self.config.read(path)
 

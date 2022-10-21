@@ -1,4 +1,5 @@
 import configparser
+import os
 
 class Configuration():
     DefaultDic = {'windowDefault':{'HS' : 0,\
@@ -49,5 +50,6 @@ class Configuration():
     def save_defaults(self,Dic = DefaultDic):
         config = configparser.ConfigParser()
         config.read_dict(Dic)
-        with open('./configuration.ini','w') as configfile:
+        dirname = os.path.dirname(__file__)
+        with open(os.path.join(dirname,'configuration.ini'),'w') as configfile:
             config.write(configfile)

@@ -17,7 +17,8 @@ class Window(QtCore.QObject):
     def __init__(self,fontname='Arial',fontsize=20,function='gaussian'):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
-        self.config.read('./configuration.ini')
+        dirname = os.path.dirname(__file__)
+        self.config.read(os.path.join(dirname,'configuration.ini'))
         self.fontname = fontname
         self.fontsize = fontsize
         self.image_worker = Image()

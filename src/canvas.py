@@ -546,7 +546,8 @@ class Canvas(QtWidgets.QGraphicsView):
         self.menu.popup(event.globalPos())
 
     def save_scene(self):
-        imageFileName = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./pattern.jpeg",\
+        dirname = os.path.dirname(__file__)
+        imageFileName = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.path.join(dirname,"pattern.jpeg"),\
                                                                    "Image (*.jpeg)")
         rect = self._scene.sceneRect()
         capture = QtGui.QImage(rect.size().toSize(),QtGui.QImage.Format_ARGB32_Premultiplied)

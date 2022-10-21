@@ -7,6 +7,7 @@ from pymatgen.io.cif import CifParser
 from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 from my_widgets import LabelMultipleLineEdit, LabelLineEdit, ColorPicker
 import sys
+import os
 import itertools
 
 class Window(QtCore.QObject):
@@ -15,8 +16,9 @@ class Window(QtCore.QObject):
 
     def __init__(self):
         super(Window,self).__init__()
+        dirname = os.path.dirname(__file__)
         self.config = configparser.ConfigParser()
-        self.config.read('./configuration.ini')
+        self.config.read(os.path.join(dirname,'configuration.ini'))
         self.kikuchi_line_series = {}
         self.kikuchi_envelope_series = {}
         self.reciprocal_spot_series = {}

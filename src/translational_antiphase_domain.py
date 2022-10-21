@@ -62,7 +62,8 @@ class Window(QtCore.QObject):
         self.ax_HWHM.set_xlabel(r'$\gamma$',fontsize=36)
         self.ax_HWHM.set_ylabel('HWHM (\u212B\u207B\u00B9)',fontsize=36)
         self.ax_HWHM.tick_params(labelsize=36)
-        file_name = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./HWHM vs gamma.txt","TXT (*.txt)")
+        dirname = os.path.dirname(__file__)
+        file_name = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.path.join(dirname,"HWHM vs gamma.txt"),"TXT (*.txt)")
         self.output = open(file_name[0],mode='w')
         for gamma,HWHM in zip(self.gamma,self.width):
             self.output.write(str(gamma)+'\t'+str(HWHM)+'\n')

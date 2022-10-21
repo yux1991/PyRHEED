@@ -1,6 +1,3 @@
-#This sets up the entire application, which reads the default configuration and initialize the UI
-#Last updated on 04/15/2019 by Y. Xiang
-#This code is written in Python 3.6.6 64-bit
 from PyQt5 import QtGui, QtWidgets, QtCore
 import broadening
 import gmm
@@ -9,6 +6,7 @@ import generate_report
 import graph_3D_surface
 import kikuchi
 import manual_fit
+import os
 import preference
 import reciprocal_space_mapping
 import simulate_RHEED
@@ -20,11 +18,12 @@ import window
 class Window():
     """The main class"""
     def __init__(self):
+        dirname = os.path.dirname(__file__)
         config = configparser.ConfigParser()
-        config.read('./configuration.ini')  #Read the configuration file
+        config.read(os.path.join(dirname,'configuration.ini'))  #Read the configuration file
         app = QtWidgets.QApplication(sys.argv)
         self.screenScaleFactor = (app.primaryScreen().geometry().width()/1200 + app.primaryScreen().geometry().height()/675)//2
-        icon = QtGui.QIcon('./icons/icon.png')
+        icon = QtGui.QIcon(os.path.join(dirname,'icons/icon.png'))
         app.setWindowIcon(icon)
         app.setFont(QtGui.QFont(app.font().family(),app.font().pointSize()*self.screenScaleFactor))
         self.window = window.Window(config)    #Initialze the main window using the default values in the configuration

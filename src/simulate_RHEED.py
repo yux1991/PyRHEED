@@ -47,12 +47,14 @@ class Window(QtWidgets.QWidget):
 
     def __init__(self):
         super(Window,self).__init__()
+        self.dirname = os.path.dirname(__file__)
         self.convertor_worker = Convertor()
 
     def main(self):
         self.graph = ScatterGraph()
-        self.AFF = pd.read_excel(open('./files/AtomicFormFactors.xlsx','rb'),sheet_name="Atomic Form Factors",index_col=0)
-        self.AR = pd.read_excel(open('./files/AtomicRadii.xlsx','rb'),sheet_name="Atomic Radius",index_col=0)
+        dirname = os.path.dirname(__file__)
+        self.AFF = pd.read_excel(open(os.path.join(dirname,'files/AtomicFormFactors.xlsx'),'rb'),sheet_name="Atomic Form Factors",index_col=0)
+        self.AR = pd.read_excel(open(os.path.join(dirname,'files/AtomicRadii.xlsx'),'rb'),sheet_name="Atomic Radius",index_col=0)
         self.structure_index = 0
         self.data_index_set = set()
         self.sample_index_set = set()
@@ -748,7 +750,7 @@ class Window(QtWidgets.QWidget):
         self.progressBar.setVisible(False)
 
     def choose_destination(self):
-        path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",'./',QtWidgets.QFileDialog.ShowDirsOnly)
+        path = QtWidgets.QFileDialog.getExistingDirectory(None,"choose save destination",self.dirname,QtWidgets.QFileDialog.ShowDirsOnly)
         self.currentDestination = path
         self.chooseDestinationLabel.setText("The save destination is:\n"+self.currentDestination)
 
@@ -956,7 +958,7 @@ class Window(QtWidgets.QWidget):
             self.update_log("Simulated diffraction patterns obtained!")
 
     def load_data(self):
-        path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The 3D Data",'./',filter="TXT (*.txt);;All Files (*.*)")[0]
+        path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The 3D Data",self.dirname,filter="TXT (*.txt);;All Files (*.*)")[0]
         if not path == "":
             self.update_log("Loading data ......")
             self.PROGRESS_HOLD.emit()
@@ -986,7 +988,7 @@ class Window(QtWidgets.QWidget):
 
     def get_cif_path(self,path=None):
         if not path:
-            path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The CIF File",'./',filter="CIF (*.cif);;All Files (*.*)")[0]
+            path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The CIF File",self.dirname,filter="CIF (*.cif);;All Files (*.*)")[0]
         if not path == "":
             self.update_log("CIF opened!")
             self.cifPath = path
@@ -1013,7 +1015,7 @@ class Window(QtWidgets.QWidget):
         self.add_sample_data(self.structure_index)
 
     def load_cif(self,text):
-        path = QtWidgets.QFileDialog.getOpenFileName(None,text,'./',filter="CIF (*.cif);;All Files (*.*)")[0]
+        path = QtWidgets.QFileDialog.getOpenFileName(None,text,self.dirname,filter="CIF (*.cif);;All Files (*.*)")[0]
         if text == 'Choose Substrate':
             self.TAPD_substrate_label.setText("The path of the substrate CIF is :\n"+path)
             self.substrate_path = path
@@ -1162,7 +1164,7 @@ class Window(QtWidgets.QWidget):
     def replace_structure(self,index):
         self.update_log("Replacing sample" + str(index+1))
         QtCore.QCoreApplication.processEvents()
-        path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The CIF File",'./',filter="CIF (*.cif);;All Files (*.*)")[0]
+        path = QtWidgets.QFileDialog.getOpenFileName(None,"Choose The CIF File",self.dirname,filter="CIF (*.cif);;All Files (*.*)")[0]
         if not path == "":
             self.update_log("CIF opened!")
             self.cifPath = path
@@ -1289,7 +1291,7 @@ class Window(QtWidgets.QWidget):
     def save_FFT(self,path=None):
         if not path:
             path = QtWidgets.QFileDialog.getSaveFileName(None,\
-                "Choose the destination for the FFT result",'./FFT.txt',"TXT (*.txt)")
+                "Choose the destination for the FFT result",os.path.join(self.dirname,'FFT.txt'),"TXT (*.txt)")
         self.update_log("Saving FFT...")
         self.SAVE_FFT.emit(path[0])
         QtCore.QCoreApplication.processEvents()
@@ -2493,9 +2495,9 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
             imageFileName1 = [kwargs['destination'] + 'lattice.bmp']
             imageFileName2 = [kwargs['destination'] + 'lattice_5x5_zoomed.bmp']
         else:
-            imageFileName1 = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./lattice.bmp",\
+            imageFileName1 = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.path.join(self.dirname,"lattice.bmp"),\
                                                                     "BMP (*.bmp);;JPEG (*.jpeg);;PNG(*.png)")
-            imageFileName2 = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name","./lattice_5x5_zoomed.bmp",\
+            imageFileName2 = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.path.join(self.dirname,"lattice_5x5_zoomed.bmp"),\
                                                                     "BMP (*.bmp);;JPEG (*.jpeg);;PNG(*.png)")
         if imageFileName1[0] and imageFileName2[0]:
             capture = self.renderToImage(0,QtCore.QSize(3000,3000))

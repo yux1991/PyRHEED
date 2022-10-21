@@ -29,7 +29,8 @@ class Window(QtCore.QObject):
         super(Window,self).__init__()
         self.analysisRegion = [0,0,0,0,0]
         self.config = configparser.ConfigParser()
-        self.config.read('./configuration.ini')
+        dirname = os.path.dirname(__file__)
+        self.config.read(os.path.join(dirname,'configuration.ini'))
         self.image_worker = Image()
         self.fit_worker = FitFunctions()
 
