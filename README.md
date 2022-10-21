@@ -17,7 +17,7 @@ which can hardly be detected using XRD. Another merit of RHEED is that the spot 
 measure the wafer-scale average of the material's properties including the lattice constants, grain orientation distribution and
 even defect density.
 
-It is written and tested with Python 3.6.6 (64 bit). The GUI is created using PyQt5. The *simulate_RHEED* module utilized the [pymatgen](http://pymatgen.org/) library to read CIF files and create structures. Major features include:
+It is written and tested with Python 3.7.4 (64 bit). The GUI is created using PyQt5. The *simulate_RHEED* module utilized the [pymatgen](http://pymatgen.org/) library to read CIF files and create structures. Major features include:
 
 1. RHEED raw image process using [rawpy](https://pypi.org/project/rawpy/) and intensity profile extraction which is accelerated by [numpy](https://www.numpy.org/) vecterization. Construction of 2D reciprocal space map and pole figure is automated. The 3D data could be saved as *.vtp format, which could be processed by [paraview](https://www.paraview.org).
 2. Batch fit RHEED line profiles with pre-defined peak functions (including Gaussian function and Voigt function) and save the formatted results.
@@ -27,26 +27,30 @@ It is written and tested with Python 3.6.6 (64 bit). The GUI is created using Py
 6. Simulate the reciprocal 3D structure from a given structure. The atomic model can be created within this program. It is especially designed to simulate the diffraction from a 2D translational antiphase domain model, see details in the paper by [Lu et al.](https://www.sciencedirect.com/science/article/pii/0039602881905410).
 
 ## Usage
-1. Installation
+1. Prerequisite
+
+    Make sure you have the Python 3.7.4 (64 bit) installed and added to the system PATH.
+
+2. Installation
     ```
     git clone https://github.com/yux1991/PyRHEED.git
     cd PyRHEED
     python setup.py install
     ```
-2. Usage
+3. Usage
     ```
     cd src
     python main.py
     ```
-3. Load data
+4. Load data
 
     The RHEED data are often images. Both raw image and compressed image files could be directly opened through the open file dialog. The image is automatically converted to a gray scale image. Note that JPEG only supports up to 8-bit RGB data. Please use other image formats if a higher dynamic range is desiered.
     
-4. Analysis
+5. Analysis
 
     Depending on the purpose, several kinds of data analysis can be done with this application. The RHEED pattern simulation, structure factor simulation are modules that does not depend on the experimental data.
 
-5. Run Scenario
+6. Run Scenario
 
     Load the predefined scenario or create a customized one, then run the scenario to automatically generate the results
     
