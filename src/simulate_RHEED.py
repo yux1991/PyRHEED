@@ -524,7 +524,6 @@ class Window(QtWidgets.QWidget):
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(5))
-        self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)

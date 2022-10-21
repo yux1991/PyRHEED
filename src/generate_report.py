@@ -154,7 +154,6 @@ class Window(QtCore.QObject):
         self.optionGrid.addWidget(self.HWHMRangeSlider,7,0,1,2)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
-        self.appearance.setMaximumHeight(100)
         self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
         self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
         self.appearanceGrid.setAlignment(QtCore.Qt.AlignTop)
@@ -163,7 +162,6 @@ class Window(QtCore.QObject):
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(15))
-        self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
@@ -177,7 +175,6 @@ class Window(QtCore.QObject):
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
-        self.statusBar.setMaximumHeight(120)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
                                     "\u00A0\u00A0\u00A0\u00A0Initialized!")
