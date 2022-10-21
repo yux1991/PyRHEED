@@ -158,7 +158,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.mainSplitter.addWidget(self.mainTab)
         self.mainSplitter.addWidget(self.controlPanelFrame)
-        self.mainSplitter.setSizes([800,400])
+        self.mainSplitter.setSizes([2000,400])
         self.mainSplitter.setStretchFactor(0,1)
         self.mainSplitter.setStretchFactor(1,1)
         self.mainSplitter.setCollapsible(0,False)

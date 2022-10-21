@@ -19,7 +19,6 @@ class Window(QtWidgets.QWidget):
         self.mainGrid = QtWidgets.QGridLayout(self.mainFrame)
         self.mainGrid.setAlignment(QtCore.Qt.AlignTop)
         self.Options = QtWidgets.QGroupBox("Options")
-        self.Options.setMaximumHeight(400)
         self.Options.setStyleSheet('QGroupBox::title {color:blue;}')
         self.OptionsGrid = QtWidgets.QGridLayout(self.Options)
         self.Eta = LabelSlider(0,100,0.5,100,"\u03B7 (\u03C0)")
@@ -43,7 +42,6 @@ class Window(QtWidgets.QWidget):
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
-        self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
                                   "\u00A0\u00A0\u00A0\u00A0Initialized!")
@@ -65,7 +63,6 @@ class Window(QtWidgets.QWidget):
         self.container.setFocusPolicy(QtCore.Qt.StrongFocus)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
-        self.appearance.setMaximumHeight(100)
         self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
         self.appearanceVBox = QtWidgets.QVBoxLayout(self.appearance)
         self.appearanceGrid = QtWidgets.QGridLayout()
@@ -74,7 +71,6 @@ class Window(QtWidgets.QWidget):
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(30))
-        self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)

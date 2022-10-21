@@ -135,7 +135,7 @@ class ProfileChart(QtChart.QChartView):
             scatter_pen_color.setAlphaF(0.7)
             pen = QtGui.QPen(scatter_pen_color)
             series.setPen(pen)
-            series.setMarkerSize(2)
+            series.setMarkerSize(10)
             series.setBorderColor(QtCore.Qt.black)
         else:
             series = QtChart.QLineSeries()

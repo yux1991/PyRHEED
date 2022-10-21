@@ -118,7 +118,7 @@ class VerticalLabelSlider(QtWidgets.QWidget):
                 self.label = QtWidgets.QLabel('\u00A0\u00A0'+self.name+'\u00A0BG\n({:3.2f})'.format(value))
             else:
                 self.label = QtWidgets.QLabel('\u00A0\u00A0'+self.name+'{}\n({:3.2f})'.format(self.index,value))
-            self.label.setFixedWidth(35)
+            #self.label.setFixedWidth(35)
             self.UIgrid.addWidget(self.slider,0,0)
             self.UIgrid.addWidget(self.label,1,0)
         elif direction == 'horizontal':

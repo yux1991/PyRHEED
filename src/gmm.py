@@ -162,7 +162,6 @@ class Window(QtCore.QObject):
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
-        self.appearance.setMaximumHeight(100)
         self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
         self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
         self.fontListLabel = QtWidgets.QLabel("Change Font")
@@ -170,7 +169,6 @@ class Window(QtCore.QObject):
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(12))
-        self.fontSizeLabel.setFixedWidth(160)
         self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
@@ -245,7 +243,6 @@ class Window(QtCore.QObject):
         self.fitOptionsGrid.addWidget(self.nInitEdit,60,2,1,4)
 
         self.covarianceType = QtWidgets.QLabel("Covariance Type")
-        self.covarianceType.setFixedWidth(160)
         self.covarianceTypeCombo = QtWidgets.QComboBox()
         for types in ('full','tied','diag','spherical'):
             self.covarianceTypeCombo.addItem(types,types)
@@ -253,7 +250,6 @@ class Window(QtCore.QObject):
         self.fitOptionsGrid.addWidget(self.covarianceTypeCombo,70,2,1,4)
 
         self.initMethodType = QtWidgets.QLabel("Initialization Method")
-        self.initMethodType.setFixedWidth(160)
         self.initMethodTypeCombo = QtWidgets.QComboBox()
         for types in ('random','kmeans'):
             self.initMethodTypeCombo.addItem(types,types)
@@ -261,7 +257,6 @@ class Window(QtCore.QObject):
         self.fitOptionsGrid.addWidget(self.initMethodTypeCombo,75,2,1,4)
 
         self.wcPriorType = QtWidgets.QLabel("Weight Prior Type")
-        self.wcPriorType.setFixedWidth(160)
         self.wcPriorTypeCombo = QtWidgets.QComboBox()
         for types in ('dirichlet_process','dirichlet_distribution'):
             self.wcPriorTypeCombo.addItem(types,types)
@@ -372,11 +367,8 @@ class Window(QtCore.QObject):
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
-        self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.progressBar = QtWidgets.QProgressBar()
-        self.progressBar.setFixedHeight(12)
-        self.progressBar.setFixedWidth(800)
         self.progressBar.setVisible(False)
         self.progressBar.setOrientation(QtCore.Qt.Horizontal)
         self.progressBarSizePolicy = self.progressBar.sizePolicy()
@@ -416,7 +408,6 @@ class Window(QtCore.QObject):
         self.distributionChartTitle = QtWidgets.QLabel('Distribution')
         self.distributionChart = profile_chart.ProfileChart(self.config)
         self.distributionChart.set_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
-        self.distributionChart.setFixedSize(1300,1300)
         self.FONTS_CHANGED.connect(self.distributionChart.adjust_fonts)
         self.costChartTitle = QtWidgets.QLabel('ELBO Change')
         self.costChart = profile_chart.ProfileChart(self.config)
@@ -424,6 +415,7 @@ class Window(QtCore.QObject):
         self.FONTS_CHANGED.connect(self.costChart.adjust_fonts)
         self.weightChart = bar_chart.BarChart(self.config)
         self.weightChart.set_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
+        self.weightChart.setFixedHeight(500)
         self.FONTS_CHANGED.connect(self.weightChart.adjust_fonts)
         self.LeftGrid.addWidget(self.chooseSource,0,0)
         self.LeftGrid.addWidget(self.information,1,0)
@@ -770,7 +762,7 @@ class Window(QtCore.QObject):
     def plot_sample(self,level=0):
         self.update_log("Plotting Samples... ")
         QtCore.QCoreApplication.processEvents()
-        self.distributionChart.add_chart(self.inputdata[level][:,0],self.inputdata[level][:,1],'scatter')
+        self.distributionChart.add_chart(self.inputdata[:,0],self.inputdata[:,1],'scatter')
         self.update_log("Plotting Complete")
         self.scatter_exist = True
 

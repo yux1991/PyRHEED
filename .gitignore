@@ -1,11 +1,10 @@
 #don't track those folders
 .idea/
 .vscode/
-source/.idea
-source/__pycache__
-source/venv
-source/venv_64
+src/.idea
+src/__pycache__
+src/venv
+src/venv_64
 Dockerfile
 PyRHEED.zip
-requirements.txt
 .dockerignore
