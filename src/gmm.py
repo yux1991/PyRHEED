@@ -112,7 +112,6 @@ class Window(QtCore.QObject):
         self.leftScroll = QtWidgets.QScrollArea(self.hSplitter)
 
         self.chooseSource = QtWidgets.QGroupBox("Input")
-        self.chooseSource.setStyleSheet('QGroupBox::title {color:blue;}')
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
         self.sourceGrid.setAlignment(QtCore.Qt.AlignTop)
         self.chooseSourceLabel = QtWidgets.QLabel("The input data directory is:\n"+self.currentSource)
@@ -129,7 +128,6 @@ class Window(QtCore.QObject):
         self.sourceGrid.addWidget(self.loadButton,1,1,1,1)
 
         self.information = QtWidgets.QGroupBox("Information")
-        self.information.setStyleSheet('QGroupBox::title {color:blue;}')
         self.informationGrid = QtWidgets.QGridLayout(self.information)
         self.informationGrid.setAlignment(QtCore.Qt.AlignTop)
         self.informationLabel = QtWidgets.QLabel("")
@@ -137,7 +135,6 @@ class Window(QtCore.QObject):
         self.informationGrid.addWidget(self.informationLabel,0,0)
 
         self.chooseDestination = QtWidgets.QGroupBox("Output")
-        self.chooseDestination.setStyleSheet('QGroupBox::title {color:blue;}')
         self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
         self.chooseDestinationLabel = QtWidgets.QLabel("The output directory is:\n"+self.currentSource)
         self.destinationNameLabel = QtWidgets.QLabel("The file name is:")
@@ -163,7 +160,6 @@ class Window(QtCore.QObject):
         self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
-        self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
         self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
         self.fontListLabel = QtWidgets.QLabel("Change Font")
         self.fontList = QtWidgets.QFontComboBox()
@@ -181,7 +177,6 @@ class Window(QtCore.QObject):
         self.appearanceGrid.addWidget(self.fontSizeSlider,1,1)
 
         self.sampleOptions = QtWidgets.QGroupBox("Sample")
-        self.sampleOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.sampleOptionsGrid = QtWidgets.QGridLayout(self.sampleOptions)
         self.numberOfSamplesLabel = QtWidgets.QLabel("Number of Samples")
         self.numberOfSamplesEdit = QtWidgets.QLineEdit(self.nsamp)
@@ -207,7 +202,6 @@ class Window(QtCore.QObject):
         self.sampleOptionsGrid.addWidget(self.plotSampleButton,3,3,1,3)
 
         self.fitOptions = QtWidgets.QGroupBox("Parameters")
-        self.fitOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.fitOptionsGrid = QtWidgets.QGridLayout(self.fitOptions)
         self.numberOfFeaturesLabel = QtWidgets.QLabel("Number of Features")
         self.numberOfFeaturesEdit = QtWidgets.QLineEdit(self.nfeature)
@@ -333,7 +327,6 @@ class Window(QtCore.QObject):
         self.fitOptionsGrid.addWidget(self.warmStartCheck,160,2,1,4)
 
         self.meanPriorTable = QtWidgets.QGroupBox("Mean Prior")
-        self.meanPriorTable.setStyleSheet('QGroupBox::title {color:blue;}')
         self.meanPriorTableGrid = QtWidgets.QGridLayout(self.meanPriorTable)
         self.meanPriorLabel = QtWidgets.QLabel("Use Mean Prior?")
         self.meanPriorCheck = QtWidgets.QCheckBox()
@@ -350,7 +343,6 @@ class Window(QtCore.QObject):
         self.meanPriorTableGrid.addWidget(self.mean_prior_table,1,0,1,6)
 
         self.covarPriorTable = QtWidgets.QGroupBox("Covariance Prior")
-        self.covarPriorTable.setStyleSheet('QGroupBox::title {color:blue;}')
         self.covarPriorTableGrid = QtWidgets.QGridLayout(self.covarPriorTable)
         self.covarPriorLabel = QtWidgets.QLabel("Use Covariance Prior?")
         self.covarPriorCheck = QtWidgets.QCheckBox()
@@ -366,7 +358,6 @@ class Window(QtCore.QObject):
         self.covarPriorTableGrid.addWidget(self.covarTab,1,0,1,6)
        
         self.statusBar = QtWidgets.QGroupBox("Log")
-        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.progressBar = QtWidgets.QProgressBar()

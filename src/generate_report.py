@@ -59,7 +59,6 @@ class Window(QtCore.QObject):
         self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
 
         self.chooseSource = QtWidgets.QGroupBox("Choose the Report File")
-        self.chooseSource.setStyleSheet('QGroupBox::title {color:blue;}')
         self.chooseSource.setMinimumWidth(300)
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
         self.sourceGrid.setAlignment(QtCore.Qt.AlignTop)
@@ -72,14 +71,12 @@ class Window(QtCore.QObject):
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
 
         self.ReportInformationBox = QtWidgets.QGroupBox("Information")
-        self.ReportInformationBox.setStyleSheet('QGroupBox::title {color:blue;}')
         self.ReportInformationGrid = QtWidgets.QGridLayout(self.ReportInformationBox)
         self.ReportInformationGrid.setAlignment(QtCore.Qt.AlignTop)
         self.ReportInformation = QtWidgets.QLabel("Fit function:\nNumber of peaks:\nDate of the report:\nStart image index:\nEnd image index:\nStart Kperp position:\nEnd Kperp position:\nKperp step size:")
         self.ReportInformationGrid.addWidget(self.ReportInformation)
 
         self.typeOfReportBox = QtWidgets.QGroupBox("Type of the Report to Be Generated")
-        self.typeOfReportBox.setStyleSheet('QGroupBox::title {color:blue;}')
         self.typeOfReportGrid = QtWidgets.QGridLayout(self.typeOfReportBox)
         self.typeOfReportGrid.setAlignment(QtCore.Qt.AlignTop)
         self.type = QtWidgets.QButtonGroup()
@@ -109,7 +106,6 @@ class Window(QtCore.QObject):
         self.typeOfReportGrid.addWidget(self.typeFrame,0,0)
 
         self.optionBox = QtWidgets.QGroupBox("Plot Options")
-        self.optionBox.setStyleSheet('QGroupBox::title {color:blue;}')
         self.optionGrid = QtWidgets.QGridLayout(self.optionBox)
         self.optionGrid.setAlignment(QtCore.Qt.AlignTop)
         self.peakLabel = QtWidgets.QLabel("Choose the peak to be analyzed:")
@@ -154,7 +150,6 @@ class Window(QtCore.QObject):
         self.optionGrid.addWidget(self.HWHMRangeSlider,7,0,1,2)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
-        self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
         self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
         self.appearanceGrid.setAlignment(QtCore.Qt.AlignTop)
         self.fontListLabel = QtWidgets.QLabel("Change Font")
@@ -173,7 +168,6 @@ class Window(QtCore.QObject):
         self.appearanceGrid.addWidget(self.fontSizeSlider,1,1)
 
         self.statusBar = QtWidgets.QGroupBox("Log")
-        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\

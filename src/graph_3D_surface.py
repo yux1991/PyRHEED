@@ -34,7 +34,6 @@ class Graph(QtWidgets.QWidget):
         self.setWindowModality(QtCore.Qt.WindowModal)
 
         self.chooseGraph = QtWidgets.QGroupBox("Choose Graph")
-        self.chooseGraph.setStyleSheet('QGroupBox::title {color:blue;}')
         self.chooseGraphGrid = QtWidgets.QGridLayout(self.chooseGraph)
         self.chooseSourceLabel = QtWidgets.QLabel("The path of the graph is:\n"+self.graphPath)
         self.chooseSourceLabel.setAlignment(QtCore.Qt.AlignTop)
@@ -47,7 +46,6 @@ class Graph(QtWidgets.QWidget):
         self.chooseGraphGrid.addWidget(self.chooseSourceButton,1,0)
 
         self.plotOptions = QtWidgets.QGroupBox("Contour Plot Options")
-        self.plotOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.plotOptionsVBox = QtWidgets.QVBoxLayout(self.plotOptions)
         self.plotOptionsGrid = QtWidgets.QGridLayout()
         self.colormapLabel = QtWidgets.QLabel("Colormap")
@@ -116,7 +114,6 @@ class Graph(QtWidgets.QWidget):
         self.themeList.addItem("Isabelle")
 
         self.colorGroupBox = QtWidgets.QGroupBox("3D Surface Colormap")
-        self.colorGroupBox.setStyleSheet('QGroupBox::title {color:blue;}')
 
         self.grBtoY = QtGui.QLinearGradient(0,0,1,100)
         self.grBtoY.setColorAt(1.0,QtCore.Qt.black)
@@ -174,7 +171,6 @@ class Graph(QtWidgets.QWidget):
         self.colorGroupBox.setLayout(self.colorHBox)
 
         self.statusBar = QtWidgets.QGroupBox("Log")
-        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)

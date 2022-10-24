@@ -218,7 +218,6 @@ class Window(QtWidgets.QWidget):
         self.TAPD_buffer_out_of_plane_distribution.setCurrentText('gaussian')
 
         self.distribution_parameters = QtWidgets.QGroupBox('Epilayer nucleation')
-        self.distribution_parameters.setStyleSheet('QGroupBox::title {color:blue;}')
         self.distribution_parameters_grid = QtWidgets.QGridLayout(self.distribution_parameters)
         self.distribution_parameters_grid.setAlignment(QtCore.Qt.AlignTop)
         self.TAPD_completely_random_label = QtWidgets.QLabel('Density')
@@ -227,7 +226,6 @@ class Window(QtWidgets.QWidget):
         self.distribution_parameters_grid.addWidget(self.TAPD_completely_random)
 
         self.buffer_in_plane_distribution_parameters = QtWidgets.QGroupBox('Buffer layer in-plane')
-        self.buffer_in_plane_distribution_parameters.setStyleSheet('QGroupBox::title {color:blue;}')
         self.buffer_in_plane_distribution_parameters_grid = QtWidgets.QGridLayout(self.buffer_in_plane_distribution_parameters)
         self.buffer_in_plane_distribution_parameters_grid.setAlignment(QtCore.Qt.AlignTop)
         self.TAPD_buffer_in_plane_completely_random_label = QtWidgets.QLabel('Density')
@@ -236,7 +234,6 @@ class Window(QtWidgets.QWidget):
         self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_completely_random)
 
         self.buffer_out_of_plane_distribution_parameters = QtWidgets.QGroupBox('Buffer layer out-of-plane')
-        self.buffer_out_of_plane_distribution_parameters.setStyleSheet('QGroupBox::title {color:blue;}')
         self.buffer_out_of_plane_distribution_parameters_grid = QtWidgets.QGridLayout(self.buffer_out_of_plane_distribution_parameters)
         self.buffer_out_of_plane_distribution_parameters_grid.setAlignment(QtCore.Qt.AlignTop)
         self.TAPD_buffer_out_of_plane_low_label = QtWidgets.QLabel('low (\u212B)')
@@ -344,7 +341,6 @@ class Window(QtWidgets.QWidget):
         self.CIF_tab.currentChanged.connect(self.CIF_tab_changed)
 
         self.chooseDestination = QtWidgets.QGroupBox("Save Destination")
-        self.chooseDestination.setStyleSheet('QGroupBox::title {color:blue;}')
         self.destinationGrid = QtWidgets.QGridLayout(self.chooseDestination)
         self.chooseDestinationLabel = QtWidgets.QLabel("The save destination is:\n")
         self.chooseDestinationLabel.setWordWrap(True)
@@ -425,7 +421,6 @@ class Window(QtWidgets.QWidget):
         self.tab.addTab(self.reciprocal_range_box,"Detector")
 
         self.plotOptions = QtWidgets.QGroupBox("Plot Options")
-        self.plotOptions.setStyleSheet('QGroupBox::title {color:blue;}')
         self.plotOptionsGrid = QtWidgets.QGridLayout(self.plotOptions)
         self.load_data_button = QtWidgets.QPushButton("Load data")
         self.load_data_button.clicked.connect(self.load_data)
@@ -519,7 +514,6 @@ class Window(QtWidgets.QWidget):
         self.themeList.addItem("black")
 
         self.fontListLabel = QtWidgets.QLabel("Change Font")
-        self.fontListLabel.setStyleSheet('QLabel {color:blue;}')
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
@@ -532,7 +526,6 @@ class Window(QtWidgets.QWidget):
         self.FONTS_CHANGED.connect(self.graph.change_fonts)
 
         self.shadowQualityLabel = QtWidgets.QLabel("Shadow Quality")
-        self.shadowQualityLabel.setStyleSheet('QLabel {color:blue;}')
         self.shadowQuality = QtWidgets.QComboBox(self)
         self.shadowQuality.addItem("None")
         self.shadowQuality.addItem("Low")
@@ -545,7 +538,6 @@ class Window(QtWidgets.QWidget):
         self.shadowQuality.currentIndexChanged.connect(self.graph.change_shadow_quality)
 
         self.statusBar = QtWidgets.QGroupBox("Log")
-        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         #self.statusBar.setFixedHeight(150)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
@@ -576,7 +568,6 @@ class Window(QtWidgets.QWidget):
         self.vLayout_left.addWidget(self.progressBar)
 
         themeLabel = QtWidgets.QLabel("Background Color")
-        themeLabel.setStyleSheet("QLabel {color:blue;}")
         self.appearanceGrid.addWidget(self.showCoordinatesWidget)
         self.appearanceGrid.addWidget(themeLabel)
         self.appearanceGrid.addWidget(self.themeList)
@@ -594,7 +585,6 @@ class Window(QtWidgets.QWidget):
         self.viewGrid.setContentsMargins(5,5,5,5)
         self.viewGrid.setAlignment(QtCore.Qt.AlignTop)
         viewLabel = QtWidgets.QLabel("Set View Direction")
-        viewLabel.setStyleSheet("QLabel {color:blue;}")
         self.graph.update_view_direction(16)
         self.viewDirection = QtWidgets.QWidget()
         self.viewDirectionGrid = QtWidgets.QGridLayout(self.viewDirection)
@@ -609,7 +599,6 @@ class Window(QtWidgets.QWidget):
         self.viewDirectionButtonGroup.buttonClicked.connect(self.view_direction_changed_emit)
 
         cameraPositionLabel = QtWidgets.QLabel("Set Camera Position")
-        cameraPositionLabel.setStyleSheet("QLabel {color:blue;}")
         self.horizontalRotation = LabelLineEdit('Horizontal Rotation',150,'0.0',1,'\u00B0')
         self.verticalRotation = LabelLineEdit('Vertical Rotation',150,'0.0',1,'\u00B0')
         self.zoom = LabelLineEdit('Zoom Level',150,'100.0')
@@ -1030,7 +1019,6 @@ class Window(QtWidgets.QWidget):
         lattice_constants_box = InfoBoard("Information",index)
         self.UPDATE_INOFRMATION_BOARD.connect(lattice_constants_box.update)
         shape_label = QtWidgets.QLabel("Shape")
-        shape_label.setStyleSheet('QLabel {color:blue;}')
         shape = IndexedComboBox(index)
         shape.addItem("Triangle")
         shape.addItem("Square")
@@ -1625,7 +1613,6 @@ class Window(QtWidgets.QWidget):
         lattice_constants_box = InfoBoard("Information",index)
         self.UPDATE_INOFRMATION_BOARD.connect(lattice_constants_box.update)
         shape_label = QtWidgets.QLabel("Shape")
-        shape_label.setStyleSheet('QLabel {color:blue;}')
         shape = IndexedComboBox(index)
         shape.addItem("Triangle")
         shape.addItem("Square")

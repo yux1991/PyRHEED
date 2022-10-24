@@ -18,14 +18,30 @@ import window
 class Window():
     """The main class"""
     def __init__(self):
-        dirname = os.path.dirname(__file__)
+        self.dirname = os.path.dirname(__file__)
         config = configparser.ConfigParser()
-        config.read(os.path.join(dirname,'configuration.ini'))  #Read the configuration file
-        app = QtWidgets.QApplication(sys.argv)
-        self.screenScaleFactor = (app.primaryScreen().geometry().width()/1200 + app.primaryScreen().geometry().height()/675)//2
-        icon = QtGui.QIcon(os.path.join(dirname,'icons/icon.png'))
-        app.setWindowIcon(icon)
-        app.setFont(QtGui.QFont(app.font().family(),app.font().pointSize()*self.screenScaleFactor))
+        config.read(os.path.join(self.dirname,'configuration.ini'))  #Read the configuration file
+        self.app = QtWidgets.QApplication(sys.argv)
+        self.screenScaleFactor = (self.app.primaryScreen().geometry().width()/1200 + self.app.primaryScreen().geometry().height()/675)//2
+        icon = QtGui.QIcon(os.path.join(self.dirname,'icons/icon.png'))
+        self.app.setWindowIcon(icon)
+        self.app.setFont(QtGui.QFont(self.app.font().family(),self.app.font().pointSize()*self.screenScaleFactor))
+        self.app.setStyle("fusion")
+        self.lightPalette = self.app.palette()
+        self.darkPalette = QtGui.QPalette()
+        self.darkPalette.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
+        self.darkPalette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
+        self.darkPalette.setColor(QtGui.QPalette.Base, QtGui.QColor(25, 25, 25))
+        self.darkPalette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(53, 53, 53))
+        self.darkPalette.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.black)
+        self.darkPalette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.white)
+        self.darkPalette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
+        self.darkPalette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
+        self.darkPalette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
+        self.darkPalette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
+        self.darkPalette.setColor(QtGui.QPalette.Link, QtGui.QColor(42, 130, 218))
+        self.darkPalette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(42, 130, 218))
+        self.darkPalette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
         self.window = window.Window(config)    #Initialze the main window using the default values in the configuration
         self.window.showMaximized()
         #self.window.setFixedSize(1600,1000)
@@ -42,9 +58,25 @@ class Window():
         self.window.KIKUCHI_PATTERN_REQUESTED.connect(self.run_kikuchi)
         self.window.THREE_DIMENSIONAL_GRAPH_REQUESTED.connect(self.run_3D_graph)
         self.window.SCENARIO_REQUESTED.connect(self.run_scenario)
+        self.window.TOGGLE_DARK_MODE.connect(self.toggle_light_dark_mode)
         self.preference = preference.Window()
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.window.refresh)
-        sys.exit(app.exec_())
+        self.toggle_light_dark_mode("light")
+        sys.exit(self.app.exec_())
+
+    def toggle_light_dark_mode(self, mode):
+        if mode == "light":
+            self.app.setPalette(self.lightPalette)
+            self.window.isDarkmode = False
+            for i in range(0,self.window.mainTab.count()):
+                self.window.mainTab.widget(i).setBackgroundBrush(QtGui.QBrush(QtGui.QColor('darkGray')))
+        elif mode == "dark":
+            self.app.setPalette(self.darkPalette)
+            self.window.isDarkmode = True
+            for i in range(0,self.window.mainTab.count()):
+                self.window.mainTab.widget(i).setBackgroundBrush(QtGui.QBrush(QtGui.QColor(20, 20, 20)))
+        self.app.setStyle("fusion")
+        self.preference.toggle_dark_theme(mode)
 
     def run_preference(self):
         self.preference.main()

@@ -27,7 +27,6 @@ class Window(QtCore.QObject):
     def main(self):
         self.label_size = 120
         self.chooseCif = QtWidgets.QGroupBox("Choose CIF")
-        self.chooseCif.setStyleSheet('QGroupBox::title {color:blue;}')
         self.chooseCifGrid = QtWidgets.QGridLayout(self.chooseCif)
         self.chooseCifLabel = QtWidgets.QLabel("The path of the CIF file is:\n")
         self.chooseCifLabel.setAlignment(QtCore.Qt.AlignTop)
@@ -38,7 +37,6 @@ class Window(QtCore.QObject):
         self.chooseCifGrid.addWidget(self.chooseCifButton,1,0)
 
         self.lattice_constants = QtWidgets.QGroupBox("Lattice Constants")
-        self.lattice_constants.setStyleSheet('QGroupBox::title {color:blue;}')
         self.lattice_constant_a       = LabelLineEdit('a',self.label_size,'',3,'\u212B')
         self.lattice_constant_b       = LabelLineEdit('b',self.label_size,'',3,'\u212B')
         self.lattice_constant_c       = LabelLineEdit('c',self.label_size,'',3,'\u212B')
@@ -54,7 +52,6 @@ class Window(QtCore.QObject):
         self.lattice_constants_grid.addWidget(self.lattice_constant_gamma)
 
         self.parameters = QtWidgets.QGroupBox("Experimental Parameters")
-        self.parameters.setStyleSheet('QGroupBox::title {color:blue;}')
         self.parameters_grid = QtWidgets.QVBoxLayout(self.parameters)
         self.zone_axis                = LabelMultipleLineEdit(3,'Zone axis (h k l)',self.label_size,['2','1','0'])
         self.out_of_plane_orientation = LabelMultipleLineEdit(3,'Out-of-plane axis (h k l)',self.label_size,['0','0','1'])
@@ -69,7 +66,6 @@ class Window(QtCore.QObject):
 
 
         self.options = QtWidgets.QGroupBox("Simulation Options")
-        self.options.setStyleSheet('QGroupBox::title {color:blue;}')
         self.options_grid = QtWidgets.QGridLayout(self.options)
         self.index_max = LabelLineEdit('Index maximum',self.label_size,'10',1)
         self.plot_range = LabelLineEdit('Plot range',self.label_size,'12',1)
@@ -114,7 +110,6 @@ class Window(QtCore.QObject):
         self.options_grid.addWidget(self.show_grid,8,3,1,1)
 
         self.statusBar = QtWidgets.QGroupBox("Log")
-        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \

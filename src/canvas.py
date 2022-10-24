@@ -14,7 +14,7 @@ class Canvas(QtWidgets.QGraphicsView):
     KEY_PRESS = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF)
     KEY_PRESS_WHILE_ARC = QtCore.pyqtSignal(QtCore.QPointF,float)
 
-    def __init__(self, parent,config):
+    def __init__(self, parent,config, isDarkMode):
         super(Canvas, self).__init__(parent)
         self._mode = "pan"
         self.canvasObject = "none"
@@ -29,6 +29,10 @@ class Canvas(QtWidgets.QGraphicsView):
         self._numberOfMoves = 0
         self._scaleBarIsPresent = False
         self._labelIsPresent = False
+        if isDarkMode:
+            self.default_background = QtGui.QColor('darkGray')
+        else:
+            self.default_background = QtGui.QColor(20, 20, 20)
 
         #Defaults
         canvasDefault = dict(config['canvasDefault'].items())
@@ -53,7 +57,7 @@ class Canvas(QtWidgets.QGraphicsView):
         self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor('darkGray')))
+        self.setBackgroundBrush(QtGui.QBrush(self.default_background))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
     def refresh(self,config):

@@ -166,3 +166,19 @@ class Window(QtCore.QObject):
         tab_new = self.refresh_tab(config)
         self.DefaultSettings_DialogGrid.replaceWidget(self.tab,tab_new)
         self.tab = tab_new
+
+    def toggle_dark_theme(self, mode):
+        if mode == "dark":
+            self.defaultLineValueList = [['0', '0', '20', '0', '5', '60', '0.4', '100', '5', '20', '10', '0', '10'], \
+                                        ['361.13', '20', '0', '5', '20', '0', '100', '50', '0', '500', '0.4', '0', '1',\
+                                        '100', '60', '0', '180', '5', '0', '20', '10', '0', '-15', '15', '10'], \
+                                        ['0.4', '20', '60', '0', '21'], ['2']]
+        elif mode == "light":
+            self.defaultLineValueList = [['0', '0', '20', '0', '5', '60', '0.4', '100', '5', '20', '10', '0', '10'], \
+                                        ['361.13', '20', '0', '5', '20', '0', '100', '50', '0', '500', '0.4', '0', '1',\
+                                        '100', '60', '0', '180', '5', '0', '20', '10', '0', '-15', '15', '10'], \
+                                        ['0.4', '20', '60', '0', '21'], ['0']]
+        Dic = self.save(self.defaultLineValueList)
+        config = configparser.ConfigParser()
+        config.read_dict(Dic)
+        self.DEFAULT_SETTINGS_CHANGED.emit(config)

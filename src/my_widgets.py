@@ -624,7 +624,6 @@ class InfoBoard(QtWidgets.QGroupBox):
         self.lattice_constants_grid.setContentsMargins(10,5,5,10)
         self.lattice_constants_label = QtWidgets.QLabel("")
         self.lattice_constants_grid.addWidget(self.lattice_constants_label,0,0)
-        self.setStyleSheet('QGroupBox::title {color:blue;}')
 
     def update(self,index,formula,a,b,c,alpha,beta,gamma):
         """This is an overload function"""

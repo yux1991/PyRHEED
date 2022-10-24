@@ -37,12 +37,14 @@ class Window(QtWidgets.QMainWindow):
     CHART_REFRESH = QtCore.pyqtSignal(configparser.ConfigParser)
     RETURN_STATUS = QtCore.pyqtSignal(dict)
     SCENARIO_REQUESTED = QtCore.pyqtSignal()
+    TOGGLE_DARK_MODE = QtCore.pyqtSignal(str)
 
     def __init__(self,config):
 
         super(Window, self).__init__()
         self.currentPath = ''
         self._mode = "pan"
+        self.isDarkMode = False
         self.photoList = []
         self.pathList = []
         self.tabClosed = False
@@ -169,22 +171,26 @@ class Window(QtWidgets.QMainWindow):
         self.toolBar = QtWidgets.QToolBar(self)
         self.toolBar.setFloatable(False)
         self.toolBar.setMovable(False)
-        dirname = os.path.dirname(__file__)
-        self.open = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/open.svg")), "open", self)
-        self.saveAs = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/save as.svg")), "save as", self)
-        self.zoomIn = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/zoom in.svg")), "zoom in (Ctrl + Plus)", self)
+        self.dirname = os.path.dirname(__file__)
+        self.open = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/open.svg")), "open", self)
+        self.saveAs = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/save as.svg")), "save as", self)
+        self.zoomIn = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom in.svg")), "zoom in (Ctrl + Plus)", self)
         self.zoomIn.setShortcut(QtGui.QKeySequence.ZoomIn)
-        self.zoomOut = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/zoom out.svg")), "zoom out (Ctrl + Minus)", self)
+        self.zoomOut = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom out.svg")), "zoom out (Ctrl + Minus)", self)
         self.zoomOut.setShortcut(QtGui.QKeySequence.ZoomOut)
-        self.fitCanvas = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/fit.svg")), "fit in view",self)
-        self.line = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/line.svg")), "line", self)
+        self.fitCanvas = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/fit.svg")), "fit in view",self)
+        self.line = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/line.svg")), "line", self)
         self.line.setCheckable(True)
-        self.rectangle = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/rectangle.svg")), "rectangle", self)
+        self.rectangle = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle.svg")), "rectangle", self)
         self.rectangle.setCheckable(True)
-        self.arc = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/arc.svg")), "arc", self)
+        self.arc = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/arc.svg")), "arc", self)
         self.arc.setCheckable(True)
-        self.pan = QtWidgets.QAction(QtGui.QIcon(os.path.join(dirname,"icons/move.svg")), "pan", self)
+        self.pan = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/move.svg")), "pan", self)
         self.pan.setCheckable(True)
+        self.lightMode = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")), "light mode", self)
+        self.lightMode.setCheckable(True)
+        self.darkMode = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")), "dark mode", self)
+        self.darkMode.setCheckable(True)
         self.buttonModeGroup = QtWidgets.QActionGroup(self.toolBar)
         self.buttonModeGroup.addAction(self.line)
         self.buttonModeGroup.addAction(self.rectangle)
@@ -201,6 +207,8 @@ class Window(QtWidgets.QMainWindow):
         self.toolBar.addAction(self.zoomIn)
         self.toolBar.addAction(self.zoomOut)
         self.toolBar.addAction(self.fitCanvas)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.darkMode)
         self.addToolBar(self.toolBar)
 
         #Status bar
@@ -238,6 +246,8 @@ class Window(QtWidgets.QMainWindow):
         self.rectangle.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="rectangle"))
         self.arc.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="arc"))
         self.pan.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="pan"))
+        self.lightMode.triggered.connect(lambda mode: self.toggle_dark_mode(mode="light"))
+        self.darkMode.triggered.connect(lambda mode: self.toggle_dark_mode(mode="dark"))
 
         #Progress Bar Connections
         self.PROGRESS_ADVANCE.connect(self.progress)
@@ -546,7 +556,7 @@ class Window(QtWidgets.QMainWindow):
 
     def open_image(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':
-            canvas_widget = canvas.Canvas(self,self.config)
+            canvas_widget = canvas.Canvas(self,self.config,self.isDarkMode)
             self.connect_canvas(canvas_widget)
             self.CANVAS_SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
             img_array = self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel)
@@ -693,6 +703,37 @@ class Window(QtWidgets.QMainWindow):
             self.cursorInfo.endXYLabel.setText('End (X,Y)')
         self.clear_cursor_info()
         self._mode = cursormode
+    
+    def toggle_dark_mode(self, mode):
+        self.TOGGLE_DARK_MODE.emit(mode)
+        if mode == "light":
+            self.toolBar.removeAction(self.lightMode)
+            self.toolBar.addAction(self.darkMode)
+            self.open.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/open.svg")))
+            self.saveAs.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/save as.svg")))
+            self.zoomIn.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom in.svg")))
+            self.zoomOut.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom out.svg")))
+            self.fitCanvas.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/fit.svg")))
+            self.line.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/line.svg")))
+            self.rectangle.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle.svg")))
+            self.arc.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/arc.svg")))
+            self.pan.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/move.svg")))
+            self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")))
+            self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")))
+        elif mode == "dark":
+            self.toolBar.removeAction(self.darkMode)
+            self.toolBar.addAction(self.lightMode)
+            self.open.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/open_dark.svg")))
+            self.saveAs.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/save as_dark.svg")))
+            self.zoomIn.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom in_dark.svg")))
+            self.zoomOut.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom out_dark.svg")))
+            self.fitCanvas.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/fit_dark.svg")))
+            self.line.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/line_dark.svg")))
+            self.rectangle.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle_dark.svg")))
+            self.arc.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/arc_dark.svg")))
+            self.pan.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/move_dark.svg")))
+            self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light_dark.svg")))
+            self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark_dark.svg")))
 
     def clear_cursor_info(self):
         self.cursorInfo.choosedXYEdit.clear()

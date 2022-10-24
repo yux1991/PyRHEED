@@ -19,7 +19,6 @@ class Window(QtWidgets.QWidget):
         self.mainGrid = QtWidgets.QGridLayout(self.mainFrame)
         self.mainGrid.setAlignment(QtCore.Qt.AlignTop)
         self.Options = QtWidgets.QGroupBox("Options")
-        self.Options.setStyleSheet('QGroupBox::title {color:blue;}')
         self.OptionsGrid = QtWidgets.QGridLayout(self.Options)
         self.Eta = LabelSlider(0,100,0.5,100,"\u03B7 (\u03C0)")
         self.Epsilon = LabelSlider(0,200,0.01,1000,"\u03B5")
@@ -40,7 +39,6 @@ class Window(QtWidgets.QWidget):
         self.graph.LOG_MESSAGE.connect(self.update_log)
         self.FONTS_CHANGED.connect(self.graph.change_fonts)
         self.statusBar = QtWidgets.QGroupBox("Log")
-        self.statusBar.setStyleSheet('QGroupBox::title {color:blue;}')
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
@@ -63,7 +61,6 @@ class Window(QtWidgets.QWidget):
         self.container.setFocusPolicy(QtCore.Qt.StrongFocus)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
-        self.appearance.setStyleSheet('QGroupBox::title {color:blue;}')
         self.appearanceVBox = QtWidgets.QVBoxLayout(self.appearance)
         self.appearanceGrid = QtWidgets.QGridLayout()
         self.fontListLabel = QtWidgets.QLabel("Change Font")

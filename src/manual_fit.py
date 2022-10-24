@@ -94,7 +94,6 @@ class Window(QtCore.QObject):
         self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
         self.RightGrid = QtWidgets.QGridLayout(self.RightFrame)
         self.parameters = QtWidgets.QGroupBox("Fitting Parameters")
-        self.parameters.setStyleSheet('QGroupBox::title {color:blue;}')
         self.parametersHLayout = QtWidgets.QHBoxLayout(self.parameters)
         self.windowDefault = dict(self.config['windowDefault'].items())
         self.RC, self.I = self.profile()
