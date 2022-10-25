@@ -707,6 +707,7 @@ class Window(QtWidgets.QMainWindow):
     def toggle_dark_mode(self, mode):
         self.TOGGLE_DARK_MODE.emit(mode)
         if mode == "light":
+            self.isDarkMode = False
             self.toolBar.removeAction(self.lightMode)
             self.toolBar.addAction(self.darkMode)
             self.open.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/open.svg")))
@@ -721,6 +722,7 @@ class Window(QtWidgets.QMainWindow):
             self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")))
             self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")))
         elif mode == "dark":
+            self.isDarkMode = True
             self.toolBar.removeAction(self.darkMode)
             self.toolBar.addAction(self.lightMode)
             self.open.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/open_dark.svg")))

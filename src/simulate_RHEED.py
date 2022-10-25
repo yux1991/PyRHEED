@@ -44,11 +44,13 @@ class Window(QtWidgets.QWidget):
     CLOSE = QtCore.pyqtSignal()
     RESULT_IS_READY = QtCore.pyqtSignal()
     SAVE_FFT = QtCore.pyqtSignal(str)
+    TOGGLE_DARK_MODE_SIGNAL = QtCore.pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, appTheme):
         super(Window,self).__init__()
         self.dirname = os.path.dirname(__file__)
         self.convertor_worker = Convertor()
+        self.appTheme = appTheme
 
     def main(self):
         self.graph = ScatterGraph()
@@ -654,7 +656,10 @@ class Window(QtWidgets.QWidget):
         self.controlPanelScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
 
         self.themeList.currentTextChanged.connect(self.graph.change_theme)
-        self.themeList.setCurrentIndex(0)
+        if self.appTheme == 'light':
+            self.themeList.setCurrentIndex(0)
+        elif self.appTheme == 'dark':
+            self.themeList.setCurrentIndex(4)
         self.graph.LOG_MESSAGE.connect(self.update_log)
         self.graph.PROGRESS_ADVANCE.connect(self.progress)
         self.graph.PROGRESS_END.connect(self.progress_reset)
@@ -666,6 +671,14 @@ class Window(QtWidgets.QWidget):
         self.UPDATE_CAMERA_POSITION.connect(self.graph.update_camera_position)
         self.STOP_CALCULATION.connect(self.graph.stop)
         self.showMaximized()
+
+    def toggle_dark_mode(self, mode):
+        self.appTheme = mode
+        if mode == 'dark':
+            self.themeList.setCurrentIndex(4)
+        elif mode == 'light':
+            self.themeList.setCurrentIndex(0)
+        self.TOGGLE_DARK_MODE_SIGNAL.emit(mode)
 
     def CIF_tab_changed(self,index):
         if index == 0:
@@ -903,9 +916,10 @@ class Window(QtWidgets.QWidget):
         for i in range(int(self.KzIndex.values()[0]),int(self.KzIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XY',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i,\
                          self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                         self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),111,kwargs)
+                         self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),111,self.appTheme,kwargs)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
+            self.TOGGLE_DARK_MODE_SIGNAL.connect(TwoDimPlot.toggle_dark_mode)
             if not 1 in self.diffraction_intensity.shape[0:1]:
                 self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
                 self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
@@ -917,9 +931,10 @@ class Window(QtWidgets.QWidget):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'XZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos,kwargs)
+                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos,self.appTheme,kwargs)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
+            self.TOGGLE_DARK_MODE_SIGNAL.connect(TwoDimPlot.toggle_dark_mode)
             if not 1 in self.diffraction_intensity.shape:
                 self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
                 self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)
@@ -933,9 +948,11 @@ class Window(QtWidgets.QWidget):
         for i in range(int(self.KxyIndex.values()[0]),int(self.KxyIndex.values()[1]+1)):
             TwoDimPlot = DynamicalColorMap(self,'YZ',self.x_linear,self.y_linear,self.z_linear,self.diffraction_intensity,i, \
                                                     self.reciprocalMapfontList.currentFont().family(),self.reciprocalMapfontSizeSlider.value(), \
-                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),self.pos,kwargs)
+                                                    self.reciprocalMapColormapCombo.currentText(),self.showFWHMCheck.isChecked(),self.plot_log_scale.isChecked(),\
+                                                    self.pos,self.appTheme,kwargs)
             TwoDimPlot.UPDATE_LOG.connect(self.update_log)
             self.REFRESH_PLOT_FONTS.connect(TwoDimPlot.refresh_fonts)
+            self.TOGGLE_DARK_MODE_SIGNAL.connect(TwoDimPlot.toggle_dark_mode)
             if not 1 in self.diffraction_intensity.shape:
                 self.REFRESH_PLOT_FWHM.connect(TwoDimPlot.refresh_FWHM)
                 self.REFRESH_PLOT_COLORMAP.connect(TwoDimPlot.refresh_colormap)

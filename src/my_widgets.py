@@ -633,8 +633,8 @@ class InfoBoard(QtWidgets.QGroupBox):
 
 class MplCanvas(FigureCanvas):
 
-    def __init__(self, parent=None, width=15, height=12, dpi=400, pos=111):
-        self.fig = Figure(figsize=(width, height), dpi=dpi, tight_layout=True)
+    def __init__(self, parent=None, width=15, height=12, dpi=400, pos=111, facecolor='white'):
+        self.fig = Figure(figsize=(width, height), dpi=dpi, tight_layout=True, facecolor=facecolor)
         self.pos = pos
         self.axes = self.fig.add_subplot(self.pos)
         FigureCanvas.__init__(self, self.fig)
@@ -642,6 +642,25 @@ class MplCanvas(FigureCanvas):
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
         mpl.rcParams['axes.linewidth'] = 0.4
+        self.change_background(facecolor)
+
+    def change_background(self, facecolor):
+        if facecolor == 'white':
+            mpl.rcParams['axes.labelcolor'] = 'black'
+            mpl.rcParams['axes.titlecolor'] = 'black'
+            mpl.rcParams['axes.edgecolor'] = 'black'
+            mpl.rcParams['xtick.color'] = 'black'
+            mpl.rcParams['ytick.color'] = 'black'
+            mpl.rcParams['xtick.labelcolor'] = 'black'
+            mpl.rcParams['ytick.labelcolor'] = 'black'
+        elif facecolor == 'black':
+            mpl.rcParams['axes.labelcolor'] = 'white'
+            mpl.rcParams['axes.titlecolor'] = 'white'
+            mpl.rcParams['axes.edgecolor'] = 'white'
+            mpl.rcParams['xtick.color'] = 'white'
+            mpl.rcParams['ytick.color'] = 'white'
+            mpl.rcParams['xtick.labelcolor'] = 'white'
+            mpl.rcParams['ytick.labelcolor'] = 'white'
 
     def clear(self):
         self.fig.clear()
@@ -654,10 +673,14 @@ class DynamicalColorMap(QtWidgets.QWidget):
 
     UPDATE_LOG = QtCore.pyqtSignal(str)
 
-    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False, log_scale = True, pos=111, kwargs={}):
+    def __init__(self,parent,type,x,y,z,intensity,nkz,fontname,fontsize,colormap,showFWHM=False, log_scale = True, pos=111, appTheme='light', kwargs={}):
         super(DynamicalColorMap,self).__init__(parent)
         self.pos = pos
-        self.figure = MplCanvas(self,pos=self.pos)
+        self.appTheme = appTheme
+        if self.appTheme == 'light':
+            self.figure = MplCanvas(self,pos=self.pos,facecolor='white')
+        elif self.appTheme == 'dark':
+            self.figure = MplCanvas(self,pos=self.pos,facecolor='black')
         self.x_linear = x
         self.y_linear = y
         self.z_linear = z
@@ -681,14 +704,27 @@ class DynamicalColorMap(QtWidgets.QWidget):
             self.TwoDimMappingWindow.setWindowTitle('Simulated 2D reciprocal space map')
         self.TwoDimMappingWindowLayout = QtWidgets.QGridLayout(self.TwoDimMappingWindow)
         self.toolbar = NavigationToolbar(self.figure,self.TwoDimMappingWindow)
-        self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0)
-        self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0)
+        self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0, QtCore.Qt.AlignHCenter)
+        self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0, QtCore.Qt.AlignHCenter)
         self.TwoDimMappingWindow.setWindowModality(QtCore.Qt.WindowModal)
-        #self.TwoDimMappingWindow.setMinimumSize(1200,1000)
         if not self.kwargs.get('save_as_file', False):
-            self.TwoDimMappingWindow.show()
+            self.TwoDimMappingWindow.showMaximized()
         else:
             self.fontsize = self.kwargs.get('font_size',50)
+
+    def toggle_dark_mode(self, mode):
+        self.appTheme = mode
+        if mode == 'light':
+            color = 'white'
+            reverse_color = 'black'
+        elif mode == 'dark':
+            color = 'black'
+            reverse_color = 'white'
+        self.figure.axes.tick_params(labelcolor=reverse_color, colors=reverse_color, which='both')
+        self.figure.axes.set_xlabel(self.figure.axes.get_xlabel(), color=reverse_color)
+        self.figure.axes.set_ylabel(self.figure.axes.get_xlabel(), color=reverse_color)
+        self.figure.fig.set_facecolor(color)
+        self.figure.draw()
 
     def show_plot(self):
         self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)
@@ -707,8 +743,6 @@ class DynamicalColorMap(QtWidgets.QWidget):
                     self.figureText = self.figure.axes.text(self.min_x*0.96,self.max_y*0.8,"Average HWHM = {:5.4f} \u212B\u207B\u00B9\nHWHM Asymmetric Ratio = {:5.3f}". \
                                                             format(self.HWHM,self.ratio),color='white',fontsize=self.fontsize-5,bbox={'facecolor':'black','alpha':0.2,'pad':5})
                     self.csHM.set_alpha(1)
-                #self.figure.axes.set_title('Simulated 2D reciprocal space map\nKz = {:5.2f} (\u212B\u207B\u00B9)'.\
-                #   format(self.z_linear[self.nkz]),fontsize=self.fontsize,pad=30)
                 self.figure.axes.set_xlabel(r'${\bf k}_{x}$ $(\AA^{-1})$',font_dict)
                 self.figure.axes.set_ylabel(r'${\bf k}_{y}$ $(\AA^{-1})$',font_dict)
             elif self.type == 'XZ':

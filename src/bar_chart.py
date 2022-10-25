@@ -67,6 +67,28 @@ class BarChart(QtChart.QChartView):
         series.attachAxis(self.axisY)
         self.CHART_IS_PRESENT = True
 
+    def refresh(self, config):
+        chartDefault = dict(config['chartDefault'].items())
+        if int(chartDefault['theme']) == 0:
+            self.theme = QtChart.QChart.ChartThemeLight
+        elif int(chartDefault['theme']) == 1:
+            self.theme = QtChart.QChart.ChartThemeBlueCerulean
+        elif int(chartDefault['theme']) == 2:
+            self.theme = QtChart.QChart.ChartThemeDark
+        elif int(chartDefault['theme']) == 3:
+            self.theme = QtChart.QChart.ChartThemeBrownSand
+        elif int(chartDefault['theme']) == 4:
+            self.theme = QtChart.QChart.ChartThemeBlueNcs
+        elif int(chartDefault['theme']) == 5:
+            self.theme = QtChart.QChart.ChartThemeHighContrast
+        elif int(chartDefault['theme']) == 6:
+            self.theme = QtChart.QChart.ChartThemeBlueIcy
+        elif int(chartDefault['theme']) == 7:
+            self.theme = QtChart.QChart.ChartThemeQt
+        else:
+            self.raise_error("Wrong theme")
+        self.barChart.setTheme(self.theme)
+
     def adjust_fonts(self,fontname,fontsize):
         self.set_fonts(fontname,fontsize)
         try:

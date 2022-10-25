@@ -30,9 +30,9 @@ class Canvas(QtWidgets.QGraphicsView):
         self._scaleBarIsPresent = False
         self._labelIsPresent = False
         if isDarkMode:
-            self.default_background = QtGui.QColor('darkGray')
+            self.default_background = QtGui.QColor(50, 50, 50)
         else:
-            self.default_background = QtGui.QColor(20, 20, 20)
+            self.default_background = QtGui.QColor('darkGray')
 
         #Defaults
         canvasDefault = dict(config['canvasDefault'].items())

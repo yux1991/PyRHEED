@@ -61,6 +61,7 @@ class Window(QtCore.QObject):
             try:
                 self.distributionChart.refresh(config)
                 self.costChart.refresh(config)
+                self.weightChart.refresh(config)
             except:
                 pass
 

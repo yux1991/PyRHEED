@@ -27,6 +27,7 @@ class Window():
         self.app.setWindowIcon(icon)
         self.app.setFont(QtGui.QFont(self.app.font().family(),self.app.font().pointSize()*self.screenScaleFactor))
         self.app.setStyle("fusion")
+        self.appTheme = "light"
         self.lightPalette = self.app.palette()
         self.darkPalette = QtGui.QPalette()
         self.darkPalette.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
@@ -65,18 +66,17 @@ class Window():
         sys.exit(self.app.exec_())
 
     def toggle_light_dark_mode(self, mode):
+        self.appTheme = mode
+        self.preference.toggle_dark_theme(mode)
         if mode == "light":
             self.app.setPalette(self.lightPalette)
-            self.window.isDarkmode = False
             for i in range(0,self.window.mainTab.count()):
                 self.window.mainTab.widget(i).setBackgroundBrush(QtGui.QBrush(QtGui.QColor('darkGray')))
         elif mode == "dark":
             self.app.setPalette(self.darkPalette)
-            self.window.isDarkmode = True
             for i in range(0,self.window.mainTab.count()):
-                self.window.mainTab.widget(i).setBackgroundBrush(QtGui.QBrush(QtGui.QColor(20, 20, 20)))
+                self.window.mainTab.widget(i).setBackgroundBrush(QtGui.QBrush(QtGui.QColor(50, 50, 50)))
         self.app.setStyle("fusion")
-        self.preference.toggle_dark_theme(mode)
 
     def run_preference(self):
         self.preference.main()
@@ -128,11 +128,13 @@ class Window():
         self.statistical_factor.main()
 
     def run_simulate_RHEED(self):
-        self.simulation = simulate_RHEED.Window()
+        self.simulation = simulate_RHEED.Window(self.appTheme)
+        self.window.TOGGLE_DARK_MODE.connect(self.simulation.toggle_dark_mode)
         self.simulation.main()
 
     def run_kikuchi(self):
         self.kikuchi = kikuchi.Window()
+        self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.kikuchi.refresh)
         self.kikuchi.main()
 
     def run_3D_graph(self,path=''):

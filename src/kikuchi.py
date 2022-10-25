@@ -326,6 +326,9 @@ class Window(QtCore.QObject):
             for series in self.plot.profileChart.series()[1:]:
                 self.plot.profileChart.removeSeries(series)
 
+    def refresh(self,config):
+        self.plot.refresh(config)
+
     def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
         self.FONTS_CHANGED.emit(self.fontList.currentFont().family(),self.fontSizeSlider.value())
