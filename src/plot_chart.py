@@ -50,6 +50,14 @@ class PlotChart(QtWidgets.QWidget):
         self.Grid.addWidget(self.coordinate,1,0)
         self.setLayout(self.Grid)
 
+    def toggle_dark_mode(self, mode):
+        if mode == 'light':
+            self.theme = QtChart.QChart.ChartThemeLight
+        elif mode == 'dark':
+            self.theme = QtChart.QChart.ChartThemeDark
+        self.profileChart.setTheme(self.theme)
+        self.adjust_color('toggle dark mode',self.current_color)
+
     def update_coordinate(self,pos):
         if self.type == "Polar":
             self.coordinate.setText("(r={:5.2f}, \u03C6={:5.2f})".format(pos.y(),pos.x()))
@@ -81,6 +89,7 @@ class PlotChart(QtWidgets.QWidget):
         self.profileChart.setTheme(self.theme)
 
     def add_chart(self,radius,profile,preset,fontname,fontsize,color,switchXY,kwargs):
+        self.current_color = color
         if self.type == 'Polar':
             pen1 = QtGui.QPen(QtCore.Qt.SolidLine)
             pen1.setWidth(3)
@@ -254,11 +263,22 @@ class PlotChart(QtWidgets.QWidget):
             pass
 
     def adjust_color(self,name,color):
-        pen = QtGui.QPen(QtCore.Qt.SolidLine)
-        pen.setWidth(3)
-        pen.setColor(QtGui.QColor(color))
-        self.profileChart.series()[-1].setPen(pen)
-
+        self.current_color = color
+        if self.CHART_IS_PRESENT:
+            if self.type == "Polar":
+                pen1 = QtGui.QPen(QtCore.Qt.SolidLine)
+                pen1.setWidth(3)
+                pen1.setColor(QtGui.QColor(self.current_color))
+                pen2 = QtGui.QPen(QtCore.Qt.DotLine)
+                pen2.setWidth(3)
+                pen2.setColor(QtGui.QColor(self.current_color))
+                self.profileChart.series()[-2].setPen(pen1)
+                self.profileChart.series()[-1].setPen(pen2)
+            elif self.type == "Normal":
+                pen = QtGui.QPen(QtCore.Qt.SolidLine)
+                pen.setWidth(3)
+                pen.setColor(QtGui.QColor(self.current_color))
+                self.profileChart.series()[-1].setPen(pen)
 
     def save_polar_as_text(self):
         if self.CHART_IS_PRESENT:

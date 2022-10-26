@@ -187,9 +187,9 @@ class Window(QtWidgets.QMainWindow):
         self.arc.setCheckable(True)
         self.pan = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/move.svg")), "pan", self)
         self.pan.setCheckable(True)
-        self.lightMode = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")), "light mode", self)
+        self.lightMode = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")), "dark mode", self)
         self.lightMode.setCheckable(True)
-        self.darkMode = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")), "dark mode", self)
+        self.darkMode = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")), "light mode", self)
         self.darkMode.setCheckable(True)
         self.buttonModeGroup = QtWidgets.QActionGroup(self.toolBar)
         self.buttonModeGroup.addAction(self.line)
@@ -719,8 +719,8 @@ class Window(QtWidgets.QMainWindow):
             self.rectangle.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle.svg")))
             self.arc.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/arc.svg")))
             self.pan.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/move.svg")))
-            self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")))
-            self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")))
+            self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")))
+            self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")))
         elif mode == "dark":
             self.isDarkMode = True
             self.toolBar.removeAction(self.darkMode)
@@ -734,8 +734,8 @@ class Window(QtWidgets.QMainWindow):
             self.rectangle.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle_dark.svg")))
             self.arc.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/arc_dark.svg")))
             self.pan.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/move_dark.svg")))
-            self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light_dark.svg")))
-            self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark_dark.svg")))
+            self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark_dark.svg")))
+            self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light_dark.svg")))
 
     def clear_cursor_info(self):
         self.cursorInfo.choosedXYEdit.clear()

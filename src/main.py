@@ -98,6 +98,7 @@ class Window():
         self.generate_report = generate_report.Window()
         self.generate_report.STATUS_REQUESTED.connect(self.window.status)
         self.window.RETURN_STATUS.connect(self.generate_report.set_status)
+        self.window.TOGGLE_DARK_MODE.connect(self.generate_report.toggle_dark_mode)
         self.generate_report.main(path)
 
     def run_manual_fit(self,path,nop):

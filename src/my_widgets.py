@@ -714,17 +714,18 @@ class DynamicalColorMap(QtWidgets.QWidget):
 
     def toggle_dark_mode(self, mode):
         self.appTheme = mode
+        self.TwoDimMappingWindowLayout.removeWidget(self.figure)
+        self.TwoDimMappingWindowLayout.removeWidget(self.toolbar)
+        del self.figure
+        del self.toolbar
         if mode == 'light':
-            color = 'white'
-            reverse_color = 'black'
+            self.figure = MplCanvas(self,pos=self.pos,facecolor='white')
         elif mode == 'dark':
-            color = 'black'
-            reverse_color = 'white'
-        self.figure.axes.tick_params(labelcolor=reverse_color, colors=reverse_color, which='both')
-        self.figure.axes.set_xlabel(self.figure.axes.get_xlabel(), color=reverse_color)
-        self.figure.axes.set_ylabel(self.figure.axes.get_xlabel(), color=reverse_color)
-        self.figure.fig.set_facecolor(color)
-        self.figure.draw()
+            self.figure = MplCanvas(self,pos=self.pos,facecolor='black')
+        self.toolbar = NavigationToolbar(self.figure,self.TwoDimMappingWindow)
+        self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0, QtCore.Qt.AlignHCenter)
+        self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0, QtCore.Qt.AlignHCenter)
+        self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)
 
     def show_plot(self):
         self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)

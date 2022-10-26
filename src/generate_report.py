@@ -19,6 +19,7 @@ class Window(QtCore.QObject):
     REFRESH_NORMAL_I = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
     REFRESH_NORMAL_F = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
     FONTS_CHANGED = QtCore.pyqtSignal(str,int)
+    TOGGLE_DARK_MODE_REQUEST = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super(Window,self).__init__()
@@ -63,7 +64,6 @@ class Window(QtCore.QObject):
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
         self.sourceGrid.setAlignment(QtCore.Qt.AlignTop)
         self.chooseSourceLabel = QtWidgets.QLabel("The path of the report file is:\n"+self.path)
-        self.chooseSourceLabel.setWordWrap(True)
         self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
         self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
         self.chooseSourceButton.clicked.connect(self.choose_source)
@@ -84,13 +84,13 @@ class Window(QtCore.QObject):
         self.typeFrame = QtWidgets.QFrame()
         self.typeGrid = QtWidgets.QGridLayout(self.typeFrame)
         self.IA = QtWidgets.QCheckBox("Intensity vs Azimuth")
-        self.IAColor = ColorPicker("IA",'red',False)
+        self.IAColor = ColorPicker("IA",'tomato',False)
         self.FA = QtWidgets.QCheckBox("HWHM vs Azimuth")
-        self.FAColor = ColorPicker("FA",'red',False)
+        self.FAColor = ColorPicker("FA",'dodgerblue',False)
         self.IK = QtWidgets.QCheckBox("Intensity vs Kperp")
-        self.IKColor = ColorPicker("IK",'red',False)
+        self.IKColor = ColorPicker("IK",'sandybrown',False)
         self.FK = QtWidgets.QCheckBox("HWHM vs Kperp")
-        self.FKColor = ColorPicker("FK",'red',False)
+        self.FKColor = ColorPicker("FK",'limegreen',False)
         self.typeGrid.addWidget(self.FA,0,0)
         self.typeGrid.addWidget(self.FAColor,0,1)
         self.typeGrid.addWidget(self.IA,1,0)
@@ -278,6 +278,11 @@ class Window(QtCore.QObject):
             self.plot_FA(F,A,Kp,self.HWHMRangeSlider.values()[0],self.HWHMRangeSlider.values()[1])
         plt.show()
 
+    def toggle_dark_mode(self, mode):
+        self.TOGGLE_DARK_MODE_REQUEST.emit(mode)
+        self.REFRESH_NORMAL_I = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
+        self.REFRESH_NORMAL_F = QtCore.pyqtSignal(np.ndarray,np.ndarray,str,str,int,str,bool,dict)
+
     def polar_start(self):
         Kp = self.currentKP/self.KperpSliderScale+self.RangeStart
         Az = self.currentAzimuth*1.8+self.AzimuthStart
@@ -286,6 +291,10 @@ class Window(QtCore.QObject):
         self.FAPlot = plot_chart.PlotChart(theme,'Polar')
         self.IKPlot = plot_chart.PlotChart(theme,'Normal')
         self.FKPlot = plot_chart.PlotChart(theme,'Normal')
+        self.TOGGLE_DARK_MODE_REQUEST.connect(self.IAPlot.toggle_dark_mode)
+        self.TOGGLE_DARK_MODE_REQUEST.connect(self.FAPlot.toggle_dark_mode)
+        self.TOGGLE_DARK_MODE_REQUEST.connect(self.IKPlot.toggle_dark_mode)
+        self.TOGGLE_DARK_MODE_REQUEST.connect(self.FKPlot.toggle_dark_mode)
         self.POLAR_I_REQUESTED.connect(self.IAPlot.main)
         self.POLAR_F_REQUESTED.connect(self.FAPlot.main)
         self.NORMAL_I_REQUESTED.connect(self.IKPlot.main)
@@ -310,8 +319,7 @@ class Window(QtCore.QObject):
         self.WindowLayout.addWidget(self.IKPlot,1,1)
         self.WindowLayout.addWidget(self.FKPlot,1,0)
         self.Window.setWindowModality(QtCore.Qt.WindowModal)
-        self.Window.setMinimumSize(1000,800)
-        self.Window.show()
+        self.Window.showMaximized()
         if self.IA.checkState() == 2:
             I, A, Ierror = self.get_IA()
             self.POLAR_I_REQUESTED.emit()
