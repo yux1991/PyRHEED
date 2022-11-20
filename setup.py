@@ -11,10 +11,12 @@ subprocess.check_call([sys.executable, "-m", "pip", "install", 'pyqtchart==5.15.
 
 setup(
    name='PyRHEED',
+   python_requires=">=3.7.4",
    version='1.0',
    description='A python program for RHEED data analysis', 
    author='Yu Xiang',
    author_email='yux1991@gmail.com',
    packages=find_packages(),
-   install_requires=required
+   install_requires=required,
+   extra_require = {"CUDA": ["pycuda==2022.1"]}
 )

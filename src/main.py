@@ -22,7 +22,7 @@ class Window():
         config = configparser.ConfigParser()
         config.read(os.path.join(self.dirname,'configuration.ini'))  #Read the configuration file
         self.app = QtWidgets.QApplication(sys.argv)
-        self.screenScaleFactor = (self.app.primaryScreen().geometry().width()/1200 + self.app.primaryScreen().geometry().height()/675)//2
+        self.screenScaleFactor = 192//(self.app.primaryScreen().logicalDotsPerInch())
         icon = QtGui.QIcon(os.path.join(self.dirname,'icons/icon.png'))
         self.app.setWindowIcon(icon)
         self.app.setFont(QtGui.QFont(self.app.font().family(),self.app.font().pointSize()*self.screenScaleFactor))
@@ -45,9 +45,7 @@ class Window():
         self.darkPalette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
         self.window = window.Window(config)    #Initialze the main window using the default values in the configuration
         self.window.showMaximized()
-        #self.window.setFixedSize(1600,1000)
         self.window.show()
-        #Connect the signals emitted by the window object
         self.window.DEFAULT_PROPERTIES_REQUESTED.connect(self.run_preference)
         self.window.RECIPROCAL_SPACE_MAPPING_REQUESTED.connect(self.run_reciprocal_space_mapping)
         self.window.BROADENING_REQUESTED.connect(self.run_broadening)

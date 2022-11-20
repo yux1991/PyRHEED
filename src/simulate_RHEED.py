@@ -23,6 +23,12 @@ from shapely.geometry import LineString
 from shapely.geometry import Point
 from shapely.geometry import Polygon
 import sys
+try:
+    import pycuda.compiler as comp
+    import pycuda.driver as drv
+    CUDA_EXIST = True
+except:
+    CUDA_EXIST = False
 
 class Window(QtWidgets.QWidget):
 
@@ -626,7 +632,11 @@ class Window(QtWidgets.QWidget):
         self.useCUDAGrid = QtWidgets.QGridLayout(self.useCUDAWidget)
         self.useCUDALabel = QtWidgets.QLabel('Use CUDA?')
         self.useCUDA = QtWidgets.QCheckBox()
-        self.useCUDA.setChecked(True)
+        if CUDA_EXIST:
+            self.useCUDA.setChecked(True)
+        else:
+            self.useCUDA.setChecked(False)
+            self.useCUDA.setEnabled(False)
         self.gstart_calculation = QtWidgets.QPushButton("Start Calculation")
         self.gstart_calculation.clicked.connect(self.update_reciprocal_range)
         self.gstart_calculation.setEnabled(False)
