@@ -181,7 +181,7 @@ class Window(QtCore.QObject):
         self.Dialog.showNormal()
         desktopRect = QtWidgets.QApplication.desktop().availableGeometry(self.Dialog)
         center = desktopRect.center()
-        self.Dialog.move(center.x()-self.Dialog.width()*0.5,center.y()-self.Dialog.height()*0.5)
+        self.Dialog.move(int(center.x()-self.Dialog.width()*0.5),int(center.y()-self.Dialog.height()*0.5))
 
     def accept(self):
         self.reject()
