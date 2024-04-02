@@ -217,7 +217,7 @@ class Window(QtCore.QObject):
         self.Dialog.show()
         desktopRect = QtWidgets.QApplication.desktop().availableGeometry(self.Dialog)
         center = desktopRect.center()
-        self.Dialog.move(center.x()-self.Dialog.width()*0.5,center.y()-self.Dialog.height()*0.5)
+        self.Dialog.move(int(center.x()-self.Dialog.width()*0.5),int(center.y()-self.Dialog.height()*0.5))
 
     def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
