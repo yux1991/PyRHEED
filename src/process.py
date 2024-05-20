@@ -59,7 +59,7 @@ class Image(object):
                                       '.png','.ppm','.sgi','.tiff','.tif','.xbm','.BMP','.EPS','.GIF','.ICNS','.ICO','.IM','.JPG','.JPEG','.JPEG2000','.MSP','.PCX',\
                                       '.PNG','.PPM','.SGI','.TIFF','.TIF','.XBM'}
 
-    def get_image(self,bit_depth,img_path,EnableAutoWB, Brightness, UserBlack, image_crop):
+    def get_image(self,bit_depth,img_path,EnableAutoWB, Brightness, UserBlack, image_crop,flipud=False,fliplr=False):
         pathExtension = os.path.splitext(img_path)[1]
         if pathExtension in self.supportedRawFormats:
             img_raw = rawpy.imread(img_path)
@@ -70,6 +70,10 @@ class Image(object):
             crop2 = max(0,image_crop[2])
             crop3 = min(len(img_bw[0])-1,image_crop[3])
             img_array = img_bw[crop0:crop1,crop2:crop3]
+            if flipud:
+                img_array = np.flipud(img_array)
+            if fliplr:
+                img_array = np.fliplr(img_array)
             if bit_depth == 16:
                 img_array = np.uint8(img_array/256)
             if bit_depth == 8:
@@ -78,6 +82,10 @@ class Image(object):
             return qImg, img_array
         elif pathExtension in self.supportedImageFormats:
             img = pilImage.open(img_path)
+            if flipud:
+                img = img.transpose(pilImage.FLIP_TOP_BOTTOM)
+            if fliplr:
+                img = img.transpose(pilImage.FLIP_LEFT_RIGHT)
             if img.mode == 'RGB':
                 img_rgb = np.fromstring(img.tobytes(),dtype=np.uint8)
                 img_rgb = img_rgb.reshape((img.size[1],img.size[0],3))

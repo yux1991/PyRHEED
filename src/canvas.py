@@ -29,6 +29,8 @@ class Canvas(QtWidgets.QGraphicsView):
         self._numberOfMoves = 0
         self._scaleBarIsPresent = False
         self._labelIsPresent = False
+        self._image_flipud = False
+        self._image_fliplr = False
         if isDarkMode:
             self.default_background = QtGui.QColor(50, 50, 50)
         else:
@@ -59,6 +61,18 @@ class Canvas(QtWidgets.QGraphicsView):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setBackgroundBrush(QtGui.QBrush(self.default_background))
         self.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+
+    def get_flipud(self):
+        return self._image_flipud
+
+    def flipud(self):
+        self._image_flipud = False if self._image_flipud else True
+
+    def get_fliplr(self):
+        return self._image_fliplr
+    
+    def fliplr(self):
+        self._image_fliplr = False if self._image_fliplr else True
 
     def refresh(self,config):
         canvasDefault = dict(config['canvasDefault'].items())

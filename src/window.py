@@ -187,6 +187,8 @@ class Window(QtWidgets.QMainWindow):
         self.arc.setCheckable(True)
         self.pan = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/move.svg")), "pan", self)
         self.pan.setCheckable(True)
+        self.flipud = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/flipud.svg")), "flipud", self)
+        self.fliplr = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/fliplr.svg")), "fliplr", self)
         self.lightMode = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")), "dark mode", self)
         self.lightMode.setCheckable(True)
         self.darkMode = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")), "light mode", self)
@@ -206,6 +208,8 @@ class Window(QtWidgets.QMainWindow):
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.zoomIn)
         self.toolBar.addAction(self.zoomOut)
+        self.toolBar.addAction(self.flipud)
+        self.toolBar.addAction(self.fliplr)
         self.toolBar.addAction(self.fitCanvas)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.darkMode)
@@ -246,6 +250,8 @@ class Window(QtWidgets.QMainWindow):
         self.rectangle.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="rectangle"))
         self.arc.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="arc"))
         self.pan.triggered.connect(lambda cursormode: self.toggle_canvas_mode(cursormode="pan"))
+        self.flipud.triggered.connect(self.flip_image_up_down)
+        self.fliplr.triggered.connect(self.flip_image_left_right)
         self.lightMode.triggered.connect(lambda mode: self.toggle_dark_mode(mode="light"))
         self.darkMode.triggered.connect(lambda mode: self.toggle_dark_mode(mode="dark"))
 
@@ -453,15 +459,25 @@ class Window(QtWidgets.QMainWindow):
         return
 
     def apply_image_adjusts(self):
-        self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(),\
-                           brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value())
+        if not self.mainTab.count() == 0:
+            canvas_widget = self.mainTab.currentWidget()
+            self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(),\
+                            brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value(), flipud=canvas_widget.get_flipud(), fliplr=canvas_widget.get_fliplr())
+        else:
+            self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(),\
+                            brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value())
 
     def reset_image_adjusts(self):
         self.properties_widget.autoWBCheckBox.setChecked(False)
         self.properties_widget.brightnessSlider.setValue(int(self.propertiesDefault['brightness']))
         self.properties_widget.blackLevelSlider.setValue(int(self.propertiesDefault['blacklevel']))
-        self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(), \
-                       brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value())
+        if not self.mainTab.count() == 0:
+            canvas_widget = self.mainTab.currentWidget()
+            self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(), \
+                        brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value(), flipud=canvas_widget.get_flipud(), fliplr=canvas_widget.get_fliplr())
+        else:
+            self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(), \
+                        brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value())
 
     def change_width(self,width):
         self.properties_widget.integralHalfWidthLabel.setText('Integral Half Width ({:3.2f} \u212B\u207B\u00B9)'.format(width/self.widthSliderScale))
@@ -570,6 +586,18 @@ class Window(QtWidgets.QMainWindow):
                 canvas_widget.toggle_mode(self._mode)
                 self.currentPath = path
                 self.FILE_OPENED.emit(path)
+    
+    def flip_image_up_down(self):
+        canvas_widget = self.mainTab.currentWidget()
+        canvas_widget.flipud()
+        self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(),\
+                           brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value(), flipud=canvas_widget.get_flipud(), fliplr=canvas_widget.get_fliplr())
+
+    def flip_image_left_right(self):
+        canvas_widget = self.mainTab.currentWidget()
+        canvas_widget.fliplr()
+        self.update_image(self.currentPath,bitDepth = 16, enableAutoWB = self.properties_widget.autoWBCheckBox.isChecked(),\
+                           brightness = self.properties_widget.brightnessSlider.value(),blackLevel=self.properties_widget.blackLevelSlider.value(), flipud=canvas_widget.get_flipud(), fliplr=canvas_widget.get_fliplr())
 
     def switch_tab(self,index):
         if self.mainTab.count() > 0:
@@ -651,15 +679,15 @@ class Window(QtWidgets.QMainWindow):
         self.CALIBRATION_CHANGED.connect(canvas_widget.calibrate)
         self.CANVAS_SCALE_FACTOR_CHANGED.connect(canvas_widget.set_scale_factor)
 
-    def update_image(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
+    def update_image(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50,flipud=False, fliplr=False):
         if not self.mainTab.count() == 0:
             canvas_widget = self.mainTab.currentWidget()
-            img_array=self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel)
+            img_array=self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel,flipud=flipud, fliplr=fliplr)
             if img_array is not None:
                 self.photoList[self.mainTab.currentIndex()]=img_array
                 self.apply_profile_options()
 
-    def load_image(self,canvas_widget,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50, crop=[]):
+    def load_image(self,canvas_widget,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50, crop=[], flipud=False, fliplr=False):
         self.messageLoadingImage.setText("Processing ... ")
         self.messageLoadingImage.setVisible(True)
         QtWidgets.QApplication.sendPostedEvents()
@@ -667,7 +695,7 @@ class Window(QtWidgets.QMainWindow):
         QtWidgets.QApplication.sendPostedEvents()
         if not crop:
             crop = self.image_crop
-        qImg,img_array = self.image_worker.get_image(bitDepth,path, enableAutoWB, brightness, blackLevel,crop)
+        qImg,img_array = self.image_worker.get_image(bitDepth,path, enableAutoWB, brightness, blackLevel,crop,flipud,fliplr)
         if qImg is not None:
             qPixImg = QtGui.QPixmap(qImg.size())
             QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.ImageConversionFlag.MonoOnly)
@@ -725,6 +753,8 @@ class Window(QtWidgets.QMainWindow):
             self.rectangle.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle.svg")))
             self.arc.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/arc.svg")))
             self.pan.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/move.svg")))
+            self.flipud.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/flipud.svg")))
+            self.fliplr.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/fliplr.svg")))
             self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")))
             self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")))
         elif mode == "dark":
@@ -740,6 +770,8 @@ class Window(QtWidgets.QMainWindow):
             self.rectangle.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle_dark.svg")))
             self.arc.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/arc_dark.svg")))
             self.pan.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/move_dark.svg")))
+            self.flipud.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/flipud_dark.svg")))
+            self.fliplr.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/fliplr_dark.svg")))
             self.lightMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/dark_dark.svg")))
             self.darkMode.setIcon(QtGui.QIcon(os.path.join(self.dirname,"icons/light_dark.svg")))
 
