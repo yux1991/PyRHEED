@@ -29,13 +29,15 @@ It is written and tested with Python 3.7.4 (64 bit). The GUI is created using Py
 ## Usage
 1. Prerequisite
 
-    Make sure you have the Python 3.7.4 (64 bit) installed and added to the system PATH.
+    It's recommended that you have the Python 3.12.2 (64 bit) installed and added to the system PATH.
 
 2. Installation
     ```
     git clone https://github.com/yux1991/PyRHEED.git
     cd PyRHEED
-    python setup.py install
+    python -m venv env_pyrheed
+    source ./env_pyrheed/bin/activate
+    pip install -r requirements.txt 
     ```
 3. Usage
     ```
