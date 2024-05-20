@@ -1,10 +1,10 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 import numpy as np
 
 class Canvas(QtWidgets.QGraphicsView):
 
     #public signals
-    PHOTO_MOUSE_MOVEMENT = QtCore.pyqtSignal(QtCore.QPointF)
+    PHOTO_MOUSE_MOVEMENT = QtCore.pyqtSignal(QtCore.QPoint)
     PHOTO_MOUSE_PRESS = QtCore.pyqtSignal(QtCore.QPointF)
     PHOTO_MOUSE_RELEASE = QtCore.pyqtSignal(QtCore.QPointF,QtCore.QPointF,bool)
     PHOTO_MOUSE_DOUBLE_CLICK = QtCore.pyqtSignal(QtCore.QPoint)
@@ -49,16 +49,16 @@ class Canvas(QtWidgets.QGraphicsView):
         self._labelText.setDefaultTextColor(QtGui.QColor("white"))
         self._scaleBarText = self._scene.addText("")
         self._scaleBarText.setDefaultTextColor(QtGui.QColor("white"))
-        self._scaleBarLine = self._scene.addLine(QtCore.QLineF(1,2,1,2),QtGui.QPen(QtCore.Qt.white,10))
+        self._scaleBarLine = self._scene.addLine(QtCore.QLineF(1,2,1,2),QtGui.QPen(QtCore.Qt.GlobalColor.white,10))
         self._scaleBarLine.hide()
         self.setScene(self._scene)
 
-        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setBackgroundBrush(QtGui.QBrush(self.default_background))
-        self.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
 
     def refresh(self,config):
         canvasDefault = dict(config['canvasDefault'].items())
@@ -156,17 +156,17 @@ class Canvas(QtWidgets.QGraphicsView):
         self._zoom = 0
         if pixmap and not pixmap.isNull():
             self._empty = False
-            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+            self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
             self._photo.setPixmap(pixmap)
         else:
             self._empty = True
-            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+            self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
             self._photo.setPixmap(QtGui.QPixmap())
 
     def wheelEvent(self, event):
         """This is an overload function"""
         if self.has_photo():
-            self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+            self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
             if event.angleDelta().y() > 0:
                 factor = 1.25
                 self._zoom += 1
@@ -175,7 +175,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 self._zoom -= 1
             if self._zoom > -self.max_zoom_factor and self._zoom < self.max_zoom_factor:
                 self.scale(factor, factor)
-                self.end = QtCore.QPointF(self.mapToScene(event.pos()))
+                self.end = QtCore.QPointF(self.mapToScene(event.position().toPoint()))
                 if self._photo.isUnderMouse():
                     if self._drawingLine:
                         self.draw_line(self.start,self.end)
@@ -191,7 +191,7 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def zoom_in(self):
         if self.has_photo():
-            self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
             factor = 1.25
             self._zoom += 1
             if self._zoom > -self.max_zoom_factor and self._zoom < self.max_zoom_factor:
@@ -203,7 +203,7 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def zoom_out(self):
         if self.has_photo():
-            self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
             factor = 0.8
             self._zoom -= 1
             if self._zoom > -self.max_zoom_factor and self._zoom < self.max_zoom_factor:
@@ -216,27 +216,27 @@ class Canvas(QtWidgets.QGraphicsView):
     def toggle_mode(self,cursormode):
         if not self._photo.pixmap().isNull():
             if cursormode == "line":
-                self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
-                self.setCursor(QtCore.Qt.CrossCursor)
+                self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
+                self.setCursor(QtCore.Qt.CursorShape.CrossCursor)
                 self._mode = "line"
             if cursormode == "rectangle":
-                self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
-                self.setCursor(QtCore.Qt.CrossCursor)
+                self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
+                self.setCursor(QtCore.Qt.CursorShape.CrossCursor)
                 self._mode = "rectangle"
             if cursormode == "arc":
-                self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
-                self.setCursor(QtCore.Qt.CrossCursor)
+                self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
+                self.setCursor(QtCore.Qt.CursorShape.CrossCursor)
                 self._mode = "arc"
             if cursormode == "pan":
-                self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+                self.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
                 self._mode = "pan"
 
     def mouseDoubleClickEvent(self, event):
         """This is an overload function"""
         if self._photo.isUnderMouse():
-            if event.button() == QtCore.Qt.LeftButton:
+            if event.button() == QtCore.Qt.MouseButton.LeftButton:
                 if not self._mode == "pan":
-                    position = self.mapToScene(event.pos())
+                    position = self.mapToScene(event.position().toPoint())
                     self.PHOTO_MOUSE_DOUBLE_CLICK.emit(position.toPoint())
         super(Canvas, self).mouseDoubleClickEvent(event)
 
@@ -244,9 +244,9 @@ class Canvas(QtWidgets.QGraphicsView):
     def mousePressEvent(self, event):
         """This is an overload function"""
         if self._photo.isUnderMouse():
-            if event.button() == QtCore.Qt.LeftButton:
+            if event.button() == QtCore.Qt.MouseButton.LeftButton:
                 if not self._mode == "pan":
-                    self.start = QtCore.QPointF(self.mapToScene(event.pos()))
+                    self.start = QtCore.QPointF(self.mapToScene(event.position().toPoint()))
                 if self._mode == "line":
                     self._drawingLine = True
                 if self._mode == "rectangle":
@@ -261,7 +261,7 @@ class Canvas(QtWidgets.QGraphicsView):
         """This is an overload function"""
         if self._photo.isUnderMouse():
             if self._drawingLine or self._drawingArc or self._drawingRect:
-                self.end = QtCore.QPointF(self.mapToScene(event.pos()))
+                self.end = QtCore.QPointF(self.mapToScene(event.position().toPoint()))
             if self._drawingLine:
                 self.draw_line(self.start,self.end)
             elif self._drawingRect:
@@ -276,7 +276,7 @@ class Canvas(QtWidgets.QGraphicsView):
                         self.PHOTO_MOUSE_PRESS.emit(self.start)
                     self._mouseIsMoved = True
                     self._numberOfMoves+=1
-            position = QtCore.QPointF(self.mapToScene(event.pos()))
+            position = QtCore.QPointF(self.mapToScene(event.position().toPoint()))
             self.PHOTO_MOUSE_MOVEMENT.emit(position.toPoint())
         super(Canvas, self).mouseMoveEvent(event)
 
@@ -284,11 +284,11 @@ class Canvas(QtWidgets.QGraphicsView):
         """This is an overload function"""
         ShiftModified = False
         if self._photo.isUnderMouse():
-            if event.button() == QtCore.Qt.LeftButton:
+            if event.button() == QtCore.Qt.MouseButton.LeftButton:
                 if self._mouseIsPressed and self._mouseIsMoved:
-                    if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
+                    if QtGui.QGuiApplication.queryKeyboardModifiers()==QtCore.Qt.KeyboardModifier.ShiftModifier:
                         ShiftModified = True
-                    self.end = QtCore.QPointF(self.mapToScene(event.pos()))
+                    self.end = QtCore.QPointF(self.mapToScene(event.position().toPoint()))
                     if self._drawingLine:
                         self.draw_line(self.start,self.end)
                     elif self._drawingRect:
@@ -297,7 +297,7 @@ class Canvas(QtWidgets.QGraphicsView):
                         if not self.PFRadius > self.radiusMaximum*self._scaleFactor:
                             self.PFRadius = np.sqrt((self.start.x()-self.end.x())**2+(self.start.y()-self.end.y())**2)
                             self.draw_arc(self.start,self.PFRadius,self.width,self.span,self.tilt)
-                    position = self.mapToScene(event.pos())
+                    position = self.mapToScene(event.position().toPoint())
                     self.PHOTO_MOUSE_RELEASE.emit(self.end,self.start,ShiftModified)
         self._drawingLine = False
         self._drawingRect = False
@@ -313,8 +313,8 @@ class Canvas(QtWidgets.QGraphicsView):
         YStep = QtCore.QPointF(0.0,10.0)
         XFineStep = QtCore.QPointF(1.0,0.0)
         YFineStep = QtCore.QPointF(0.0,1.0)
-        if event.key() == QtCore.Qt.Key_Up:
-            if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
+        if event.key() == QtCore.Qt.Key.Key_Up:
+            if QtGui.QGuiApplication.queryKeyboardModifiers()==QtCore.Qt.KeyboardModifier.ControlModifier:
                 self.saveStart-=YFineStep
                 if not self.canvasObject == "arc":
                     self.saveEnd-=YFineStep
@@ -334,8 +334,8 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.draw_arc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.KEY_PRESS_WHILE_ARC.emit(self.saveStart,self.saveRadius)
-        elif event.key() == QtCore.Qt.Key_Down:
-            if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
+        elif event.key() == QtCore.Qt.Key.Key_Down:
+            if QtGui.QGuiApplication.queryKeyboardModifiers()==QtCore.Qt.KeyboardModifier.ControlModifier:
                 self.saveStart+=YFineStep
                 if not self.canvasObject == "arc":
                     self.saveEnd+=YFineStep
@@ -355,8 +355,8 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.draw_arc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.KEY_PRESS_WHILE_ARC.emit(self.saveStart,self.saveRadius)
-        elif event.key() == QtCore.Qt.Key_Left:
-            if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
+        elif event.key() == QtCore.Qt.Key.Key_Left:
+            if QtGui.QGuiApplication.queryKeyboardModifiers()==QtCore.Qt.KeyboardModifier.ControlModifier:
                 self.saveStart-=XFineStep
                 if not self.canvasObject == "arc":
                     self.saveEnd-=XFineStep
@@ -376,8 +376,8 @@ class Canvas(QtWidgets.QGraphicsView):
                 self.PLOT_CHI_SCAN.emit(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.draw_arc(self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt)
                 self.KEY_PRESS_WHILE_ARC.emit(self.saveStart,self.saveRadius)
-        elif event.key() == QtCore.Qt.Key_Right:
-            if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ControlModifier):
+        elif event.key() == QtCore.Qt.Key.Key_Right:
+            if QtGui.QGuiApplication.queryKeyboardModifiers()==QtCore.Qt.KeyboardModifier.ControlModifier:
                 self.saveStart+=XFineStep
                 if not self.canvasObject == "arc":
                     self.saveEnd+=XFineStep
@@ -417,7 +417,7 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def draw_line(self,start,end,EnablePlot = True):
         self.clear_canvas()
-        if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
+        if QtGui.QGuiApplication.queryKeyboardModifiers() == QtCore.Qt.KeyboardModifier.ShiftModifier:
             if end.x() == start.x():
                 slope = 10
             else:
@@ -428,7 +428,7 @@ class Canvas(QtWidgets.QGraphicsView):
                 end.setY(start.y())
             else:
                 end.setY(end.x()-start.x()+start.y())
-        self._lineItem = self._scene.addLine(QtCore.QLineF(start,end),QtGui.QPen(QtCore.Qt.yellow,1))
+        self._lineItem = self._scene.addLine(QtCore.QLineF(start,end),QtGui.QPen(QtCore.Qt.GlobalColor.yellow,1))
         self._lineItem.show()
         self.canvasObject = "line"
         self.saveStart,self.saveEnd = start,end
@@ -438,7 +438,7 @@ class Canvas(QtWidgets.QGraphicsView):
     def draw_rect(self,start,end,width,EnablePlot = True):
         self.clear_canvas()
         rect = QtGui.QPolygonF()
-        if QtGui.QGuiApplication.queryKeyboardModifiers().__eq__(QtCore.Qt.ShiftModifier):
+        if QtGui.QGuiApplication.queryKeyboardModifiers()==QtCore.Qt.KeyboardModifier.ShiftModifier:
             if end.x() == start.x():
                 slope = 10
             else:
@@ -454,7 +454,7 @@ class Canvas(QtWidgets.QGraphicsView):
         rect.append(p2)
         rect.append(p3)
         rect.append(p4)
-        self._rectItem = self._scene.addPolygon(rect,QtGui.QPen(QtCore.Qt.yellow,1))
+        self._rectItem = self._scene.addPolygon(rect,QtGui.QPen(QtCore.Qt.GlobalColor.yellow,1))
         self._rectItem.show()
         self.canvasObject = "rectangle"
         self.saveStart,self.saveEnd,self.saveWidth = start,end,width
@@ -472,17 +472,17 @@ class Canvas(QtWidgets.QGraphicsView):
         rect1 = QtCore.QRectF(arc1x0,arc1y0,arc1x1-arc1x0,arc1y1-arc1y0)
         rect2 = QtCore.QRectF(arc2x0,arc2y0,arc2x1-arc2x0,arc2y1-arc2y0)
         rect3 = QtCore.QRectF(arc3x0,arc3y0,arc3x1-arc3x0,arc3y1-arc3y0)
-        self._arcItem3=self._scene.addEllipse(rect3,QtGui.QPen(QtCore.Qt.yellow,1))
-        self._arcItem3.setStartAngle((270-span/2+tilt)*16)
-        self._arcItem3.setSpanAngle((span)*16)
+        self._arcItem3=self._scene.addEllipse(rect3,QtGui.QPen(QtCore.Qt.GlobalColor.yellow,1))
+        self._arcItem3.setStartAngle(int((270-span/2+tilt)*16))
+        self._arcItem3.setSpanAngle(int((span)*16))
         self._arcItem3.show()
-        self._arcItem1=self._scene.addEllipse(rect1,QtGui.QPen(QtCore.Qt.yellow,1))
-        self._arcItem1.setStartAngle((270-span/2+tilt)*16)
-        self._arcItem1.setSpanAngle(span*16)
+        self._arcItem1=self._scene.addEllipse(rect1,QtGui.QPen(QtCore.Qt.GlobalColor.yellow,1))
+        self._arcItem1.setStartAngle(int((270-span/2+tilt)*16))
+        self._arcItem1.setSpanAngle(int(span*16))
         self._arcItem1.show()
-        self._arcItem2=self._scene.addEllipse(rect2,QtGui.QPen(QtCore.Qt.yellow,1))
-        self._arcItem2.setStartAngle((270-span/2+tilt)*16)
-        self._arcItem2.setSpanAngle(span*16)
+        self._arcItem2=self._scene.addEllipse(rect2,QtGui.QPen(QtCore.Qt.GlobalColor.yellow,1))
+        self._arcItem2.setStartAngle(int((270-span/2+tilt)*16))
+        self._arcItem2.setSpanAngle(int(span*16))
         self._arcItem2.show()
         self.canvasObject = "arc"
         self.saveStart,self.saveRadius,self.saveWidth,self.saveSpan,self.saveTilt = start,radius,width,span,tilt
@@ -541,9 +541,9 @@ class Canvas(QtWidgets.QGraphicsView):
     def contextMenuEvent(self,event):
         """This is an overload function"""
         self.menu = QtWidgets.QMenu()
-        self.clear = QtWidgets.QAction('Clear')
+        self.clear = QtGui.QAction('Clear')
         self.clear.triggered.connect(self.clear_canvas)
-        self.save = QtWidgets.QAction('Save as...')
+        self.save = QtGui.QAction('Save as...')
         self.save.triggered.connect(self.save_scene)
         self.menu.addAction(self.clear)
         self.menu.addAction(self.save)
@@ -554,9 +554,9 @@ class Canvas(QtWidgets.QGraphicsView):
         imageFileName = QtWidgets.QFileDialog.getSaveFileName(None,"choose save file name",os.path.join(dirname,"pattern.jpeg"),\
                                                                    "Image (*.jpeg)")
         rect = self._scene.sceneRect()
-        capture = QtGui.QImage(rect.size().toSize(),QtGui.QImage.Format_ARGB32_Premultiplied)
+        capture = QtGui.QImage(rect.size().toSize(),QtGui.QImage.Format.Format_ARGB32_Premultiplied)
         painter = QtGui.QPainter(capture)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self._scene.render(painter,QtCore.QRectF(capture.rect()),QtCore.QRectF(rect))
         painter.end()
         capture.save(imageFileName[0])

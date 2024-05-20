@@ -1,5 +1,5 @@
 import broadening, generate_report, main, process, reciprocal_space_mapping, simulate_RHEED, translational_antiphase_domain
-from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
+from PyQt6 import QtCore, QtGui, QtWidgets, QtDataVisualization
 from my_widgets import IndexedPushButtonWithTag, StartEndStep
 import configparser
 import matplotlib.pyplot as plt
@@ -13,7 +13,7 @@ class Window(QtWidgets.QWidget):
     def __init__(self):
         super(Window,self).__init__()
         self.setWindowTitle("Scenario")
-        self.setWindowModality(QtCore.Qt.WindowModal)
+        self.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         self.main_layout = QtWidgets.QGridLayout(self)
         self.path_dict = {}
         self.dir_dict = {}
@@ -166,7 +166,7 @@ class Window(QtWidgets.QWidget):
             scroll = QtWidgets.QScrollArea()
             scroll.setWidget(app)
             scroll.setWidgetResizable(True)
-            scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+            scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
             self.tab.addTab(scroll,section)
 
         self.scenario_path_label = QtWidgets.QLabel("The scenario is:\n"+os.path.join(self.dirname,'default_scenario.ini'))
@@ -449,19 +449,19 @@ class Window(QtWidgets.QWidget):
 
     def request_confirmation(self,message):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Warning)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         info.setText(message)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         return info.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()
 
 def test():

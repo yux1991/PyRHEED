@@ -7,7 +7,7 @@ with open('requirements.txt', encoding='UTF-8') as f:
 
 subprocess.check_call([sys.executable, "-m", "pip", "install", 'numpy==1.21.6'])
 subprocess.check_call([sys.executable, "-m", "pip", "install", 'pyqtdatavisualization==5.15.5'])
-subprocess.check_call([sys.executable, "-m", "pip", "install", 'pyqtchart==5.15.6'])
+subprocess.check_call([sys.executable, "-m", "pip", "install", 'pyQtCharts==5.15.6'])
 
 setup(
    name='PyRHEED',

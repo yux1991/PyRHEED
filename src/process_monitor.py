@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 from sys import getsizeof
 
 
@@ -31,21 +31,21 @@ class Monitor(QtCore.QObject):
                 total_size+=size
                 item = QtWidgets.QTableWidgetItem('{}'.format(size))
                 if size >= 1024000:
-                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
+                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.GlobalColor.red)))
                 else:
-                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.black)))
-                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.GlobalColor.black)))
+                item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 self.table.setItem(self.row_dict[att],j,item)
             self.table.setItem(0,j,QtWidgets.QTableWidgetItem('{}'.format(total_size)))
-        self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+        self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setBackgroundRole(QtGui.QPalette.ColorRole.Highlight)
         self.grid.addWidget(self.table,0,0)
         self.widget.setWindowTitle("Process Monitor")
         self.widget.setMinimumHeight(800)
         self.widget.setMinimumWidth(400)
-        self.widget.setWindowModality(QtCore.Qt.WindowModal)
+        self.widget.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         self.widget.showNormal()
-        desktopRect = QtWidgets.QApplication.desktop().availableGeometry(self.widget)
+        desktopRect = self.Dialog.geometry()
         center = desktopRect.center()
         self.widget.move(center.x()-self.widget.width()*0.5,center.y()-self.widget.height()*0.5)
 
@@ -62,9 +62,9 @@ class Monitor(QtCore.QObject):
                 total_size+=size
                 item = QtWidgets.QTableWidgetItem('{}'.format(size))
                 if size >= 1024000:
-                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
+                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.GlobalColor.red)))
                 else:
-                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.black)))
-                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.GlobalColor.black)))
+                item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 self.table.setItem(self.row_dict[att],j,item)
             self.table.setItem(0,j,QtWidgets.QTableWidgetItem('{}'.format(total_size)))

@@ -17,7 +17,7 @@ which can hardly be detected using XRD. Another merit of RHEED is that the spot 
 measure the wafer-scale average of the material's properties including the lattice constants, grain orientation distribution and
 even defect density.
 
-It is written and tested with Python 3.7.4 (64 bit). The GUI is created using PyQt5. The *simulate_RHEED* module utilized the [pymatgen](http://pymatgen.org/) library to read CIF files and create structures. Major features include:
+It is written and tested with Python 3.7.4 (64 bit). The GUI is created using PyQt6. The *simulate_RHEED* module utilized the [pymatgen](http://pymatgen.org/) library to read CIF files and create structures. Major features include:
 
 1. RHEED raw image process using [rawpy](https://pypi.org/project/rawpy/) and intensity profile extraction which is accelerated by [numpy](https://www.numpy.org/) vecterization. Construction of 2D reciprocal space map and pole figure is automated. The 3D data could be saved as *.vtp format, which could be processed by [paraview](https://www.paraview.org).
 2. Batch fit RHEED line profiles with pre-defined peak functions (including Gaussian function and Voigt function) and save the formatted results.

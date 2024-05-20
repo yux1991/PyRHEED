@@ -4,7 +4,7 @@ from numpy.lib import scimath
 from process import Diffraction
 import profile_chart
 from pymatgen.io.cif import CifParser
-from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 from my_widgets import LabelMultipleLineEdit, LabelLineEdit, ColorPicker
 import sys
 import os
@@ -29,7 +29,7 @@ class Window(QtCore.QObject):
         self.chooseCif = QtWidgets.QGroupBox("Choose CIF")
         self.chooseCifGrid = QtWidgets.QGridLayout(self.chooseCif)
         self.chooseCifLabel = QtWidgets.QLabel("The path of the CIF file is:\n")
-        self.chooseCifLabel.setAlignment(QtCore.Qt.AlignTop)
+        self.chooseCifLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.chooseCifLabel.setWordWrap(True)
         self.chooseCifButton = QtWidgets.QPushButton("Add CIF")
         self.chooseCifButton.clicked.connect(self.open_cif)
@@ -83,7 +83,7 @@ class Window(QtCore.QObject):
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(15))
         self.fontSizeLabel.setFixedWidth(160)
-        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(15)
@@ -111,29 +111,29 @@ class Window(QtCore.QObject):
 
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
-        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
                                           "\u00A0\u00A0\u00A0\u00A0Initialized!")
         self.logCursor = QtGui.QTextCursor(self.logBox.document())
-        self.logCursor.movePosition(QtGui.QTextCursor.End)
+        self.logCursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
         self.logBox.setTextCursor(self.logCursor)
         self.logBox.ensureCursorVisible()
-        self.logBox.setAlignment(QtCore.Qt.AlignTop)
-        self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBox.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        self.logBox.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.logBoxScroll = QtWidgets.QScrollArea()
         self.logBoxScroll.setWidget(self.logBox)
         self.logBoxScroll.setWidgetResizable(True)
-        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.progressBar = QtWidgets.QProgressBar()
         self.progressBar.setVisible(False)
-        self.progressBar.setOrientation(QtCore.Qt.Horizontal)
+        self.progressBar.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.progressBarSizePolicy = self.progressBar.sizePolicy()
         self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
-        self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Expanding)
+        self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Policy.Expanding)
         self.progressBar.setSizePolicy(self.progressBarSizePolicy)
         self.statusGrid.addWidget(self.logBoxScroll,0,0)
 
-        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Abort|QtWidgets.QDialogButtonBox.Discard,QtCore.Qt.Horizontal)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok|QtWidgets.QDialogButtonBox.StandardButton.Abort|QtWidgets.QDialogButtonBox.StandardButton.Discard,QtCore.Qt.Orientation.Horizontal)
         self.button_box.setCenterButtons(True)
         self.button_box.accepted.connect(self.start)
         self.button_box.rejected.connect(self.stop)
@@ -145,7 +145,7 @@ class Window(QtCore.QObject):
         self.Vlayout.addWidget(self.chooseCif)
         self.Vlayout.addWidget(self.lattice_constants)
         self.Vlayout.addWidget(self.parameters)
-        self.vSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.vSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.vSplitter.addWidget(self.options)
         self.vSplitter.addWidget(self.statusBar)
         self.vSplitter.setStretchFactor(0,1)
@@ -161,7 +161,7 @@ class Window(QtCore.QObject):
         self.plot = profile_chart.ProfileChart(self.config)
         self.plot.set_fonts(self.fontList.currentFont().family(),self.fontSizeSlider.value())
         self.plot.add_chart([],[],'kikuchi line')
-        self.plot.profileChart.axisX().setRange(-self.plot_range.value(),self.plot_range.value())
+        self.plot.profileChart.axes(QtCore.Qt.Orientation.Horizontal)[0].setRange(-self.plot_range.value(),self.plot_range.value())
         self.plot.set_axes_visible(False)
         self.plot.set_grids_visible(False)
         self.show_grid.stateChanged.connect(self.plot.set_grids_visible)
@@ -181,7 +181,7 @@ class Window(QtCore.QObject):
         self.leftScroll = QtWidgets.QScrollArea(self.main_splitter)
         self.leftScroll.setWidget(self.control_panel)
         self.leftScroll.setWidgetResizable(True)
-        self.leftScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.leftScroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
 
         self.main_layout = QtWidgets.QVBoxLayout()
         self.main_layout.addWidget(self.main_splitter)
@@ -272,10 +272,10 @@ class Window(QtCore.QObject):
                 series.setColor(QtGui.QColor(color))
 
     def add_line(self,list,x1,x2,y1,y2,color='red',width=2,number_of_steps=200, label='kikuchi_line'):
-        pen = QtGui.QPen(QtCore.Qt.SolidLine)
+        pen = QtGui.QPen(QtCore.Qt.PenStyle.SolidLine)
         pen.setColor(QtGui.QColor(color))
         pen.setWidth(width)
-        series = QtChart.QLineSeries()
+        series = QtCharts.QLineSeries()
         series.setPen(pen)
         for x,y in zip(np.linspace(x1,x2,number_of_steps),np.linspace(y1,y2,number_of_steps)):
             series.append(x,y)
@@ -284,13 +284,13 @@ class Window(QtCore.QObject):
             series.attachAxis(ax)
         if label == 'kikuchi_line':
             self.kikuchi_line_series[list] = series
-        self.plot.profileChart.axisY().setRange(-0.5,self.plot_range.value())
+        self.plot.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setRange(-0.5,self.plot_range.value())
 
     def add_curve(self,list,list_x,list_y,color='red',width=2,label='kikuchi_line'):
-        pen = QtGui.QPen(QtCore.Qt.SolidLine)
+        pen = QtGui.QPen(QtCore.Qt.PenStyle.SolidLine)
         pen.setColor(QtGui.QColor(color))
         pen.setWidth(width)
-        series = QtChart.QLineSeries()
+        series = QtCharts.QLineSeries()
         series.setPen(pen)
         for x,y in zip(list_x,list_y):
             series.append(x,y)
@@ -301,14 +301,14 @@ class Window(QtCore.QObject):
             self.kikuchi_line_series[list] = series
         elif label == 'kikuchi_envelope':
             self.kikuchi_envelope_series[list] = series
-        self.plot.profileChart.axisY().setRange(-0.5,self.plot_range.value())
+        self.plot.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setRange(-0.5,self.plot_range.value())
 
     def add_spot(self,list,x,y,shape='circle',color='red',size=15,label='reciprocal_spot'):
-        series = QtChart.QScatterSeries()
+        series = QtCharts.QScatterSeries()
         if shape == 'circle':
-            series.setMarkerShape(QtChart.QScatterSeries.MarkerShapeCircle)
+            series.setMarkerShape(QtCharts.QScatterSeries.MarkerShape.MarkerShapeCircle)
         elif shape == 'rectangle':
-            series.setMarkerShape(QtChart.QScatterSeries.MarkerShapeRectangle)
+            series.setMarkerShape(QtCharts.QScatterSeries.MarkerShape.MarkerShapeRectangle)
         series.setMarkerSize(size)
         series.setColor(QtGui.QColor(color))
         series.append(x,y)
@@ -319,7 +319,7 @@ class Window(QtCore.QObject):
             self.reciprocal_spot_series[list] = series
         elif label == 'laue_spot':
             self.laue_spot_series[list] = series
-        self.plot.profileChart.axisY().setRange(-0.5,self.plot_range.value())
+        self.plot.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setRange(-0.5,self.plot_range.value())
 
     def clear_plot(self):
         if len(self.plot.profileChart.series())>1:
@@ -348,20 +348,20 @@ class Window(QtCore.QObject):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()
 
 class Simulation(QtCore.QObject):

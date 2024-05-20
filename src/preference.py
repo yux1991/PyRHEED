@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtWidgets
 import configparser
 import os
 
@@ -29,9 +29,9 @@ class Window(QtCore.QObject):
         self.DefaultSettings_DialogGrid = QtWidgets.QGridLayout(self.DefaultSettings_Dialog)
         self.tab = self.refresh_tab(self.config)
         buttonBox = QtWidgets.QDialogButtonBox()
-        buttonBox.addButton("Accept",QtWidgets.QDialogButtonBox.AcceptRole)
-        buttonBox.addButton("Reset",QtWidgets.QDialogButtonBox.ResetRole)
-        buttonBox.addButton("Quit",QtWidgets.QDialogButtonBox.DestructiveRole)
+        buttonBox.addButton("Accept",QtWidgets.QDialogButtonBox.ButtonRole.AcceptRole)
+        buttonBox.addButton("Reset",QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
+        buttonBox.addButton("Quit",QtWidgets.QDialogButtonBox.ButtonRole.DestructiveRole)
         buttonBox.setCenterButtons(True)
         buttonBox.findChildren(QtWidgets.QPushButton)[0].clicked.connect(self.accept)
         buttonBox.findChildren(QtWidgets.QPushButton)[1].clicked.connect(self.reset)
@@ -40,10 +40,10 @@ class Window(QtCore.QObject):
         self.DefaultSettings_DialogGrid.addWidget(buttonBox,1,0)
         self.DefaultSettings_DialogGrid.setContentsMargins(0,0,0,0)
         self.DefaultSettings_Dialog.setWindowTitle("Default Settings")
-        self.DefaultSettings_Dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.DefaultSettings_Dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
         self.DefaultSettings_Dialog.resize(self.tab.minimumSizeHint())
         self.DefaultSettings_Dialog.showNormal()
-        self.DefaultSettings_Dialog.exec_()
+        self.DefaultSettings_Dialog.exec()
 
     def save(self,lineValueList):
         windowKeys = ['HS','VS','energy','azimuth','scaleBarLength','chiRange','width','widthSliderScale','radius',\
@@ -132,13 +132,13 @@ class Window(QtCore.QObject):
                       ('Tilt',canvasDefault['tilt'],3,0,1),\
                       ('Maximum Zoom Factor',canvasDefault['max_zoom_factor'],4,0,1)]
         chartGrid = QtWidgets.QVBoxLayout(self.chart)
-        chartGrid.setAlignment(QtCore.Qt.AlignTop)
+        chartGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         PageMode = [(windowGrid,windowMode),(propertiesGrid,propertiesMode),(canvasGrid,canvasMode)]
         for grid, mode in PageMode:
             for label,value,row,col,span in mode:
                 grid.addWidget(QtWidgets.QLabel(label),row,2*col,1,1)
                 grid.addWidget(QtWidgets.QLineEdit(value),row,2*col+1,1,2*span-1)
-                grid.setAlignment(QtCore.Qt.AlignTop)
+                grid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         chartGrid.addWidget(QtWidgets.QLabel("Theme:"))
         chartGrid.addWidget(chartCombo)
         tab.addTab(self.window,"Window")

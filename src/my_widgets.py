@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt6 import QtCore, QtWidgets, QtGui
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -16,7 +16,7 @@ class DoubleSlider(QtWidgets.QWidget):
         self.scale = scale
         self.unit = unit
         self.minLabel = QtWidgets.QLabel(self.text+"_min = {:5.2f} ".format(self.currentMin*self.scale)+"("+unit+")")
-        self.minSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.minSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.minSlider.setFixedWidth(300)
         self.minSlider.setMinimum(minimum)
         self.minSlider.setMaximum(maximum)
@@ -24,7 +24,7 @@ class DoubleSlider(QtWidgets.QWidget):
         self.minSlider.valueChanged.connect(self.min_changed)
 
         self.maxLabel = QtWidgets.QLabel(self.text+"_max = {:5.2f} ".format(self.currentMax*self.scale)+"("+unit+")")
-        self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.maxSlider.setFixedWidth(300)
         self.maxSlider.setMinimum(minimum)
         self.maxSlider.setMaximum(maximum)
@@ -101,18 +101,18 @@ class VerticalLabelSlider(QtWidgets.QWidget):
         self.currentValue = value
         self.direction = direction
         if direction == 'vertical':
-            self.slider = QtWidgets.QSlider(QtCore.Qt.Vertical)
+            self.slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
         elif direction == 'horizontal':
-            self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setMinimum(minimum*scale)
-        self.slider.setMaximum(maximum*scale)
-        self.slider.setValue(value*self.scale)
+            self.slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.slider.setMinimum(int(minimum*scale))
+        self.slider.setMaximum(int(maximum*scale))
+        self.slider.setValue(int(value*self.scale))
         self.slider.valueChanged.connect(self.update_label)
 
         self.UIgrid = QtWidgets.QGridLayout()
         palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.Window, QtCore.Qt.transparent)
-        palette.setColor(QtGui.QPalette.WindowText,QtGui.QColor(color))
+        palette.setColor(QtGui.QPalette.ColorRole.Window, QtCore.Qt.GlobalColor.transparent)
+        palette.setColor(QtGui.QPalette.ColorRole.WindowText,QtGui.QColor(color))
         if direction == 'vertical':
             if self.BG:
                 self.label = QtWidgets.QLabel('\u00A0\u00A0'+self.name+'\u00A0BG\n({:3.2f})'.format(value))
@@ -134,7 +134,7 @@ class VerticalLabelSlider(QtWidgets.QWidget):
         return str(self.currentValue)
 
     def set_value(self,value):
-        self.slider.setValue(value*self.scale)
+        self.slider.setValue(int(value*self.scale))
 
     def update_label(self,value):
         self.currentValue = value/self.scale
@@ -202,7 +202,7 @@ class LabelSpinBox(QtWidgets.QWidget):
         self.valueSpinBox = QtWidgets.QSpinBox()
         self.valueSpinBox.setMinimum(min)
         self.valueSpinBox.setMaximum(max)
-        self.valueSpinBox.setValue(initial*scale)
+        self.valueSpinBox.setValue(int(initial*scale))
         self.valueSpinBox.setSingleStep(1)
         self.valueSpinBox.setSuffix(" x 10"+self.to_sup(int(np.log10(1/scale))))
         self.valueSpinBox.valueChanged.connect(self.value_changed)
@@ -222,13 +222,13 @@ class LabelSpinBox(QtWidgets.QWidget):
         self.max = max
         self.valueSpinBox.setMinimum(min)
         self.valueSpinBox.setMaximum(max)
-        self.valueSpinBox.setValue(initial*scale)
+        self.valueSpinBox.setValue(int(initial*scale))
         self.value_changed(initial*scale)
 
     def reset(self):
         self.valueSpinBox.setMinimum(self.min)
         self.valueSpinBox.setMaximum(self.max)
-        self.valueSpinBox.setValue(self.initial*self.scale)
+        self.valueSpinBox.setValue(int(self.initial*self.scale))
         self.value_changed(self.initial*self.scale)
 
     def value_changed(self,value):
@@ -248,7 +248,7 @@ class LabelSpinBox(QtWidgets.QWidget):
         return self.valueSpinBox.value()/self.scale
 
     def set_value(self,value):
-        self.valueSpinBox.setValue(value*self.scale)
+        self.valueSpinBox.setValue(int(value*self.scale))
 
     def get_index(self):
         return self.index
@@ -257,7 +257,7 @@ class LabelSlider(QtWidgets.QWidget):
 
     VALUE_CHANGED = QtCore.pyqtSignal(float,int)
 
-    def __init__(self,min,max,initial,scale,text,unit='',orientation = QtCore.Qt.Horizontal,index=-1):
+    def __init__(self,min,max,initial,scale,text,unit='',orientation = QtCore.Qt.Orientation.Horizontal,index=-1):
         super(LabelSlider, self).__init__()
         self.scale = scale
         self.label_text = text
@@ -277,7 +277,7 @@ class LabelSlider(QtWidgets.QWidget):
         self.valueSlider = QtWidgets.QSlider(orientation)
         self.valueSlider.setMinimum(min)
         self.valueSlider.setMaximum(max)
-        self.valueSlider.setValue(initial*scale)
+        self.valueSlider.setValue(int(initial*scale))
         self.valueSlider.setTickInterval(1)
         self.valueSlider.valueChanged.connect(self.value_changed)
         self.grid = QtWidgets.QGridLayout()
@@ -292,13 +292,13 @@ class LabelSlider(QtWidgets.QWidget):
         self.max = max
         self.valueSlider.setMinimum(min)
         self.valueSlider.setMaximum(max)
-        self.valueSlider.setValue(initial*scale)
+        self.valueSlider.setValue(int(initial*scale))
         self.value_changed(initial*scale)
 
     def reset(self):
         self.valueSlider.setMinimum(self.min)
         self.valueSlider.setMaximum(self.max)
-        self.valueSlider.setValue(self.initial*self.scale)
+        self.valueSlider.setValue(int(self.initial*self.scale))
         self.value_changed(self.initial*self.scale)
 
     def value_changed(self,value):
@@ -318,7 +318,7 @@ class LabelSlider(QtWidgets.QWidget):
         return self.valueSlider.value()/self.scale
 
     def set_value(self,value):
-        self.valueSlider.setValue(value*self.scale)
+        self.valueSlider.setValue(int(value*self.scale))
 
     def get_index(self):
         return self.index
@@ -362,7 +362,7 @@ class LockableDoubleSlider(QtWidgets.QWidget):
             elif 1/self.scale >=0.0001:
                 self.minLabel = QtWidgets.QLabel(self.text+"_min = {:6.4f} ".format(self.currentMin)+"("+unit+")")
         if self.type == 'slider':
-            self.minSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+            self.minSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         elif self.type == 'spinbox':
             self.minSlider = QtWidgets.QSpinBox()
             self.minSlider.setSingleStep(1)
@@ -372,7 +372,7 @@ class LockableDoubleSlider(QtWidgets.QWidget):
             self.minSlider.setMaximum(0)
         else:
             self.minSlider.setMaximum(self._maximum)
-        self.minSlider.setValue(self.currentMin*self.scale)
+        self.minSlider.setValue(int(self.currentMin*self.scale))
         self.minSlider.valueChanged.connect(self.min_changed)
 
         if self.unit == '':
@@ -398,7 +398,7 @@ class LockableDoubleSlider(QtWidgets.QWidget):
             elif 1/self.scale >=0.0001:
                 self.maxLabel = QtWidgets.QLabel(self.text+"_max = {:6.4f} ".format(self.currentMax)+"("+unit+")")
         if self.type == 'slider':
-            self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+            self.maxSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         elif self.type == 'spinbox':
             self.maxSlider = QtWidgets.QSpinBox()
             self.maxSlider.setSingleStep(1)
@@ -408,7 +408,7 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         else:
             self.maxSlider.setMinimum(minimum)
         self.maxSlider.setMaximum(maximum)
-        self.maxSlider.setValue(self.currentMax*self.scale)
+        self.maxSlider.setValue(int(self.currentMax*self.scale))
         self.maxSlider.valueChanged.connect(self.max_changed)
 
         self.UIgrid = QtWidgets.QGridLayout()
@@ -424,8 +424,8 @@ class LockableDoubleSlider(QtWidgets.QWidget):
         return ''.join(dict(zip('-0123456789','\u207b\u2070\xb9\xb2\xb3\u2074\u2075\u2076\u2077\u2078\u2079')).get(c,c) for c in s)
 
     def reset(self):
-        self.minSlider.setValue(self.head*self.scale)
-        self.maxSlider.setValue(self.tail*self.scale)
+        self.minSlider.setValue(int(self.head*self.scale))
+        self.maxSlider.setValue(int(self.tail*self.scale))
 
     def set_maximum(self,value):
         if self.lock:
@@ -436,11 +436,11 @@ class LockableDoubleSlider(QtWidgets.QWidget):
 
     def set_head(self,value):
         if not self.lock:
-            self.minSlider.setValue(np.round(value*self.scale,0))
+            self.minSlider.setValue(int(value*self.scale))
 
     def set_tail(self,value):
         if not self.lock:
-            self.maxSlider.setValue(np.round(value*self.scale,0))
+            self.maxSlider.setValue(int(value*self.scale))
 
     def values(self):
         return self.currentMin, self.currentMax
@@ -452,9 +452,9 @@ class LockableDoubleSlider(QtWidgets.QWidget):
                 self.maxSlider.setValue(0)
                 self.minSlider.setValue(0)
             else:
-                self.maxSlider.setValue(-self.currentMin*self.scale)
+                self.maxSlider.setValue(int(-self.currentMin*self.scale))
         elif self.currentMin > self.currentMax:
-            self.maxSlider.setValue(self.currentMin*self.scale)
+            self.maxSlider.setValue(int(self.currentMin*self.scale))
 
         if self.unit == '':
             if 1/self.scale >=1:
@@ -487,9 +487,9 @@ class LockableDoubleSlider(QtWidgets.QWidget):
                 self.maxSlider.setValue(0)
                 self.minSlider.setValue(0)
             else:
-                self.minSlider.setValue(-self.currentMax*self.scale)
+                self.minSlider.setValue(int(-self.currentMax*self.scale))
         elif self.currentMin > self.currentMax:
-            self.minSlider.setValue(self.currentMax*self.scale)
+            self.minSlider.setValue(int(self.currentMax*self.scale))
         if self.unit == '':
             if 1/self.scale >=1:
                 self.maxLabel.setText(self.text+"_max = {:2.0f} ".format(self.currentMax))
@@ -526,8 +526,8 @@ class LockableDoubleSlider(QtWidgets.QWidget):
             self.lock = False
         if self.lock:
             value = abs(self.currentMax) + abs(self.currentMin)
-            self.maxSlider.setValue(value*self.scale/2)
-            self.minSlider.setValue(-value*self.scale/2)
+            self.maxSlider.setValue(int(value*self.scale/2))
+            self.minSlider.setValue(int(-value*self.scale/2))
             self.minSlider.setMaximum(0)
             self.maxSlider.setMinimum(0)
         else:
@@ -553,7 +553,7 @@ class IndexedColorPicker(QtWidgets.QWidget):
         self.SB.setMinimum(0)
         self.SB.setMaximum(100)
         self.SB.setSingleStep(1)
-        self.SB.setValue(self.size)
+        self.SB.setValue(int(self.size))
         self.SB.valueChanged.connect(self.change_size)
         self.set_color(self.color)
         self.grid = QtWidgets.QGridLayout(self)
@@ -639,7 +639,7 @@ class MplCanvas(FigureCanvas):
         self.axes = self.fig.add_subplot(self.pos)
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
-        FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Expanding)
         FigureCanvas.updateGeometry(self)
         mpl.rcParams['axes.linewidth'] = 0.4
         self.change_background(facecolor)
@@ -704,9 +704,9 @@ class DynamicalColorMap(QtWidgets.QWidget):
             self.TwoDimMappingWindow.setWindowTitle('Simulated 2D reciprocal space map')
         self.TwoDimMappingWindowLayout = QtWidgets.QGridLayout(self.TwoDimMappingWindow)
         self.toolbar = NavigationToolbar(self.figure,self.TwoDimMappingWindow)
-        self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0, QtCore.Qt.AlignHCenter)
-        self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0, QtCore.Qt.AlignHCenter)
-        self.TwoDimMappingWindow.setWindowModality(QtCore.Qt.WindowModal)
+        self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+        self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+        self.TwoDimMappingWindow.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         if not self.kwargs.get('save_as_file', False):
             self.TwoDimMappingWindow.showMaximized()
         else:
@@ -723,8 +723,8 @@ class DynamicalColorMap(QtWidgets.QWidget):
         elif mode == 'dark':
             self.figure = MplCanvas(self,pos=self.pos,facecolor='black')
         self.toolbar = NavigationToolbar(self.figure,self.TwoDimMappingWindow)
-        self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0, QtCore.Qt.AlignHCenter)
-        self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0, QtCore.Qt.AlignHCenter)
+        self.TwoDimMappingWindowLayout.addWidget(self.figure,0,0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+        self.TwoDimMappingWindowLayout.addWidget(self.toolbar,1,0, QtCore.Qt.AlignmentFlag.AlignHCenter)
         self.replot(self.type,self.x_linear,self.y_linear,self.z_linear,self.colormap,self.intensity,self.nkz)
 
     def show_plot(self):
@@ -1066,8 +1066,8 @@ class MultipleInputDialog(QtWidgets.QDialog):
                 self.widget_list[-1].addItems(dict['content'])
             self.form.addRow(self.label_list[-1],self.widget_list[-1])
 
-        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel,\
-                                                QtCore.Qt.Horizontal)
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok|QtWidgets.QDialogButtonBox.StandardButton.Cancel,\
+                                                QtCore.Qt.Orientation.Horizontal)
         self.form.addRow(button_box)
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)

@@ -1,5 +1,5 @@
 from my_widgets import ColorPicker, DoubleSlider
-from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 import configparser
 import matplotlib.pyplot as plt
 import numpy as np
@@ -62,23 +62,23 @@ class Window(QtCore.QObject):
         self.chooseSource = QtWidgets.QGroupBox("Choose the Report File")
         self.chooseSource.setMinimumWidth(300)
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
-        self.sourceGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.sourceGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.chooseSourceLabel = QtWidgets.QLabel("The path of the report file is:\n"+self.path)
         self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
-        self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
         self.chooseSourceButton.clicked.connect(self.choose_source)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0)
         self.sourceGrid.addWidget(self.chooseSourceButton,0,1)
 
         self.ReportInformationBox = QtWidgets.QGroupBox("Information")
         self.ReportInformationGrid = QtWidgets.QGridLayout(self.ReportInformationBox)
-        self.ReportInformationGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.ReportInformationGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.ReportInformation = QtWidgets.QLabel("Fit function:\nNumber of peaks:\nDate of the report:\nStart image index:\nEnd image index:\nStart Kperp position:\nEnd Kperp position:\nKperp step size:")
         self.ReportInformationGrid.addWidget(self.ReportInformation)
 
         self.typeOfReportBox = QtWidgets.QGroupBox("Type of the Report to Be Generated")
         self.typeOfReportGrid = QtWidgets.QGridLayout(self.typeOfReportBox)
-        self.typeOfReportGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.typeOfReportGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.type = QtWidgets.QButtonGroup()
         self.type.setExclusive(False)
         self.typeFrame = QtWidgets.QFrame()
@@ -107,7 +107,7 @@ class Window(QtCore.QObject):
 
         self.optionBox = QtWidgets.QGroupBox("Plot Options")
         self.optionGrid = QtWidgets.QGridLayout(self.optionBox)
-        self.optionGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.optionGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.peakLabel = QtWidgets.QLabel("Choose the peak to be analyzed:")
         self.peak = QtWidgets.QComboBox()
         self.peak.addItem('Center','0')
@@ -117,14 +117,14 @@ class Window(QtCore.QObject):
         self.figureGenerator.addItem('Matplotlib','Matplotlib')
         self.figureGenerator.currentTextChanged.connect(self.connect_OK_button)
         self.KperpLabel = QtWidgets.QLabel("Kperp = {:6.2f} (\u212B\u207B\u00B9)".format(self.currentKP/self.KperpSliderScale+self.RangeStart))
-        self.KperpSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.KperpSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.KperpSlider.setMinimum(self.KPmin)
         self.KperpSlider.setMaximum(self.KPmax)
         self.KperpSlider.setValue(self.currentKP)
         self.KperpSlider.valueChanged.connect(self.kp_changed)
         self.KperpSlider.setEnabled(False)
         self.AzimuthLabel = QtWidgets.QLabel("Azimuth Angle = {:5.1f} (\u00B0)".format(self.currentAzimuth))
-        self.AzimuthSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.AzimuthSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.AzimuthSlider.setMinimum(self.AZmin)
         self.AzimuthSlider.setMaximum(self.AZmax)
         self.AzimuthSlider.setValue(0)
@@ -151,13 +151,13 @@ class Window(QtCore.QObject):
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
         self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
-        self.appearanceGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.appearanceGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.fontListLabel = QtWidgets.QLabel("Change Font")
         self.fontList = QtWidgets.QFontComboBox()
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(15))
-        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(15)
@@ -169,25 +169,25 @@ class Window(QtCore.QObject):
 
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
-        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
                                     "\u00A0\u00A0\u00A0\u00A0Initialized!")
         self.logCursor = QtGui.QTextCursor(self.logBox.document())
-        self.logCursor.movePosition(QtGui.QTextCursor.End)
+        self.logCursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
         self.logBox.setTextCursor(self.logCursor)
         self.logBox.ensureCursorVisible()
-        self.logBox.setAlignment(QtCore.Qt.AlignTop)
-        self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBox.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        self.logBox.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.logBoxScroll = QtWidgets.QScrollArea()
         self.logBoxScroll.setWidget(self.logBox)
         self.logBoxScroll.setWidgetResizable(True)
-        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.statusGrid.addWidget(self.logBoxScroll,0,0)
 
         self.ButtonBox = QtWidgets.QDialogButtonBox()
-        self.ButtonBox.addButton("OK",QtWidgets.QDialogButtonBox.AcceptRole)
-        self.ButtonBox.addButton("Fit",QtWidgets.QDialogButtonBox.AcceptRole)
-        self.ButtonBox.addButton("Quit",QtWidgets.QDialogButtonBox.DestructiveRole)
+        self.ButtonBox.addButton("OK",QtWidgets.QDialogButtonBox.ButtonRole.AcceptRole)
+        self.ButtonBox.addButton("Fit",QtWidgets.QDialogButtonBox.ButtonRole.AcceptRole)
+        self.ButtonBox.addButton("Quit",QtWidgets.QDialogButtonBox.ButtonRole.DestructiveRole)
         self.ButtonBox.setCenterButtons(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[1].clicked.\
             connect(self.linear_fit)
@@ -215,7 +215,7 @@ class Window(QtCore.QObject):
 
         self.Dialog.setWindowTitle("Generate Report")
         self.Dialog.show()
-        desktopRect = QtWidgets.QApplication.desktop().availableGeometry(self.Dialog)
+        desktopRect = self.Dialog.geometry()
         center = desktopRect.center()
         self.Dialog.move(int(center.x()-self.Dialog.width()*0.5),int(center.y()-self.Dialog.height()*0.5))
 
@@ -318,7 +318,7 @@ class Window(QtCore.QObject):
         self.WindowLayout.addWidget(self.FAPlot,0,0)
         self.WindowLayout.addWidget(self.IKPlot,1,1)
         self.WindowLayout.addWidget(self.FKPlot,1,0)
-        self.Window.setWindowModality(QtCore.Qt.WindowModal)
+        self.Window.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         self.Window.showMaximized()
         if self.IA.checkState() == 2:
             I, A, Ierror = self.get_IA()
@@ -664,18 +664,18 @@ class Window(QtCore.QObject):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()

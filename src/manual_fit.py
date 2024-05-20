@@ -1,6 +1,6 @@
 from my_widgets import VerticalLabelSlider
 from process import Image, FitFunctions
-from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 import configparser
 import glob
 import numpy as np
@@ -179,7 +179,7 @@ class Window(QtCore.QObject):
         self.Dialog.setWindowTitle("Manual Fit")
         self.Dialog.setMinimumHeight(600)
         self.Dialog.showNormal()
-        desktopRect = QtWidgets.QApplication.desktop().availableGeometry(self.Dialog)
+        desktopRect = self.Dialog.geometry()
         center = desktopRect.center()
         self.Dialog.move(int(center.x()-self.Dialog.width()*0.5),int(center.y()-self.Dialog.height()*0.5))
 
@@ -306,43 +306,43 @@ class Window(QtCore.QObject):
                     minH2 = self.fit_function(x0[-1],self.lattice_constant,gamma,height,offset)
             if min(minH1,minH2) < total_min:
                 total_min = min(minH1,minH2)
-            pen = QtGui.QPen(QtCore.Qt.DotLine)
+            pen = QtGui.QPen(QtCore.Qt.PenStyle.DotLine)
             pen.setColor(QtGui.QColor(self.COLOR[i]))
             pen.setWidth(2)
-            self.series_fit = QtChart.QLineSeries()
+            self.series_fit = QtCharts.QLineSeries()
             self.series_fit.setPen(pen)
             for x,y in zip(x0,fit):
                 self.series_fit.append(x,y)
             self.fit_chart.profileChart.addSeries(self.series_fit)
             for ax in self.fit_chart.profileChart.axes():
                 self.series_fit.attachAxis(ax)
-            self.fit_chart.profileChart.axisY().setRange(min(minH1,minH2,self.minIntensity),max(maxH,self.maxIntensity))
-        pen = QtGui.QPen(QtCore.Qt.DotLine)
+            self.fit_chart.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setRange(min(minH1,minH2,self.minIntensity),max(maxH,self.maxIntensity))
+        pen = QtGui.QPen(QtCore.Qt.PenStyle.DotLine)
         pen.setColor(QtGui.QColor('red'))
         pen.setWidth(2)
-        series_total = QtChart.QLineSeries()
+        series_total = QtCharts.QLineSeries()
         series_total.setPen(pen)
         for x,y in zip(x0,total):
             series_total.append(x,y)
         self.fit_chart.profileChart.addSeries(series_total)
         for ax in self.fit_chart.profileChart.axes():
             series_total.attachAxis(ax)
-        self.fit_chart.profileChart.axisY().setRange(min(total[0],total[-1],self.minIntensity,total_min),max(np.amax(total),self.maxIntensity))
+        self.fit_chart.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setRange(min(total[0],total[-1],self.minIntensity,total_min),max(np.amax(total),self.maxIntensity))
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()

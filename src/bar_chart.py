@@ -1,8 +1,8 @@
 from process import Image
-from PyQt5 import QtCore, QtWidgets, QtGui, QtChart, QtSvg
+from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts, QtSvg
 import numpy as np
 
-class BarChart(QtChart.QChartView):
+class BarChart(QtCharts.QChartView):
     CHART_IS_PRESENT = False
     FONTS_CHANGED = QtCore.pyqtSignal(str,int)
 
@@ -10,25 +10,25 @@ class BarChart(QtChart.QChartView):
         super(BarChart,self).__init__()
         chartDefault = dict(config['chartDefault'].items())
         if int(chartDefault['theme']) == 0:
-            self.theme = QtChart.QChart.ChartThemeLight
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeLight
         if int(chartDefault['theme']) == 1:
-            self.theme = QtChart.QChart.ChartThemeBlueCerulean
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueCerulean
         if int(chartDefault['theme']) == 2:
-            self.theme = QtChart.QChart.ChartThemeDark
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeDark
         if int(chartDefault['theme']) == 3:
-            self.theme = QtChart.QChart.ChartThemeBrownSand
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBrownSand
         if int(chartDefault['theme']) == 4:
-            self.theme = QtChart.QChart.ChartThemeBlueNcs
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueNcs
         if int(chartDefault['theme']) == 5:
-            self.theme = QtChart.QChart.ChartThemeHighContrast
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeHighContrast
         if int(chartDefault['theme']) == 6:
-            self.theme = QtChart.QChart.ChartThemeBlueIcy
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueIcy
         if int(chartDefault['theme']) == 7:
-            self.theme = QtChart.QChart.ChartThemeQt
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeQt
 
-        self.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.setContentsMargins(0,0,0,0)
-        self.barChart = QtChart.QChart()
+        self.barChart = QtCharts.QChart()
         self.barChart.setBackgroundRoundness(0)
         self.barChart.setMargins(QtCore.QMargins(0,0,0,0))
         self.barChart.setTheme(self.theme)
@@ -38,10 +38,10 @@ class BarChart(QtChart.QChartView):
 
     def add_chart(self,weights,colors,type="bar"):
         if not hasattr(self,'axisX'):
-            self.axisX = QtChart.QBarCategoryAxis()
+            self.axisX = QtCharts.QBarCategoryAxis()
             for n in range(len(weights)):
                 self.axisX.append("<span style=\"color: "+colors[n]+";\">{}</span>".format(n+1))
-            self.axisY = QtChart.QValueAxis()
+            self.axisY = QtCharts.QValueAxis()
             self.axisX.setTitleText("Components")
             self.axisY.setTitleText("Weight (%)")
             self.axisY.setRange(0,100)
@@ -49,16 +49,16 @@ class BarChart(QtChart.QChartView):
             self.axisX.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
             self.axisY.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
             self.axisY.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
-            self.barChart.addAxis(self.axisX, QtCore.Qt.AlignBottom)
-            self.barChart.addAxis(self.axisY, QtCore.Qt.AlignLeft)
+            self.barChart.addAxis(self.axisX, QtCore.Qt.AlignmentFlag.AlignBottom)
+            self.barChart.addAxis(self.axisY, QtCore.Qt.AlignmentFlag.AlignLeft)
         elif len(weights)!=self.ncomp:
             self.axisX.clear()
             for n in range(len(weights)):
                 self.axisX.append("<span style=\"color: "+colors[n]+";\">{}</span>".format(n+1))
         self.ncomp = len(weights)
         self.barChart.removeAllSeries()
-        series = QtChart.QBarSeries()
-        barset = QtChart.QBarSet("Weight")
+        series = QtCharts.QBarSeries()
+        barset = QtCharts.QBarSet("Weight")
         for n in range(self.ncomp):
             barset.append(weights[n]*100)
         series.append(barset)
@@ -70,21 +70,21 @@ class BarChart(QtChart.QChartView):
     def refresh(self, config):
         chartDefault = dict(config['chartDefault'].items())
         if int(chartDefault['theme']) == 0:
-            self.theme = QtChart.QChart.ChartThemeLight
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeLight
         elif int(chartDefault['theme']) == 1:
-            self.theme = QtChart.QChart.ChartThemeBlueCerulean
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueCerulean
         elif int(chartDefault['theme']) == 2:
-            self.theme = QtChart.QChart.ChartThemeDark
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeDark
         elif int(chartDefault['theme']) == 3:
-            self.theme = QtChart.QChart.ChartThemeBrownSand
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBrownSand
         elif int(chartDefault['theme']) == 4:
-            self.theme = QtChart.QChart.ChartThemeBlueNcs
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueNcs
         elif int(chartDefault['theme']) == 5:
-            self.theme = QtChart.QChart.ChartThemeHighContrast
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeHighContrast
         elif int(chartDefault['theme']) == 6:
-            self.theme = QtChart.QChart.ChartThemeBlueIcy
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueIcy
         elif int(chartDefault['theme']) == 7:
-            self.theme = QtChart.QChart.ChartThemeQt
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeQt
         else:
             self.raise_error("Wrong theme")
         self.barChart.setTheme(self.theme)
@@ -105,19 +105,19 @@ class BarChart(QtChart.QChartView):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()
 

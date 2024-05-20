@@ -1,8 +1,8 @@
 from process import Image
-from PyQt5 import QtCore, QtWidgets, QtGui, QtChart, QtSvg
+from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts, QtSvg
 import numpy as np
 
-class ProfileChart(QtChart.QChartView):
+class ProfileChart(QtCharts.QChartView):
 
     CHART_MOUSE_MOVEMENT = QtCore.pyqtSignal(QtCore.QPointF,str)
     CHART_MOUSE_LEAVE = QtCore.pyqtSignal()
@@ -13,26 +13,26 @@ class ProfileChart(QtChart.QChartView):
         super(ProfileChart,self).__init__()
         chartDefault = dict(config['chartDefault'].items())
         if int(chartDefault['theme']) == 0:
-            self.theme = QtChart.QChart.ChartThemeLight
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeLight
         if int(chartDefault['theme']) == 1:
-            self.theme = QtChart.QChart.ChartThemeBlueCerulean
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueCerulean
         if int(chartDefault['theme']) == 2:
-            self.theme = QtChart.QChart.ChartThemeDark
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeDark
         if int(chartDefault['theme']) == 3:
-            self.theme = QtChart.QChart.ChartThemeBrownSand
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBrownSand
         if int(chartDefault['theme']) == 4:
-            self.theme = QtChart.QChart.ChartThemeBlueNcs
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueNcs
         if int(chartDefault['theme']) == 5:
-            self.theme = QtChart.QChart.ChartThemeHighContrast
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeHighContrast
         if int(chartDefault['theme']) == 6:
-            self.theme = QtChart.QChart.ChartThemeBlueIcy
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueIcy
         if int(chartDefault['theme']) == 7:
-            self.theme = QtChart.QChart.ChartThemeQt
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeQt
 
-        self.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self._scaleFactor = 1
         self.setContentsMargins(0,0,0,0)
-        self.profileChart = QtChart.QChart()
+        self.profileChart = QtCharts.QChart()
         self.profileChart.setBackgroundRoundness(0)
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
         self.profileChart.setTheme(self.theme)
@@ -42,21 +42,21 @@ class ProfileChart(QtChart.QChartView):
     def refresh(self,config):
         chartDefault = dict(config['chartDefault'].items())
         if int(chartDefault['theme']) == 0:
-            self.theme = QtChart.QChart.ChartThemeLight
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeLight
         elif int(chartDefault['theme']) == 1:
-            self.theme = QtChart.QChart.ChartThemeBlueCerulean
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueCerulean
         elif int(chartDefault['theme']) == 2:
-            self.theme = QtChart.QChart.ChartThemeDark
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeDark
         elif int(chartDefault['theme']) == 3:
-            self.theme = QtChart.QChart.ChartThemeBrownSand
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBrownSand
         elif int(chartDefault['theme']) == 4:
-            self.theme = QtChart.QChart.ChartThemeBlueNcs
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueNcs
         elif int(chartDefault['theme']) == 5:
-            self.theme = QtChart.QChart.ChartThemeHighContrast
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeHighContrast
         elif int(chartDefault['theme']) == 6:
-            self.theme = QtChart.QChart.ChartThemeBlueIcy
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeBlueIcy
         elif int(chartDefault['theme']) == 7:
-            self.theme = QtChart.QChart.ChartThemeQt
+            self.theme = QtCharts.QChart.ChartTheme.ChartThemeQt
         else:
             self.raise_error("Wrong theme")
         self.profileChart.setTheme(self.theme)
@@ -72,9 +72,9 @@ class ProfileChart(QtChart.QChartView):
                 self.profileChart.removeSeries(last_series)
                 series_length -= 1
         for n in range(ncomp):
-            series = QtChart.QScatterSeries()
-            series.setMarkerShape(QtChart.QScatterSeries.MarkerShapeRectangle)
-            series.setBorderColor(QtCore.Qt.transparent)
+            series = QtCharts.QScatterSeries()
+            series.setMarkerShape(QtCharts.QScatterSeries.MarkerShape.MarkerShapeRectangle)
+            series.setBorderColor(QtCore.Qt.GlobalColor.transparent)
             ea, eb = a[n]*scale,b[n]*scale
             delta_a = ea*(1-np.cos(angle[n]/180*np.pi))-eb*np.sin(angle[n]/180*np.pi)
             delta_b = ea*np.sin(angle[n]/180*np.pi)+eb*(1-np.cos(angle[n]/180*np.pi))
@@ -82,15 +82,15 @@ class ProfileChart(QtChart.QChartView):
             series.setMarkerSize(msize)
             ellipsePath = QtGui.QPainterPath()
             ellipsePath.addEllipse(0,0,ea,eb)
-            ellipse = QtGui.QImage(msize,msize,QtGui.QImage.Format_ARGB32)
-            ellipse.fill(QtCore.Qt.transparent)
+            ellipse = QtGui.QImage(msize,msize,QtGui.QImage.Format.Format_ARGB32)
+            ellipse.fill(QtCore.Qt.GlobalColor.transparent)
             ellipse_painter = QtGui.QPainter(ellipse)
             ellipse_painter.translate(msize//2-ea//2+delta_a//2,msize//2-eb//2+delta_b//2)
             ellipse_painter.rotate(-angle[n])
-            ellipse_painter.setRenderHint(QtGui.QPainter.Antialiasing)
+            ellipse_painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
             painter_color = QtGui.QColor(colors[n])
             painter_color.setAlphaF(weights[n])
-            pen_color = QtGui.QColor(QtCore.Qt.black)
+            pen_color = QtGui.QColor(QtCore.Qt.GlobalColor.black)
             pen_color.setAlphaF(weights[n])
             ellipse_painter.setPen(pen_color)
             ellipse_painter.setBrush(painter_color)
@@ -99,12 +99,12 @@ class ProfileChart(QtChart.QChartView):
             series.setBrush(QtGui.QBrush(ellipse))
 
             if weights[n] > 0.01:
-                label_series = QtChart.QScatterSeries()
-                label_series.setMarkerShape(QtChart.QScatterSeries.MarkerShapeRectangle)
+                label_series = QtCharts.QScatterSeries()
+                label_series.setMarkerShape(QtCharts.QScatterSeries.MarkerShape.MarkerShapeRectangle)
                 label_series.setMarkerSize(1000)
-                label_series.setBorderColor(QtCore.Qt.transparent)
-                label = QtGui.QImage(1000,1000,QtGui.QImage.Format_ARGB32)
-                label.fill(QtCore.Qt.transparent)
+                label_series.setBorderColor(QtCore.Qt.GlobalColor.transparent)
+                label = QtGui.QImage(1000,1000,QtGui.QImage.Format.Format_ARGB32)
+                label.fill(QtCore.Qt.GlobalColor.transparent)
                 label_painter = QtGui.QPainter(label)
                 label_painter_color = QtGui.QColor(colors[n])
                 label_pen_color = QtGui.QColor(colors[n])
@@ -112,7 +112,7 @@ class ProfileChart(QtChart.QChartView):
                 label_painter.setBrush(label_painter_color)
                 label_painter.setFont(QtGui.QFont("Times",20))
                 region = QtCore.QRect(500,500,1000,1000) 
-                label_painter.drawText(region,QtCore.Qt.AlignLeft,"({:.2f},{:.2f})".format(x[n],y[n]))
+                label_painter.drawText(region,QtCore.Qt.AlignmentFlag.AlignLeft,"({:.2f},{:.2f})".format(x[n],y[n]))
                 label_painter.end()
                 label_series.setBrush(QtGui.QBrush(label))
                 label_series.append(x[n],y[n])
@@ -126,19 +126,19 @@ class ProfileChart(QtChart.QChartView):
             series.attachAxis(self.axisY)
 
     def add_chart(self,radius,profile,type="line",slope=0):
-        #pen = QtGui.QPen(QtCore.Qt.SolidLine)
-        #pen.setColor(QtGui.QColor(QtCore.Qt.blue))
+        #pen = QtGui.QPen(QtCore.Qt.PenStyle.SolidLine)
+        #pen.setColor(QtGui.QColor(QtCore.Qt.GlobalColor.blue))
         #pen.setWidth(3)
         if type == 'scatter':
-            series = QtChart.QScatterSeries()
-            scatter_pen_color = QtGui.QColor(QtCore.Qt.blue)
+            series = QtCharts.QScatterSeries()
+            scatter_pen_color = QtGui.QColor(QtCore.Qt.GlobalColor.blue)
             scatter_pen_color.setAlphaF(0.7)
             pen = QtGui.QPen(scatter_pen_color)
             series.setPen(pen)
             series.setMarkerSize(10)
-            series.setBorderColor(QtCore.Qt.black)
+            series.setBorderColor(QtCore.Qt.GlobalColor.black)
         else:
-            series = QtChart.QLineSeries()
+            series = QtCharts.QLineSeries()
             #series.setPen(pen)
         self.currentRadius = []
         self.currentProfile = []
@@ -146,16 +146,16 @@ class ProfileChart(QtChart.QChartView):
             series.append(x,y)
             self.currentRadius.append(x)
             self.currentProfile.append(y)
-        self.profileChart = QtChart.QChart()
+        self.profileChart = QtCharts.QChart()
         self.profileChart.removeAllSeries()
         self.profileChart.addSeries(series)
         self.profileChart.setTheme(self.theme)
         self.profileChart.setBackgroundRoundness(0)
         self.profileChart.setMargins(QtCore.QMargins(0,0,0,0))
         if type == "line" or type == "rectangle":
-            self.axisX = QtChart.QValueAxis()
+            self.axisX = QtCharts.QValueAxis()
             self.axisX.setTickCount(10)
-            self.axisY = QtChart.QValueAxis()
+            self.axisY = QtCharts.QValueAxis()
             if slope > 1:
                 self.axisX.setTitleText("<b>k</b><sub>||</sub> (\u212B\u207B\u00B9)")
             else:
@@ -163,36 +163,36 @@ class ProfileChart(QtChart.QChartView):
             self.axisY.setTitleText("Intensity (arb. units)")
             self.axisY.setTickCount(10)
         elif type == "arc":
-            self.axisX = QtChart.QValueAxis()
+            self.axisX = QtCharts.QValueAxis()
             self.axisX.setTickCount(10)
-            self.axisY = QtChart.QValueAxis()
+            self.axisY = QtCharts.QValueAxis()
             self.axisX.setTitleText("\u03A7 (\u00BA)")
             self.axisY.setTitleText("Intensity (arb. units)")
             self.axisY.setTickCount(10)
         elif type == "cost_function":
-            self.axisX = QtChart.QValueAxis()
+            self.axisX = QtCharts.QValueAxis()
             self.axisX.setTickCount(10)
-            self.axisY = QtChart.QLogValueAxis()
+            self.axisY = QtCharts.QLogValueAxis()
             self.axisX.setTitleText("Number of Iterations")
             self.axisY.setTitleText("Cost Function")
         elif type == "kikuchi line":
-            self.axisX = QtChart.QValueAxis()
+            self.axisX = QtCharts.QValueAxis()
             self.axisX.setTickCount(10)
-            self.axisY = QtChart.QValueAxis()
+            self.axisY = QtCharts.QValueAxis()
             self.axisX.setTitleText("<b>k</b><sub>x</sub> (\u212B\u207B\u00B9)")
             self.axisY.setTitleText("<b>k</b><sub>y</sub> (\u212B\u207B\u00B9)")
             self.axisY.setTickCount(10)
             self.axisY.setReverse(True)
         elif type == "ELBO change":
-            self.axisX = QtChart.QValueAxis()
+            self.axisX = QtCharts.QValueAxis()
             self.axisX.setTickCount(10)
-            self.axisY = QtChart.QLogValueAxis()
+            self.axisY = QtCharts.QLogValueAxis()
             self.axisX.setTitleText("Number of Iterations")
             self.axisY.setTitleText("Log of ELBO change")
         elif type == 'scatter':
-            self.axisX = QtChart.QValueAxis()
+            self.axisX = QtCharts.QValueAxis()
             self.axisX.setTickCount(10)
-            self.axisY = QtChart.QValueAxis()
+            self.axisY = QtCharts.QValueAxis()
             self.axisX.setTitleText("X")
             self.axisY.setTitleText("Y")
             self.axisX.setRange(-7,7)
@@ -202,13 +202,13 @@ class ProfileChart(QtChart.QChartView):
             self.axisX.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
             self.axisY.setLabelsFont(QtGui.QFont(self.fontname,self.fontsize,57))
             self.axisY.setTitleFont(QtGui.QFont(self.fontname,self.fontsize,57))
-        self.profileChart.addAxis(self.axisX, QtCore.Qt.AlignBottom)
-        self.profileChart.addAxis(self.axisY, QtCore.Qt.AlignLeft)
+        self.profileChart.addAxis(self.axisX, QtCore.Qt.AlignmentFlag.AlignBottom)
+        self.profileChart.addAxis(self.axisY, QtCore.Qt.AlignmentFlag.AlignLeft)
         series.attachAxis(self.axisX)
         series.attachAxis(self.axisY)
         self.profileChart.legend().setVisible(False)
         self.setChart(self.profileChart)
-        self.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.DefaultContextMenu)
         self.CHART_IS_PRESENT = True
 
     def adjust_fonts(self,fontname,fontsize):
@@ -223,19 +223,19 @@ class ProfileChart(QtChart.QChartView):
 
     def set_axes_visible(self,state):
         if state == 2:
-            self.profileChart.axisX().setVisible(True)
-            self.profileChart.axisY().setVisible(True)
+            self.profileChart.axes(QtCore.Qt.Orientation.Horizontal)[0].setVisible(True)
+            self.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setVisible(True)
         elif state == 0:
-            self.profileChart.axisX().setVisible(False)
-            self.profileChart.axisY().setVisible(False)
+            self.profileChart.axes(QtCore.Qt.Orientation.Horizontal)[0].setVisible(False)
+            self.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setVisible(False)
 
     def set_grids_visible(self,state):
         if state == 2:
-            self.profileChart.axisX().setGridLineVisible(True)
-            self.profileChart.axisY().setGridLineVisible(True)
+            self.profileChart.axes(QtCore.Qt.Orientation.Horizontal)[0].setGridLineVisible(True)
+            self.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setGridLineVisible(True)
         elif state == 0:
-            self.profileChart.axisX().setGridLineVisible(False)
-            self.profileChart.axisY().setGridLineVisible(False)
+            self.profileChart.axes(QtCore.Qt.Orientation.Horizontal)[0].setGridLineVisible(False)
+            self.profileChart.axes(QtCore.Qt.Orientation.Vertical)[0].setGridLineVisible(False)
 
     def set_fonts(self,fontname,fontsize):
         self.fontname = fontname
@@ -265,23 +265,23 @@ class ProfileChart(QtChart.QChartView):
 
     def mouseMoveEvent(self, event):
         """This is an overload function"""
-        if self.chart().plotArea().contains(event.pos()) and self.CHART_IS_PRESENT:
-            self.setCursor(QtCore.Qt.CrossCursor)
-            position = self.chart().mapToValue(event.pos())
+        if self.chart().plotArea().contains(event.position()) and self.CHART_IS_PRESENT:
+            self.setCursor(QtCore.Qt.CursorShape.CrossCursor)
+            position = self.chart().mapToValue(event.position())
             self.CHART_MOUSE_MOVEMENT.emit(position,"chart")
         else:
-            self.setCursor(QtCore.Qt.ArrowCursor)
+            self.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
             self.CHART_MOUSE_LEAVE.emit()
         super(ProfileChart, self).mouseMoveEvent(event)
 
     def contextMenuEvent(self,event):
         """This is an overload function"""
         self.menu = QtWidgets.QMenu()
-        self.saveAsText = QtWidgets.QAction('Save as text...')
+        self.saveAsText = QtGui.QAction('Save as text...')
         self.saveAsText.triggered.connect(self.save_profile_as_text)
-        self.saveAsImage = QtWidgets.QAction('Save as an image...')
+        self.saveAsImage = QtGui.QAction('Save as an image...')
         self.saveAsImage.triggered.connect(self.save_profile_as_image)
-        self.saveAsSVG = QtWidgets.QAction('Export as SVG...')
+        self.saveAsSVG = QtGui.QAction('Export as SVG...')
         self.saveAsSVG.triggered.connect(self.save_profile_as_SVG)
         self.menu.addAction(self.saveAsText)
         self.menu.addAction(self.saveAsImage)
@@ -304,14 +304,14 @@ class ProfileChart(QtChart.QChartView):
             if not self.filename[0] == "":
                 output_size = QtCore.QSize(800,600)
                 output_rect = QtCore.QRectF(QtCore.QPointF(0,0),QtCore.QSizeF(output_size))
-                image = QtGui.QImage(output_size,QtGui.QImage.Format_ARGB32)
-                image.fill(QtCore.Qt.transparent)
+                image = QtGui.QImage(output_size,QtGui.QImage.Format.Format_ARGB32)
+                image.fill(QtCore.Qt.GlobalColor.transparent)
                 original_size = self.profileChart.size()
                 self.profileChart.resize(QtCore.QSizeF(output_size))
                 painter = QtGui.QPainter()
                 painter.begin(image)
-                painter.setRenderHint(QtGui.QPainter.Antialiasing)
-                self.profileChart.scene().render(painter, source=output_rect,target=output_rect,mode=QtCore.Qt.IgnoreAspectRatio)
+                painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+                self.profileChart.scene().render(painter, source=output_rect,target=output_rect,mode=QtCore.Qt.AspectRatioMode.IgnoreAspectRatio)
                 painter.end()
                 self.profileChart.resize(original_size)
                 image.save(self.filename[0])
@@ -336,8 +336,8 @@ class ProfileChart(QtChart.QChartView):
                 self.profileChart.resize(QtCore.QSizeF(output_size))
                 painter = QtGui.QPainter()
                 painter.begin(svg)
-                painter.setRenderHint(QtGui.QPainter.Antialiasing)
-                self.profileChart.scene().render(painter, source=output_rect,target=output_rect,mode=QtCore.Qt.IgnoreAspectRatio)
+                painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+                self.profileChart.scene().render(painter, source=output_rect,target=output_rect,mode=QtCore.Qt.AspectRatioMode.IgnoreAspectRatio)
                 painter.end()
                 self.profileChart.resize(original_size)
             else:
@@ -347,18 +347,18 @@ class ProfileChart(QtChart.QChartView):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()

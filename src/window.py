@@ -1,5 +1,5 @@
 from process import Image
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 import browser
 import canvas
 import configparser
@@ -120,14 +120,14 @@ class Window(QtWidgets.QMainWindow):
         #Center Widget
         self.image_crop = [1200+self.VS,2650+self.VS,500+self.HS,3100+self.HS]
 
-        self.mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.mainTab = QtWidgets.QTabWidget()
         self.mainTab.setContentsMargins(0,0,0,0)
         self.mainTab.setTabsClosable(True)
         self.controlPanelFrame = QtWidgets.QWidget(self)
         self.controlPanelGrid = QtWidgets.QGridLayout(self.controlPanelFrame)
         self.controlPanelGrid.setContentsMargins(0,0,0,0)
-        self.controlPanelSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.controlPanelSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         supportedFormats =    {'*.3fr','*.ari','*.arw','*.srf', '*.sr2','*.bay','*.cri','*.crw', '*.cr2',     '*.cr3', '*.cap','*.iiq','*.eip',\
                                '*.dcs','*.dcr','*.drf','*.k25', '*.kdc','*.dng','*.erf','*.fff', '*.mef',     '*.mdc', '*.mos','*.mrw','*.nef',\
                                '*.nrw','*.orf','*.pef','*.ptx', '*.pxn','*.r3d','*.raf','*.raw', '*.rw2',     '*.rwl', '*.rwz','*.srw','*.x3f',\
@@ -172,26 +172,26 @@ class Window(QtWidgets.QMainWindow):
         self.toolBar.setFloatable(False)
         self.toolBar.setMovable(False)
         self.dirname = os.path.dirname(__file__)
-        self.open = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/open.svg")), "open", self)
-        self.saveAs = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/save as.svg")), "save as", self)
-        self.zoomIn = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom in.svg")), "zoom in (Ctrl + Plus)", self)
-        self.zoomIn.setShortcut(QtGui.QKeySequence.ZoomIn)
-        self.zoomOut = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom out.svg")), "zoom out (Ctrl + Minus)", self)
-        self.zoomOut.setShortcut(QtGui.QKeySequence.ZoomOut)
-        self.fitCanvas = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/fit.svg")), "fit in view",self)
-        self.line = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/line.svg")), "line", self)
+        self.open = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/open.svg")), "open", self)
+        self.saveAs = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/save as.svg")), "save as", self)
+        self.zoomIn = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom in.svg")), "zoom in (Ctrl + Plus)", self)
+        self.zoomIn.setShortcut(QtGui.QKeySequence.StandardKey.ZoomIn)
+        self.zoomOut = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/zoom out.svg")), "zoom out (Ctrl + Minus)", self)
+        self.zoomOut.setShortcut(QtGui.QKeySequence.StandardKey.ZoomOut)
+        self.fitCanvas = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/fit.svg")), "fit in view",self)
+        self.line = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/line.svg")), "line", self)
         self.line.setCheckable(True)
-        self.rectangle = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle.svg")), "rectangle", self)
+        self.rectangle = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/rectangle.svg")), "rectangle", self)
         self.rectangle.setCheckable(True)
-        self.arc = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/arc.svg")), "arc", self)
+        self.arc = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/arc.svg")), "arc", self)
         self.arc.setCheckable(True)
-        self.pan = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/move.svg")), "pan", self)
+        self.pan = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/move.svg")), "pan", self)
         self.pan.setCheckable(True)
-        self.lightMode = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")), "dark mode", self)
+        self.lightMode = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/dark.svg")), "dark mode", self)
         self.lightMode.setCheckable(True)
-        self.darkMode = QtWidgets.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")), "light mode", self)
+        self.darkMode = QtGui.QAction(QtGui.QIcon(os.path.join(self.dirname,"icons/light.svg")), "light mode", self)
         self.darkMode.setCheckable(True)
-        self.buttonModeGroup = QtWidgets.QActionGroup(self.toolBar)
+        self.buttonModeGroup = QtGui.QActionGroup(self.toolBar)
         self.buttonModeGroup.addAction(self.line)
         self.buttonModeGroup.addAction(self.rectangle)
         self.buttonModeGroup.addAction(self.arc)
@@ -218,13 +218,13 @@ class Window(QtWidgets.QMainWindow):
         self.progressBar = QtWidgets.QProgressBar(self)
         self.progressBar.setMaximumHeight(12)
         self.progressBar.setVisible(False)
-        self.progressBar.setOrientation(QtCore.Qt.Horizontal)
+        self.progressBar.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.progressBarSizePolicy = self.progressBar.sizePolicy()
         self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
-        self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Expanding)
+        self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Policy.Expanding)
         self.progressBar.setSizePolicy(self.progressBarSizePolicy)
         self.editPixInfo = QtWidgets.QLabel(self)
-        self.editPixInfo.setAlignment(QtCore.Qt.AlignRight)
+        self.editPixInfo.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
         self.editPixInfo.setMinimumWidth(150)
         self.statusBar.addWidget(self.messageLoadingImage)
         self.statusBar.insertPermanentWidget(1,self.progressBar)
@@ -500,10 +500,10 @@ class Window(QtWidgets.QMainWindow):
                 self.mainTab.currentWidget().chi_scan_signal_emit()
 
     def reset_profile_options(self):
-        self.properties_widget.integralHalfWidthSlider.setValue(self.width*self.widthSliderScale)
-        self.properties_widget.chiRangeSlider.setValue(self.chiRange)
-        self.properties_widget.radiusSlider.setValue(self.radius*self.radiusSliderScale)
-        self.properties_widget.tiltAngleSlider.setValue(self.tiltAngle)
+        self.properties_widget.integralHalfWidthSlider.setValue(int(self.width*self.widthSliderScale))
+        self.properties_widget.chiRangeSlider.setValue(int(self.chiRange))
+        self.properties_widget.radiusSlider.setValue(int(self.radius*self.radiusSliderScale))
+        self.properties_widget.tiltAngleSlider.setValue(int(self.tiltAngle))
         self.apply_profile_options()
 
     def edit_choosed_XY(self):
@@ -516,7 +516,7 @@ class Window(QtWidgets.QMainWindow):
         return
 
     def edit_width(self,width):
-        self.properties_widget.integralHalfWidthSlider.setValue(int(width)*self.widthSliderScale)
+        self.properties_widget.integralHalfWidthSlider.setValue(int(width*self.widthSliderScale))
 
     def get_img_path(self):
         supportedRawFormats = {'.3fr','.ari','.arw','.srf','.sr2','.bay','.cri','.crw','.cr2','.cr3','.cap','.iiq','.eip',\
@@ -530,7 +530,7 @@ class Window(QtWidgets.QMainWindow):
                                       '.PNG','.PPM','.SGI','.TIFF','.TIF','.XBM'}
         fileDlg = QtWidgets.QFileDialog(self)
         fileDlg.setDirectory(os.path.dirname(__file__))
-        path = fileDlg.getOpenFileName(filter="Nikon (*.nef;*.nrw);;Sony (*.arw;*.srf;*.sr2);;Canon (*.crw;*.cr2;*.cr3);;JPEG (*.jpg;*.jpeg;*.jpeg2000);;GIF (*.gif);;PNG (*.png);;TIF (*.tif;*.tiff);;BMP (*.bmp);;All Files (*.*)")[0]
+        path = fileDlg.getOpenFileName(filter="All Files (*.*);;Nikon (*.nef;*.nrw);;Sony (*.arw;*.srf;*.sr2);;Canon (*.crw;*.cr2;*.cr3);;JPEG (*.jpg;*.jpeg;*.jpeg2000);;GIF (*.gif);;PNG (*.png);;TIF (*.tif;*.tiff);;BMP (*.bmp)")[0]
         if not path == '':
             if not (os.path.splitext(path)[1] in supportedRawFormats or os.path.splitext(path)[1] in supportedImageFormats):
                 self.raise_error("Not supported image type!")
@@ -544,15 +544,16 @@ class Window(QtWidgets.QMainWindow):
         if not path == '':
             canvas_widget = self.mainTab.currentWidget()
             img_array = self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel,crop)
-            self.photoList.pop()
-            self.photoList.append(img_array)
-            self.pathList.pop()
-            self.pathList.append(path)
-            self.mainTab.setTabText(self.mainTab.currentIndex(), os.path.basename(path))
-            canvas_widget.fit_canvas()
-            canvas_widget.toggle_mode(self._mode)
-            self.currentPath = path
-            self.FILE_OPENED.emit(path)
+            if img_array is not None:
+                self.photoList.pop()
+                self.photoList.append(img_array)
+                self.pathList.pop()
+                self.pathList.append(path)
+                self.mainTab.setTabText(self.mainTab.currentIndex(), os.path.basename(path))
+                canvas_widget.fit_canvas()
+                canvas_widget.toggle_mode(self._mode)
+                self.currentPath = path
+                self.FILE_OPENED.emit(path)
 
     def open_image(self,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50):
         if not path == '':
@@ -560,14 +561,15 @@ class Window(QtWidgets.QMainWindow):
             self.connect_canvas(canvas_widget)
             self.CANVAS_SCALE_FACTOR_CHANGED.emit(self.scaleFactor)
             img_array = self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel)
-            self.photoList.append(img_array)
-            self.pathList.append(path)
-            self.mainTab.addTab(canvas_widget,os.path.basename(path))
-            self.mainTab.setCurrentIndex(self.mainTab.count()-1)
-            canvas_widget.fit_canvas()
-            canvas_widget.toggle_mode(self._mode)
-            self.currentPath = path
-            self.FILE_OPENED.emit(path)
+            if img_array is not None:
+                self.photoList.append(img_array)
+                self.pathList.append(path)
+                self.mainTab.addTab(canvas_widget,os.path.basename(path))
+                self.mainTab.setCurrentIndex(self.mainTab.count()-1)
+                canvas_widget.fit_canvas()
+                canvas_widget.toggle_mode(self._mode)
+                self.currentPath = path
+                self.FILE_OPENED.emit(path)
 
     def switch_tab(self,index):
         if self.mainTab.count() > 0:
@@ -653,8 +655,9 @@ class Window(QtWidgets.QMainWindow):
         if not self.mainTab.count() == 0:
             canvas_widget = self.mainTab.currentWidget()
             img_array=self.load_image(canvas_widget,path,bitDepth,enableAutoWB,brightness,blackLevel)
-            self.photoList[self.mainTab.currentIndex()]=img_array
-            self.apply_profile_options()
+            if img_array is not None:
+                self.photoList[self.mainTab.currentIndex()]=img_array
+                self.apply_profile_options()
 
     def load_image(self,canvas_widget,path,bitDepth = 16, enableAutoWB=False,brightness=20,blackLevel=50, crop=[]):
         self.messageLoadingImage.setText("Processing ... ")
@@ -665,13 +668,16 @@ class Window(QtWidgets.QMainWindow):
         if not crop:
             crop = self.image_crop
         qImg,img_array = self.image_worker.get_image(bitDepth,path, enableAutoWB, brightness, blackLevel,crop)
-        qPixImg = QtGui.QPixmap(qImg.size())
-        QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.MonoOnly)
-        canvas_widget.set_photo(QtGui.QPixmap(qPixImg))
-        self._img = img_array
-        self.IMG_CREATED.emit(self._img)
-        self.messageLoadingImage.setText("Path of the image: "+path)
-        return img_array
+        if qImg is not None:
+            qPixImg = QtGui.QPixmap(qImg.size())
+            QtGui.QPixmap.convertFromImage(qPixImg,qImg,QtCore.Qt.ImageConversionFlag.MonoOnly)
+            canvas_widget.set_photo(QtGui.QPixmap(qPixImg))
+            self._img = img_array
+            self.IMG_CREATED.emit(self._img)
+            self.messageLoadingImage.setText("Path of the image: "+path)
+            return img_array
+        else:
+            return None
 
     def update_drawing(self):
         if not self.mainTab.count() == 0:
@@ -769,13 +775,13 @@ class Window(QtWidgets.QMainWindow):
                     pos.setY(pos.x()-start.x()+start.y())
             self.cursorInfo.endXYEdit.setText('{},{}'.format(int(pos.x()), int(pos.y())))
         if self.mainTab.currentWidget()._drawingArc:
-            self.properties_widget.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
+            self.properties_widget.radiusSlider.setValue(int(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor))
 
     def photo_mouse_movement(self, pos, type="canvas"):
         if type == "canvas":
             self.editPixInfo.setText('x = %d, y = %d' % (int(pos.x()), int(pos.y())))
             if self.mainTab.currentWidget()._drawingArc:
-                self.properties_widget.radiusSlider.setValue(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor)
+                self.properties_widget.radiusSlider.setValue(int(self.radiusSliderScale*self.mainTab.currentWidget().PFRadius/self.scaleFactor))
         elif type == "chart":
             self.editPixInfo.setText('K = %3.2f, Int. = %3.2f' % (pos.x(), pos.y()))
 
@@ -784,7 +790,7 @@ class Window(QtWidgets.QMainWindow):
         self.cursorInfo.intensityEdit.setText('{:3.2f}'.format(self._img[pos.y(), pos.x()]/np.amax(np.amax(self._img))))
 
     def key_press_event(self,event):
-        if event.key() == QtCore.Qt.Key_Up or QtCore.Qt.Key_Down or QtCore.Qt.Key_Left or QtCore.Qt.Key_Right :
+        if event.key() == QtCore.Qt.Key.Key_Up or QtCore.Qt.Key.Key_Down or QtCore.Qt.Key.Key_Left or QtCore.Qt.Key.Key_Right :
             self.mainTab.currentWidget().setFocus()
             self.mainTab.currentWidget().keyPressEvent(event)
 
@@ -827,18 +833,18 @@ class Window(QtWidgets.QMainWindow):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()

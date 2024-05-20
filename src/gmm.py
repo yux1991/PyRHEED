@@ -1,7 +1,7 @@
 from my_widgets import LabelSlider
 from process import Image, FitFunctions, FitBroadening
 from process_monitor import Monitor
-from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
+from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 from sys import getsizeof
 from sklearn.mixture import BayesianGaussianMixture
 from sklearn.mixture._gaussian_mixture import _estimate_gaussian_parameters
@@ -103,7 +103,7 @@ class Window(QtCore.QObject):
         self.RightFrame = QtWidgets.QFrame()
         self.LeftGrid = QtWidgets.QGridLayout(self.LeftFrame)
         self.RightGrid = QtWidgets.QGridLayout(self.RightFrame)
-        self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.hSplitter.addWidget(self.RightFrame)
         self.hSplitter.addWidget(self.LeftFrame)
         self.hSplitter.setStretchFactor(0,1)
@@ -114,14 +114,14 @@ class Window(QtCore.QObject):
 
         self.chooseSource = QtWidgets.QGroupBox("Input")
         self.sourceGrid = QtWidgets.QGridLayout(self.chooseSource)
-        self.sourceGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.sourceGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.chooseSourceLabel = QtWidgets.QLabel("The input data directory is:\n"+self.currentSource)
         self.chooseSourceLabel.setWordWrap(True)
         self.chooseSourceButton = QtWidgets.QPushButton("Browse...")
-        self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.chooseSourceButton.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
         self.chooseSourceButton.clicked.connect(self.choose_source)
         self.loadButton = QtWidgets.QPushButton("Load")
-        self.loadButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.loadButton.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
         self.loadButton.clicked.connect(self.load_data)
         self.loadButton.setEnabled(False)
         self.sourceGrid.addWidget(self.chooseSourceLabel,0,0,2,1)
@@ -130,7 +130,7 @@ class Window(QtCore.QObject):
 
         self.information = QtWidgets.QGroupBox("Information")
         self.informationGrid = QtWidgets.QGridLayout(self.information)
-        self.informationGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.informationGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.informationLabel = QtWidgets.QLabel("")
         self.informationLabel.setWordWrap(True)
         self.informationGrid.addWidget(self.informationLabel,0,0)
@@ -145,7 +145,7 @@ class Window(QtCore.QObject):
         self.fileType.addItem(".txt",".txt")
         self.fileType.addItem(".xlsx",".xlsx")
         self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
-        self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
         self.chooseDestinationButton.clicked.connect(self.choose_destination)
         self.saveResultLabel = QtWidgets.QLabel("Save Results?")
         self.saveResult = QtWidgets.QCheckBox()
@@ -158,7 +158,7 @@ class Window(QtCore.QObject):
         self.destinationGrid.addWidget(self.fileType,2,1)
         self.destinationGrid.addWidget(self.saveResultLabel,3,0)
         self.destinationGrid.addWidget(self.saveResult,3,1)
-        self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignRight)
+        self.destinationGrid.setAlignment(self.chooseDestinationButton,QtCore.Qt.AlignmentFlag.AlignRight)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
         self.appearanceGrid = QtWidgets.QGridLayout(self.appearance)
@@ -167,7 +167,7 @@ class Window(QtCore.QObject):
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(12))
-        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(12)
@@ -186,11 +186,11 @@ class Window(QtCore.QObject):
         self.numberOfZsLabel = QtWidgets.QLabel("Number of Z Slices")
         self.numberOfZsEdit = QtWidgets.QLineEdit(self.nzslices)
         self.drawSampleButton = QtWidgets.QPushButton("Draw Z=0")
-        self.drawSampleButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.drawSampleButton.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
         self.drawSampleButton.clicked.connect(self.draw_sample)
         self.drawSampleButton.setEnabled(False)
         self.plotSampleButton = QtWidgets.QPushButton("Plot Z=0")
-        self.plotSampleButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.plotSampleButton.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
         self.plotSampleButton.clicked.connect(self.plot_sample)
         self.plotSampleButton.setEnabled(False)
         self.sampleOptionsGrid.addWidget(self.numberOfSamplesLabel,0,0,1,2)
@@ -360,10 +360,10 @@ class Window(QtCore.QObject):
        
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
-        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Fixed)
         self.progressBar = QtWidgets.QProgressBar()
         self.progressBar.setVisible(False)
-        self.progressBar.setOrientation(QtCore.Qt.Horizontal)
+        self.progressBar.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.progressBarSizePolicy = self.progressBar.sizePolicy()
         self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
         self.progressBar.setSizePolicy(self.progressBarSizePolicy)
@@ -372,19 +372,19 @@ class Window(QtCore.QObject):
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+\
                                     "\u00A0\u00A0\u00A0\u00A0Initialized!")
         self.logBox.ensureCursorVisible()
-        self.logBox.setAlignment(QtCore.Qt.AlignTop)
-        self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBox.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        self.logBox.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.logBoxScroll = QtWidgets.QScrollArea()
         self.logBoxScroll.setWidget(self.logBox)
         self.logBoxScroll.setWidgetResizable(True)
-        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.statusGrid.addWidget(self.logBoxScroll,0,0)
-        self.statusGrid.setAlignment(self.progressBar,QtCore.Qt.AlignRight)
+        self.statusGrid.setAlignment(self.progressBar,QtCore.Qt.AlignmentFlag.AlignRight)
         self.ButtonBox = QtWidgets.QDialogButtonBox()
-        self.ButtonBox.addButton("Start",QtWidgets.QDialogButtonBox.ActionRole)
-        self.ButtonBox.addButton("Stop",QtWidgets.QDialogButtonBox.ActionRole)
-        self.ButtonBox.addButton("Reset",QtWidgets.QDialogButtonBox.ResetRole)
-        self.ButtonBox.addButton("Quit",QtWidgets.QDialogButtonBox.DestructiveRole)
+        self.ButtonBox.addButton("Start",QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        self.ButtonBox.addButton("Stop",QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        self.ButtonBox.addButton("Reset",QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
+        self.ButtonBox.addButton("Quit",QtWidgets.QDialogButtonBox.ButtonRole.DestructiveRole)
         self.ButtonBox.setCenterButtons(True)
         self.ButtonBox.findChildren(QtWidgets.QPushButton)[0].clicked.\
             connect(self.start)
@@ -430,9 +430,9 @@ class Window(QtCore.QObject):
         self.leftScroll.setWidget(self.LeftFrame)
         self.leftScroll.setMinimumWidth(800)
         self.leftScroll.setWidgetResizable(True)
-        self.leftScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.leftScroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.Dialog.setWindowTitle("Gaussian Mixture Modeling")
-        self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
+        self.Dialog.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         self.Dialog.showMaximized()
         self.set_default_mean_priors()
 
@@ -464,11 +464,11 @@ class Window(QtCore.QObject):
         if state == 0:
             for c in range(self.mean_prior_table.columnCount()):
                 if self.mean_prior_table.item(0,2*c):
-                    self.mean_prior_table.item(0,2*c).setBackground(QtCore.Qt.lightGray)
+                    self.mean_prior_table.item(0,2*c).setBackground(QtCore.Qt.GlobalColor.lightGray)
         elif state == 2:
             for c in range(self.mean_prior_table.columnCount()):
                 if self.mean_prior_table.item(0,2*c):
-                    self.mean_prior_table.item(0,2*c).setBackground(QtCore.Qt.transparent)
+                    self.mean_prior_table.item(0,2*c).setBackground(QtCore.Qt.GlobalColor.transparent)
 
     def covar_prior_check_changed(self,state):
         if state == 0:
@@ -490,14 +490,14 @@ class Window(QtCore.QObject):
                 header_item = QtWidgets.QTableWidgetItem(coords[n])
                 self.mean_prior_table.setHorizontalHeaderItem(n,header_item)
             self.mean_prior_table.setRowCount(ncomp)
-            self.mean_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-            self.mean_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+            self.mean_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            self.mean_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.ColorRole.Highlight)
             for i in range(ncomp):
                 icon_pm = QtGui.QPixmap(50,50)
                 icon_pm.fill(QtGui.QColor(self.fit_colors[i]))
                 icon = QtGui.QIcon(icon_pm)
                 item = QtWidgets.QTableWidgetItem(icon,'{}'.format(i+1))
-                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 self.mean_prior_table.setVerticalHeaderItem(i,item)
 
     def mean_prior_table_initialize(self,text):
@@ -514,14 +514,14 @@ class Window(QtCore.QObject):
                 header_item = QtWidgets.QTableWidgetItem(coords[n])
                 self.mean_prior_table.setHorizontalHeaderItem(n,header_item)
             self.mean_prior_table.setRowCount(ncomp)
-            self.mean_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-            self.mean_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+            self.mean_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            self.mean_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.ColorRole.Highlight)
             for i in range(ncomp):
                 icon_pm = QtGui.QPixmap(50,50)
                 icon_pm.fill(QtGui.QColor(self.fit_colors[i]))
                 icon = QtGui.QIcon(icon_pm)
                 item = QtWidgets.QTableWidgetItem(icon,'{}'.format(i+1))
-                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 self.mean_prior_table.setVerticalHeaderItem(i,item)
 
     def get_mean_posteriors(self):
@@ -554,7 +554,7 @@ class Window(QtCore.QObject):
             for j in range(int(self.numberOfFeaturesEdit.text())):
                 if not self.mean_prior_table.item(i,j*2):
                     item = QtWidgets.QTableWidgetItem('{:.2f}'.format(self.default_means[i][j]))
-                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                     self.mean_prior_table.setItem(i,2*j,item)
                 else:
                     self.mean_prior_table.item(i,2*j).setText('{:.2f}'.format(self.default_means[i][j]))
@@ -564,7 +564,7 @@ class Window(QtCore.QObject):
             for j in range(int(self.numberOfFeaturesEdit.text())):
                 if not self.mean_prior_table.item(i,2*j+1):
                     item = QtWidgets.QTableWidgetItem('{:.2f}'.format(means[i,j]))
-                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                     self.mean_prior_table.setItem(i,2*j+1,item)
                 else:
                     self.mean_prior_table.item(i,2*j+1).setText('{:.2f}'.format(means[i,j]))
@@ -575,7 +575,7 @@ class Window(QtCore.QObject):
                 value = float(self.mean_prior_table.item(i,j*2+1).text())
                 if not self.mean_prior_table.item(i,2*j):
                     item = QtWidgets.QTableWidgetItem('{:.2f}'.format(value))
-                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                     self.mean_prior_table.setItem(i,2*j,item)
                 else:
                     self.mean_prior_table.item(i,2*j).setText('{:.2f}'.format(value))
@@ -594,13 +594,13 @@ class Window(QtCore.QObject):
                 for j in range(nfeatures):
                     header_item = QtWidgets.QTableWidgetItem('C{}'.format(j))
                     covar_prior_table.setHorizontalHeaderItem(j,header_item)
-                covar_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-                covar_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+                covar_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+                covar_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.ColorRole.Highlight)
                 covar_prior_table.setMinimumHeight(200)
                 covar_prior_table.setRowCount(nfeatures)
                 for j in range(nfeatures):
                     item = QtWidgets.QTableWidgetItem('R{}'.format(j))
-                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                     covar_prior_table.setVerticalHeaderItem(j,item)
                 if i == 0:
                     self.covarTab.addTab(covar_prior_table,"Prior")
@@ -623,13 +623,13 @@ class Window(QtCore.QObject):
                 for j in range(nfeatures):
                     header_item = QtWidgets.QTableWidgetItem('C{}'.format(j))
                     covar_prior_table.setHorizontalHeaderItem(j,header_item)
-                covar_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-                covar_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.Highlight)
+                covar_prior_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+                covar_prior_table.horizontalHeader().setBackgroundRole(QtGui.QPalette.ColorRole.Highlight)
                 covar_prior_table.setMinimumHeight(200)
                 covar_prior_table.setRowCount(nfeatures)
                 for j in range(nfeatures):
                     item = QtWidgets.QTableWidgetItem('R{}'.format(j))
-                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                     covar_prior_table.setVerticalHeaderItem(j,item)
                 if i == 0:
                     self.covarTab.addTab(covar_prior_table,"Prior")
@@ -660,7 +660,7 @@ class Window(QtCore.QObject):
                 for k in range(int(self.numberOfFeaturesEdit.text())):
                     if not self.covarTab.widget(i).item(j,k):
                         item = QtWidgets.QTableWidgetItem('{:.2f}'.format(covars[i-1,j,k]))
-                        item.setTextAlignment(QtCore.Qt.AlignCenter)
+                        item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                         self.covarTab.widget(i).setItem(j,k,item)
                     else:
                         self.covarTab.widget(i).item(j,k).setText('{:.2f}'.format(covars[i-1,j,k]))
@@ -674,7 +674,7 @@ class Window(QtCore.QObject):
                 value /= int(self.numberOfComponentsEdit.text())
                 if not self.covarTab.widget(0).item(j,k):
                     item = QtWidgets.QTableWidgetItem('{:.2f}'.format(value))
-                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                     self.covarTab.widget(0).setItem(j,k,item)
                 else:
                     self.covarTab.widget(0).item(j,k).setText('{:.2f}'.format(value))
@@ -920,7 +920,7 @@ class Window(QtCore.QObject):
 
     def update_log(self,message):
         self.logBox.append(QtCore.QTime.currentTime().toString("hh:mm:ss")+"\u00A0\u00A0\u00A0\u00A0" + message)
-        self.logBox.moveCursor(QtGui.QTextCursor.End)
+        self.logBox.moveCursor(QtGui.QTextCursor.MoveOperation.End)
 
     def reject(self):
         self.Dialog.close()
@@ -958,10 +958,10 @@ class Window(QtCore.QObject):
                     else:
                         item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0.1,np.round(value-variation[4],2))))
                         item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[5],2)))
-                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
-                    item.setTextAlignment(QtCore.Qt.AlignCenter)
-                    item2.setTextAlignment(QtCore.Qt.AlignCenter)
-                    item3.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.GlobalColor.red)))
+                    item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                    item2.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                    item3.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                     self.table.setItem(i,j,item)
                     self.table.setItem(i,j+1,item2)
                     self.table.setItem(i,j+2,item3)
@@ -989,10 +989,10 @@ class Window(QtCore.QObject):
                    elif j == 9:
                        item2 = QtWidgets.QTableWidgetItem('{}'.format(max(0.01,np.round(value-variation[6],2))))
                        item3 = QtWidgets.QTableWidgetItem('{}'.format(np.round(value+variation[7],2)))
-                   item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.red)))
-                   item.setTextAlignment(QtCore.Qt.AlignCenter)
-                   item2.setTextAlignment(QtCore.Qt.AlignCenter)
-                   item3.setTextAlignment(QtCore.Qt.AlignCenter)
+                   item.setForeground(QtGui.QBrush(QtGui.QColor(QtCore.Qt.GlobalColor.red)))
+                   item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                   item2.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                   item3.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                    self.table.setItem(i,j,item)
                    self.table.setItem(i,j+1,item2)
                    self.table.setItem(i,j+2,item3)
@@ -1001,20 +1001,20 @@ class Window(QtCore.QObject):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()
 
     def progress(self,min,max,val):

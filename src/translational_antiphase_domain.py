@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtWidgets
 from my_widgets import LabelSlider
 from process import FitFunctions
 import matplotlib.pyplot as plt
@@ -21,10 +21,10 @@ class Window(QtCore.QObject):
         self.Grid.addWidget(self.plot,0,0,1,5)
         self.Grid.addWidget(self.gamma_slider,1,0,1,5)
         self.Dialog.setWindowTitle("Translational-antiphase Domain Model")
-        self.Dialog.setWindowModality(QtCore.Qt.WindowModal)
+        self.Dialog.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         self.Dialog.setMinimumSize(1000,800)
         #self.Dialog.show()
-        desktopRect = QtWidgets.QApplication.desktop().availableGeometry(self.Dialog)
+        desktopRect = self.Dialog.geometry()
         center = desktopRect.center()
         self.Dialog.move(center.x()-self.Dialog.width()*0.5,center.y()-self.Dialog.height()*0.5)
 

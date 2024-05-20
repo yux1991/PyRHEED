@@ -1,4 +1,4 @@
-from PyQt5 import QtGui, QtWidgets, QtCore
+from PyQt6 import QtGui, QtWidgets, QtCore
 import broadening
 import gmm
 import configparser
@@ -22,27 +22,26 @@ class Window():
         config = configparser.ConfigParser()
         config.read(os.path.join(self.dirname,'configuration.ini'))  #Read the configuration file
         self.app = QtWidgets.QApplication(sys.argv)
-        self.screenScaleFactor = 192//(self.app.primaryScreen().logicalDotsPerInch())
         icon = QtGui.QIcon(os.path.join(self.dirname,'icons/icon.png'))
         self.app.setWindowIcon(icon)
-        self.app.setFont(QtGui.QFont(self.app.font().family(),self.app.font().pointSize()*self.screenScaleFactor))
+        self.app.setFont(QtGui.QFont(self.app.font().family()))
         self.app.setStyle("fusion")
         self.appTheme = "light"
         self.lightPalette = self.app.palette()
         self.darkPalette = QtGui.QPalette()
-        self.darkPalette.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
-        self.darkPalette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
-        self.darkPalette.setColor(QtGui.QPalette.Base, QtGui.QColor(25, 25, 25))
-        self.darkPalette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(53, 53, 53))
-        self.darkPalette.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.black)
-        self.darkPalette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.white)
-        self.darkPalette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
-        self.darkPalette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
-        self.darkPalette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
-        self.darkPalette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
-        self.darkPalette.setColor(QtGui.QPalette.Link, QtGui.QColor(42, 130, 218))
-        self.darkPalette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(42, 130, 218))
-        self.darkPalette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor(53, 53, 53))
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.WindowText, QtCore.Qt.GlobalColor.white)
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.Base, QtGui.QColor(25, 25, 25))
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.AlternateBase, QtGui.QColor(53, 53, 53))
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.ToolTipBase, QtCore.Qt.GlobalColor.black)
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.ToolTipText, QtCore.Qt.GlobalColor.white)
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.Text, QtCore.Qt.GlobalColor.white)
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.Button, QtGui.QColor(53, 53, 53))
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.ButtonText, QtCore.Qt.GlobalColor.white)
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.BrightText, QtCore.Qt.GlobalColor.red)
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.Link, QtGui.QColor(42, 130, 218))
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.Highlight, QtGui.QColor(42, 130, 218))
+        self.darkPalette.setColor(QtGui.QPalette.ColorRole.HighlightedText, QtCore.Qt.GlobalColor.black)
         self.window = window.Window(config)    #Initialze the main window using the default values in the configuration
         self.window.showMaximized()
         self.window.show()
@@ -61,7 +60,7 @@ class Window():
         self.preference = preference.Window()
         self.preference.DEFAULT_SETTINGS_CHANGED.connect(self.window.refresh)
         self.toggle_light_dark_mode("light")
-        sys.exit(self.app.exec_())
+        sys.exit(self.app.exec())
 
     def toggle_light_dark_mode(self, mode):
         self.appTheme = mode

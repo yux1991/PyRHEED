@@ -29,7 +29,7 @@ from pymatgen.io.cif import CifParser
 from pymatgen.core import sites as pgSites
 from pymatgen.core import structure as pgStructure
 from pymatgen.core import periodic_table
-from PyQt5 import QtGui,QtCore, QtWidgets
+from PyQt6 import QtGui,QtCore, QtWidgets
 from scipy.optimize import least_squares
 from scipy.spatial import ConvexHull
 from scipy.spatial import Voronoi
@@ -74,7 +74,7 @@ class Image(object):
                 img_array = np.uint8(img_array/256)
             if bit_depth == 8:
                 img_array = np.uint8(img_array)
-            qImg = QtGui.QImage(img_array,img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
+            qImg = QtGui.QImage(img_array,img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format.Format_Grayscale8)
             return qImg, img_array
         elif pathExtension in self.supportedImageFormats:
             img = pilImage.open(img_path)
@@ -82,7 +82,13 @@ class Image(object):
                 img_rgb = np.fromstring(img.tobytes(),dtype=np.uint8)
                 img_rgb = img_rgb.reshape((img.size[1],img.size[0],3))
                 img_array = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
-                qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format_Grayscale8)
+                qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format.Format_Grayscale8)
+            elif img.mode == 'RGBA':
+                img_rgba = np.fromstring(img.tobytes(),dtype=np.uint8)
+                img_rgb = img_rgba.reshape((img.size[1], img.size[0], 4))[:, :, :3]
+                img_rgb = img_rgb.reshape((img.size[1],img.size[0],3))
+                img_array = (0.21*img_rgb[:,:,0])+(0.72*img_rgb[:,:,1])+(0.07*img_rgb[:,:,2])
+                qImg = QtGui.QImage(np.uint8(img_array),img_array.shape[1],img_array.shape[0],img_array.shape[1], QtGui.QImage.Format.Format_Grayscale8)
             elif img.mode == 'L':
                 img_array = np.array(img)
                 qImg = pilQtImage.ImageQt(img)
@@ -194,20 +200,20 @@ class Image(object):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()
 
 class FitFunctions(object):
@@ -1195,84 +1201,85 @@ class FitBroadening(QtCore.QObject):
             self.endIndex += 101
             self._periodic = True
         for nimg in range(self.startIndex,self.endIndex+1):
-            if self._periodic:
-                nimg = nimg%101
-            self.UPDATE_RESULTS.emit(self.initialparameters)
-            self.UPDATE_LOG.emit("The file being processed right now is: "+self.image_list[nimg])
-            QtCore.QCoreApplication.processEvents()
-            qImg, img = self.image_worker.get_image(16,self.image_list[nimg],self.autoWB,self.brightness,self.blackLevel,self.image_crop)
-            x0,y0,x1,y1 = self.start.x(),self.start.y(),self.end.x(),self.end.y()
-            newStart = QtCore.QPointF()
-            newEnd = QtCore.QPointF()
-            if self.width==0.0:
-                if self.origin.y() < (y0 + y1) /2:
-                    step = 5
-                else:
-                    step = -5
-                nos = int(self.analysisRange*self.scale_factor/step)
-            else:
-                nos = int(self.analysisRange*self.scale_factor/self.width)
-                if self.origin.y() < (y0 + y1) /2:
-                    step = self.width
-                else:
-                    step = -self.width
-            for i in range(1,nos+1):
-                if x0 == x1:
-                    newStart.setX(x0+i*step)
-                    newStart.setY(y0)
-                    newEnd.setX(x1+i*step)
-                    newEnd.setY(y1)
-                else:
-                    angle = np.arctan((y0-y1)/(x1-x0))
-                    newStart.setX(int(x0+i*step*np.sin(angle)))
-                    newStart.setY(int(y0+i*step*np.cos(angle)))
-                    newEnd.setX(int(x1+i*step*np.sin(angle)))
-                    newEnd.setY(int(y1+i*step*np.cos(angle)))
-                if self.width == 0.0:
-                    RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,self.scale_factor)
-                else:
-                    RC,I = self.image_worker.get_integral(newStart,newEnd,self.width,img,self.scale_factor)
-                if self.remove_linear_BGCheck:
-                    BG = np.linspace(I[0],I[-1],len(I))
-                    I = I - BG
-                results, cost, output = self.fit_worker.get_fit(RC,I,self.numberOfPeaks,self.BGCheck,self.function, self.guess,(self.bound_low,self.bound_high),self.ftol,\
-                                                                self.xtol,self.gtol,self.method,self.loss)
-                Kperp = (np.abs((newEnd.y()-newStart.y())*self.origin.x()-(newEnd.x()-newStart.x())*self.origin.y()+newEnd.x()*newStart.y()-newEnd.y()*newStart.x())/\
-                        np.sqrt((newEnd.y()-newStart.y())**2+(newEnd.x()-newStart.x())**2))/self.scale_factor
-                iteration = np.linspace(1,len(cost)+1,len(cost))
-                jac = results.jac
-                cov = np.linalg.pinv(jac.T.dot(jac))
-                residual_variance = np.sum(results.fun**2)/(len(I)-len(self.guess))
-                var = np.sqrt(np.diagonal(cov*residual_variance))
-                value_variance = np.reshape(np.concatenate((np.array(results.x),np.array(var)),axis=0),(2,len(var)))
-                self.ADD_COST_FUNCTION.emit(iteration,cost,'cost_function')
-                self.UPDATE_RESULTS.emit(list(results.x))
-                self.UPDATE_LOG.emit(output)
-                if i == 1:
-                    self.initialparameters = list(results.x)
-                if nimg<=100:
-                    angle = nimg*1.8
-                else:
-                    angle = nimg*1.8 - 180
-                fitresults =str(angle).ljust(12)+'\t'+str(np.round(Kperp,3)).ljust(12)+'\t'+'\t'.join(str(np.round(e[0],3)).ljust(12)+'\t'+str(np.round(e[1],3)).ljust(12) for e in value_variance.T)+'\n'
-                if self.saveResult == 2:
-                    self.WRITE_OUTPUT.emit(fitresults)
-                self.UPDATE_LOG.emit("MESSAGE:"+results.message)
-                self.ADD_PLOT.emit(RC,I,Kperp,nimg)
-                time.sleep(0.1)
+            if nimg < len(self.image_list):
                 if self._periodic:
-                    if nimg < self.startIndex:
-                        offset = 1
-                    else:
-                        offset = 0
-                    self.PROGRESS_ADVANCE.emit(0,100,((nimg+101*offset-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
-                else:
-                    self.PROGRESS_ADVANCE.emit(0,100,((nimg-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
+                    nimg = nimg%101
+                self.UPDATE_RESULTS.emit(self.initialparameters)
+                self.UPDATE_LOG.emit("The file being processed right now is: "+self.image_list[nimg])
                 QtCore.QCoreApplication.processEvents()
+                qImg, img = self.image_worker.get_image(16,self.image_list[nimg],self.autoWB,self.brightness,self.blackLevel,self.image_crop)
+                x0,y0,x1,y1 = self.start.x(),self.start.y(),self.end.x(),self.end.y()
+                newStart = QtCore.QPointF()
+                newEnd = QtCore.QPointF()
+                if self.width==0.0:
+                    if self.origin.y() < (y0 + y1) /2:
+                        step = 5
+                    else:
+                        step = -5
+                    nos = int(self.analysisRange*self.scale_factor/step)
+                else:
+                    nos = int(self.analysisRange*self.scale_factor/self.width)
+                    if self.origin.y() < (y0 + y1) /2:
+                        step = self.width
+                    else:
+                        step = -self.width
+                for i in range(1,nos+1):
+                    if x0 == x1:
+                        newStart.setX(x0+i*step)
+                        newStart.setY(y0)
+                        newEnd.setX(x1+i*step)
+                        newEnd.setY(y1)
+                    else:
+                        angle = np.arctan((y0-y1)/(x1-x0))
+                        newStart.setX(int(x0+i*step*np.sin(angle)))
+                        newStart.setY(int(y0+i*step*np.cos(angle)))
+                        newEnd.setX(int(x1+i*step*np.sin(angle)))
+                        newEnd.setY(int(y1+i*step*np.cos(angle)))
+                    if self.width == 0.0:
+                        RC,I = self.image_worker.get_line_scan(newStart,newEnd,img,self.scale_factor)
+                    else:
+                        RC,I = self.image_worker.get_integral(newStart,newEnd,self.width,img,self.scale_factor)
+                    if self.remove_linear_BGCheck:
+                        BG = np.linspace(I[0],I[-1],len(I))
+                        I = I - BG
+                    results, cost, output = self.fit_worker.get_fit(RC,I,self.numberOfPeaks,self.BGCheck,self.function, self.guess,(self.bound_low,self.bound_high),self.ftol,\
+                                                                    self.xtol,self.gtol,self.method,self.loss)
+                    Kperp = (np.abs((newEnd.y()-newStart.y())*self.origin.x()-(newEnd.x()-newStart.x())*self.origin.y()+newEnd.x()*newStart.y()-newEnd.y()*newStart.x())/\
+                            np.sqrt((newEnd.y()-newStart.y())**2+(newEnd.x()-newStart.x())**2))/self.scale_factor
+                    iteration = np.linspace(1,len(cost)+1,len(cost))
+                    jac = results.jac
+                    cov = np.linalg.pinv(jac.T.dot(jac))
+                    residual_variance = np.sum(results.fun**2)/(len(I)-len(self.guess))
+                    var = np.sqrt(np.diagonal(cov*residual_variance))
+                    value_variance = np.reshape(np.concatenate((np.array(results.x),np.array(var)),axis=0),(2,len(var)))
+                    self.ADD_COST_FUNCTION.emit(iteration,cost,'cost_function')
+                    self.UPDATE_RESULTS.emit(list(results.x))
+                    self.UPDATE_LOG.emit(output)
+                    if i == 1:
+                        self.initialparameters = list(results.x)
+                    if nimg<=100:
+                        angle = nimg*1.8
+                    else:
+                        angle = nimg*1.8 - 180
+                    fitresults =str(angle).ljust(12)+'\t'+str(np.round(Kperp,3)).ljust(12)+'\t'+'\t'.join(str(np.round(e[0],3)).ljust(12)+'\t'+str(np.round(e[1],3)).ljust(12) for e in value_variance.T)+'\n'
+                    if self.saveResult == 2:
+                        self.WRITE_OUTPUT.emit(fitresults)
+                    self.UPDATE_LOG.emit("MESSAGE:"+results.message)
+                    self.ADD_PLOT.emit(RC,I,Kperp,nimg)
+                    time.sleep(0.1)
+                    if self._periodic:
+                        if nimg < self.startIndex:
+                            offset = 1
+                        else:
+                            offset = 0
+                        self.PROGRESS_ADVANCE.emit(0,100,((nimg+101*offset-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
+                    else:
+                        self.PROGRESS_ADVANCE.emit(0,100,((nimg-self.startIndex)*nos+i)*100/nos/(self.endIndex-self.startIndex+1))
+                    QtCore.QCoreApplication.processEvents()
+                    if self._abort:
+                        break
                 if self._abort:
                     break
-            if self._abort:
-                break
         if self.saveResult == 2:
             self.CLOSE_OUTPUT.emit()
         if not self._abort:
@@ -1496,13 +1503,16 @@ class TAPD_Simulation(QtCore.QObject):
         model = self.get_TAPD_sites(self.X_max,self.Y_max, self.Z_min, self.Z_max,self.offset, self.substrate_CIF_path, self.epilayer_CIF_path,\
             self.buffer_layer_atom, self.buffer_in_plane_distribution, self.buffer_out_of_plane_distribution, self.buffer_offset,\
             self.sub_orientation,self.epi_orientation, self.use_atoms, self.add_buffer)
-        QtCore.QCoreApplication.processEvents()
-        if not self._abort:
-            self.UPDATE_LOG.emit('Translational antiphase domain sites are created!')
-            self.SEND_RESULTS.emit(model)
+        if model is not None:
+            QtCore.QCoreApplication.processEvents()
+            if not self._abort:
+                self.UPDATE_LOG.emit('Translational antiphase domain sites are created!')
+                self.SEND_RESULTS.emit(model)
+            else:
+                self.UPDATE_LOG.emit('Process aborted!')
+                self._abort = False
         else:
-            self.UPDATE_LOG.emit('Process aborted!')
-            self._abort = False
+            self.UPDATE_LOG.emit('Wrong parameters!')
         self.FINISHED.emit()
 
     def stop(self):
@@ -1528,7 +1538,10 @@ class TAPD_Simulation(QtCore.QObject):
                 self.UPDATE_LOG.emit('Nucleation created!')
                 self.UPDATE_LOG.emit('Creating Voronoi ...')
                 QtCore.QCoreApplication.processEvents()
-                vor = Voronoi(generators)
+                try:
+                    vor = Voronoi(generators)
+                except:
+                    return None
                 model.vor = vor
                 self.UPDATE_LOG.emit('Voronoi is created!')
                 self.UPDATE_LOG.emit('Epilayer is growing ...')

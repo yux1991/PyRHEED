@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtWidgets, QtGui
 import os
 
 class Browser(QtWidgets.QWidget):
@@ -12,7 +12,7 @@ class Browser(QtWidgets.QWidget):
         self.init_UI()
 
     def init_UI(self,path=QtCore.QDir.currentPath()):
-        self.model = QtWidgets.QFileSystemModel()
+        self.model = QtGui.QFileSystemModel()
         self.model.setRootPath(path)
         self.model.setNameFilters(self.filter)
         self.model.setNameFilterDisables(False)
@@ -22,7 +22,7 @@ class Browser(QtWidgets.QWidget):
         self.tree.setAnimated(True)
         self.tree.setIndentation(20)
         self.tree.setSortingEnabled(True)
-        self.tree.sortByColumn(0,QtCore.Qt.AscendingOrder)
+        self.tree.sortByColumn(0,QtCore.Qt.SortOrder.AscendingOrder)
         self.tree.setColumnWidth(0,400)
         self.tree.setColumnWidth(1,150)
         self.tree.setColumnWidth(2,150)

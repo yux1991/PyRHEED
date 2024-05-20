@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
+from PyQt6 import QtCore, QtGui, QtWidgets, QtDataVisualization
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.collections import LineCollection
@@ -82,20 +82,20 @@ class Window(QtWidgets.QWidget):
         self.currentDestination = ''
         self.container = QtWidgets.QWidget.createWindowContainer(self.graph)
         self.screenSize = self.graph.screen().size()
-        self.container.setMinimumSize(self.screenSize.width()/2, self.screenSize.height()/2)
+        self.container.setMinimumSize(int(self.screenSize.width()/2), int(self.screenSize.height()/2))
         self.container.setMaximumSize(self.screenSize)
-        self.container.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
-        self.container.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.container.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Expanding)
+        self.container.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.mainVLayout = QtWidgets.QVBoxLayout(self)
-        self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.controlPanel = QtWidgets.QFrame()
         self.displayPanel = QtWidgets.QFrame()
         self.vLayout = QtWidgets.QVBoxLayout(self.controlPanel)
-        self.vLayout.setAlignment(QtCore.Qt.AlignTop)
+        self.vLayout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.vLayout.setContentsMargins(0,0,0,0)
         self.vLayout_left = QtWidgets.QVBoxLayout(self.displayPanel)
-        self.vLayout_left.setAlignment(QtCore.Qt.AlignTop)
-        self.vSplitter_left = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.vLayout_left.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        self.vSplitter_left = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.vLayout_left.addWidget(self.vSplitter_left)
         self.vSplitter_left.addWidget(self.container)
         self.vSplitter_left.setStretchFactor(0,1)
@@ -108,13 +108,13 @@ class Window(QtWidgets.QWidget):
         self.hSplitter.setCollapsible(1,False)
         self.mainVLayout.addWidget(self.hSplitter)
         self.setWindowTitle("RHEED Simulation")
-        self.setWindowModality(QtCore.Qt.WindowModal)
+        self.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
 
         self.chooseCif = QtWidgets.QWidget()
         self.chooseCifGrid = QtWidgets.QGridLayout(self.chooseCif)
         self.chooseCifBrowser = browser.Browser(self.chooseCif, {"*.cif","*.CIF"})
         self.chooseCifLabel = QtWidgets.QLabel("The path of the CIF file is:\n")
-        self.chooseCifLabel.setAlignment(QtCore.Qt.AlignTop)
+        self.chooseCifLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.chooseCifLabel.setWordWrap(True)
         self.chooseCifButton = QtWidgets.QPushButton("Add CIF")
         self.chooseCifButton.clicked.connect(self.get_cif_path)
@@ -126,12 +126,12 @@ class Window(QtWidgets.QWidget):
         self.TAPD_model = QtWidgets.QWidget()
         self.TAPD_model_grid = QtWidgets.QGridLayout(self.TAPD_model)
         self.TAPD_substrate_label = QtWidgets.QLabel("The path of the substrate CIF is:\n")
-        self.TAPD_substrate_label.setAlignment(QtCore.Qt.AlignTop)
+        self.TAPD_substrate_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.TAPD_substrate_label.setWordWrap(True)
         self.TAPD_add_substrate_button = QtWidgets.QPushButton("Add Substrate")
         self.TAPD_add_substrate_button.clicked.connect(lambda text: self.load_cif(text='Choose Substrate'))
         self.TAPD_epilayer_label = QtWidgets.QLabel("The path of the epilayer CIF is:\n")
-        self.TAPD_epilayer_label.setAlignment(QtCore.Qt.AlignTop)
+        self.TAPD_epilayer_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.TAPD_epilayer_label.setWordWrap(True)
         self.TAPD_add_epilayer_button = QtWidgets.QPushButton("Add Epilayer")
         self.TAPD_add_epilayer_button.clicked.connect(lambda text: self.load_cif(text='Choose Epilayer'))
@@ -227,7 +227,7 @@ class Window(QtWidgets.QWidget):
 
         self.distribution_parameters = QtWidgets.QGroupBox('Epilayer nucleation')
         self.distribution_parameters_grid = QtWidgets.QGridLayout(self.distribution_parameters)
-        self.distribution_parameters_grid.setAlignment(QtCore.Qt.AlignTop)
+        self.distribution_parameters_grid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.TAPD_completely_random_label = QtWidgets.QLabel('Density')
         self.TAPD_completely_random = QtWidgets.QLineEdit('0.01')
         self.distribution_parameters_grid.addWidget(self.TAPD_completely_random_label)
@@ -235,7 +235,7 @@ class Window(QtWidgets.QWidget):
 
         self.buffer_in_plane_distribution_parameters = QtWidgets.QGroupBox('Buffer layer in-plane')
         self.buffer_in_plane_distribution_parameters_grid = QtWidgets.QGridLayout(self.buffer_in_plane_distribution_parameters)
-        self.buffer_in_plane_distribution_parameters_grid.setAlignment(QtCore.Qt.AlignTop)
+        self.buffer_in_plane_distribution_parameters_grid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.TAPD_buffer_in_plane_completely_random_label = QtWidgets.QLabel('Density')
         self.TAPD_buffer_in_plane_completely_random = QtWidgets.QLineEdit('1')
         self.buffer_in_plane_distribution_parameters_grid.addWidget(self.TAPD_buffer_in_plane_completely_random_label)
@@ -243,7 +243,7 @@ class Window(QtWidgets.QWidget):
 
         self.buffer_out_of_plane_distribution_parameters = QtWidgets.QGroupBox('Buffer layer out-of-plane')
         self.buffer_out_of_plane_distribution_parameters_grid = QtWidgets.QGridLayout(self.buffer_out_of_plane_distribution_parameters)
-        self.buffer_out_of_plane_distribution_parameters_grid.setAlignment(QtCore.Qt.AlignTop)
+        self.buffer_out_of_plane_distribution_parameters_grid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.TAPD_buffer_out_of_plane_low_label = QtWidgets.QLabel('low (\u212B)')
         self.TAPD_buffer_out_of_plane_low = QtWidgets.QLineEdit('-0.5')
         self.TAPD_buffer_out_of_plane_high_label = QtWidgets.QLabel('high (\u212B)')
@@ -355,7 +355,7 @@ class Window(QtWidgets.QWidget):
         self.destinationNameLabel = QtWidgets.QLabel("The file name is:")
         self.destinationNameEdit = QtWidgets.QLineEdit('3D_data')
         self.chooseDestinationButton = QtWidgets.QPushButton("Browse...")
-        self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+        self.chooseDestinationButton.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
         self.chooseDestinationButton.clicked.connect(self.choose_destination)
         self.destinationGrid.addWidget(self.chooseDestinationLabel,0,0,1,3)
         self.destinationGrid.addWidget(self.chooseDestinationButton,0,3,1,1)
@@ -373,7 +373,7 @@ class Window(QtWidgets.QWidget):
         self.reciprocal_range_box = QtWidgets.QWidget()
         self.reciprocal_range_grid = QtWidgets.QGridLayout(self.reciprocal_range_box)
         self.reciprocal_range_grid.setContentsMargins(5,5,5,5)
-        self.reciprocal_range_grid.setAlignment(QtCore.Qt.AlignTop)
+        self.reciprocal_range_grid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.number_of_steps_para_label = QtWidgets.QLabel("Number of K_para Steps:")
         self.number_of_steps_para = QtWidgets.QSpinBox()
         self.number_of_steps_para.setMinimum(1)
@@ -452,7 +452,7 @@ class Window(QtWidgets.QWidget):
         self.reciprocalMapfontList.currentFontChanged.connect(self.update_plot_font)
         self.reciprocalMapfontSizeLabel = QtWidgets.QLabel("Font Size ({})".format(7))
         self.reciprocalMapfontSizeLabel.setFixedWidth(160)
-        self.reciprocalMapfontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.reciprocalMapfontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.reciprocalMapfontSizeSlider.setMinimum(1)
         self.reciprocalMapfontSizeSlider.setMaximum(100)
         self.reciprocalMapfontSizeSlider.setValue(7)
@@ -502,7 +502,7 @@ class Window(QtWidgets.QWidget):
         self.appearance = QtWidgets.QWidget()
         self.appearanceGrid = QtWidgets.QVBoxLayout(self.appearance)
         self.appearanceGrid.setContentsMargins(5,5,5,5)
-        self.appearanceGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.appearanceGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         self.graph.update_coordinates(0)
         self.showCoordinatesWidget = QtWidgets.QWidget()
@@ -526,7 +526,7 @@ class Window(QtWidgets.QWidget):
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(5))
-        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(5)
@@ -548,25 +548,25 @@ class Window(QtWidgets.QWidget):
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
         #self.statusBar.setFixedHeight(150)
-        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
                                           "\u00A0\u00A0\u00A0\u00A0Initialized!")
         self.logCursor = QtGui.QTextCursor(self.logBox.document())
-        self.logCursor.movePosition(QtGui.QTextCursor.End)
+        self.logCursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
         self.logBox.setTextCursor(self.logCursor)
         self.logBox.ensureCursorVisible()
-        self.logBox.setAlignment(QtCore.Qt.AlignTop)
-        self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBox.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        self.logBox.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         #self.logBoxScroll = QtWidgets.QScrollArea()
         #self.logBoxScroll.setWidget(self.logBox)
         #self.logBoxScroll.setWidgetResizable(True)
-        #self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        #self.logBoxScroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.progressBar = QtWidgets.QProgressBar()
         self.progressBar.setVisible(False)
-        self.progressBar.setOrientation(QtCore.Qt.Horizontal)
+        self.progressBar.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.progressBarSizePolicy = self.progressBar.sizePolicy()
         self.progressBarSizePolicy.setRetainSizeWhenHidden(True)
-        self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Expanding)
+        self.progressBarSizePolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Policy.Expanding)
         self.progressBar.setSizePolicy(self.progressBarSizePolicy)
         self.PROGRESS_ADVANCE.connect(self.progress)
         self.PROGRESS_HOLD.connect(self.progress_on)
@@ -586,12 +586,12 @@ class Window(QtWidgets.QWidget):
         self.appearanceGrid.addWidget(self.shadowQualityLabel)
         self.appearanceGrid.addWidget(self.shadowQuality)
         self.tab.addTab(self.appearance,"Appearance")
-        self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.tab.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Fixed)
 
         self.view = QtWidgets.QWidget()
         self.viewGrid = QtWidgets.QVBoxLayout(self.view)
         self.viewGrid.setContentsMargins(5,5,5,5)
-        self.viewGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.viewGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         viewLabel = QtWidgets.QLabel("Set View Direction")
         self.graph.update_view_direction(16)
         self.viewDirection = QtWidgets.QWidget()
@@ -621,12 +621,12 @@ class Window(QtWidgets.QWidget):
         self.viewGrid.addWidget(self.verticalRotation)
         self.viewGrid.addWidget(self.zoom)
         self.tab.addTab(self.view,"View")
-        self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.tab.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Fixed)
 
         self.gpu = QtWidgets.QWidget()
         self.gpuGrid = QtWidgets.QVBoxLayout(self.gpu)
         self.gpuGrid.setContentsMargins(5,5,5,5)
-        self.gpuGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.gpuGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         self.useCUDAWidget = QtWidgets.QWidget()
         self.useCUDAGrid = QtWidgets.QGridLayout(self.useCUDAWidget)
@@ -651,7 +651,7 @@ class Window(QtWidgets.QWidget):
 
         self.gpuGrid.addWidget(self.useCUDAWidget)
         self.tab.addTab(self.gpu,"GPU")
-        self.tab.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.tab.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Fixed)
 
         self.colorTab = QtWidgets.QTabWidget()
         self.colorTab.setVisible(False)
@@ -663,7 +663,7 @@ class Window(QtWidgets.QWidget):
         self.vLayout.addWidget(self.plotOptions)
         self.controlPanelScroll.setWidget(self.controlPanel)
         self.controlPanelScroll.setWidgetResizable(True)
-        self.controlPanelScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.controlPanelScroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
 
         self.themeList.currentTextChanged.connect(self.graph.change_theme)
         if self.appTheme == 'light':
@@ -1042,7 +1042,7 @@ class Window(QtWidgets.QWidget):
         range_structure = QtWidgets.QWidget()
         range_grid = QtWidgets.QGridLayout(range_structure)
         range_grid.setContentsMargins(5,5,5,5)
-        range_grid.setAlignment(QtCore.Qt.AlignTop)
+        range_grid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         lattice_constants_box = InfoBoard("Information",index)
         self.UPDATE_INOFRMATION_BOARD.connect(lattice_constants_box.update)
         shape_label = QtWidgets.QLabel("Shape")
@@ -1379,7 +1379,7 @@ class Window(QtWidgets.QWidget):
 
     def resizeEvent(self,event):
         self.screenSize = self.graph.screen().size()
-        self.container.setMinimumSize(self.screenSize.width()/2, self.screenSize.height()/2)
+        self.container.setMinimumSize(int(self.screenSize.width()/2), int(self.screenSize.height()/2))
         self.container.setMaximumSize(self.screenSize)
 
     def toggle_add_epilayer(self,state):
@@ -1636,7 +1636,7 @@ class Window(QtWidgets.QWidget):
         range_structure = QtWidgets.QWidget()
         range_grid = QtWidgets.QGridLayout(range_structure)
         range_grid.setContentsMargins(5,5,5,5)
-        range_grid.setAlignment(QtCore.Qt.AlignTop)
+        range_grid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         lattice_constants_box = InfoBoard("Information",index)
         self.UPDATE_INOFRMATION_BOARD.connect(lattice_constants_box.update)
         shape_label = QtWidgets.QLabel("Shape")
@@ -1950,15 +1950,16 @@ class Window(QtWidgets.QWidget):
             figure.savefig(kwargs['destination']+'distribution.tif')
             figure.savefig(kwargs['destination']+'distribution.svg')
         else:
-            window = QtWidgets.QWidget()
-            layout = QtWidgets.QVBoxLayout(window)
+            self.plot_distribution_window = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(self.plot_distribution_window)
             canvas = FigureCanvas(figure)
-            toolbar = NavigationToolbar(canvas,window)
+            toolbar = NavigationToolbar(canvas,self.plot_distribution_window)
             canvas.draw()
             layout.addWidget(toolbar)
             layout.addWidget(canvas)
-            window.setWindowTitle("Domain size distribution")
-            window.show()
+            self.plot_distribution_window.setWindowTitle("Domain size distribution")
+            self.plot_distribution_window.setVisible(True)
+            self.plot_distribution_window.show()
     
     def plot_boundary(self,**kwargs):
         fontsize = 20
@@ -1994,15 +1995,15 @@ class Window(QtWidgets.QWidget):
             figure.savefig(kwargs['destination']+'boundary.tif')
             figure.savefig(kwargs['destination']+'boundary.svg')
         else:
-            window = QtWidgets.QWidget()
-            layout = QtWidgets.QVBoxLayout(window)
+            self.plot_boundary_window = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(self.plot_boundary_window)
             canvas = FigureCanvas(figure)
-            toolbar = NavigationToolbar(canvas,window)
+            toolbar = NavigationToolbar(canvas,self.plot_boundary_window)
             canvas.draw()
             layout.addWidget(toolbar)
             layout.addWidget(canvas)
-            window.setWindowTitle("Domain boundary")
-            window.show()
+            self.plot_boundary_window.setWindowTitle("Domain boundary")
+            self.plot_boundary_window.show()
 
     def plot_boundary_statistics(self, **kwargs):
         fontsize = 20
@@ -2061,7 +2062,7 @@ class Window(QtWidgets.QWidget):
         y_min, y_max = np.amin(np.array(xy_distance)[:,1]), np.amax(np.array(xy_distance)[:,1])
         H, x_edges, y_edges = np.histogram2d(np.array(xy_distance)[:,0],np.array(xy_distance)[:,1],bins=500)
         H[H == 0] = 0.1
-        ax.imshow(H,cmap='hot',aspect='equal', origin = 'low', interpolation='gaussian',\
+        ax.imshow(H,cmap='hot',aspect='equal', origin = 'lower', interpolation='gaussian',\
             norm=mcolors.LogNorm(0.1,np.amax(np.amax(H))), extent=[x_min, x_max, y_min, y_max])
         ax.set_xlabel('\u0394x/a',fontsize=fontsize, fontname=fontname)
         ax.set_ylabel('\u0394y/a',fontsize=fontsize, fontname=fontname)
@@ -2075,15 +2076,15 @@ class Window(QtWidgets.QWidget):
             figure.savefig(kwargs['destination']+'boundary_statistics.tif')
             figure.savefig(kwargs['destination']+'boundary_statistics.svg')
         else:
-            window = QtWidgets.QWidget()
-            layout = QtWidgets.QVBoxLayout(window)
+            self.plot_boundary_statistics_window = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(self.plot_boundary_statistics_window)
             canvas = FigureCanvas(figure)
-            toolbar = NavigationToolbar(canvas,window)
+            toolbar = NavigationToolbar(canvas,self.plot_boundary_statistics_window)
             canvas.draw()
             layout.addWidget(toolbar)
             layout.addWidget(canvas)
-            window.setWindowTitle("Domain boundary statistics")
-            window.show()
+            self.plot_boundary_statistics_window.setWindowTitle("Domain boundary statistics")
+            self.plot_boundary_statistics_window.show()
 
     def plot_voronoi(self, **kwargs):
         x_max = kwargs.get('X_max',float(self.TAPD_X_max.text()))
@@ -2175,15 +2176,15 @@ class Window(QtWidgets.QWidget):
             figure.savefig(kwargs['destination']+'voronoi.tif')
             figure.savefig(kwargs['destination']+'voronoi.svg')
         else:
-            window = QtWidgets.QWidget()
-            layout = QtWidgets.QVBoxLayout(window)
+            self.plot_voronoi_window = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(self.plot_voronoi_window)
             canvas = FigureCanvas(figure)
-            toolbar = NavigationToolbar(canvas,window)
+            toolbar = NavigationToolbar(canvas,self.plot_voronoi_window)
             canvas.draw()
             layout.addWidget(toolbar)
             layout.addWidget(canvas)
-            window.setWindowTitle("2D Contour")
-            window.show()
+            self.plot_voronoi_window.setWindowTitle("2D Contour")
+            self.plot_voronoi_window.show()
 
     def refresh_font_size(self):
         self.fontSizeLabel.setText("Adjust Font Size ({})".format(self.fontSizeSlider.value()))
@@ -2210,20 +2211,20 @@ class Window(QtWidgets.QWidget):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()
 
 class ScatterGraph(QtDataVisualization.Q3DScatter):
@@ -2328,7 +2329,7 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
                 ScatterProxy.resetArray(dataArray)
                 radii = AR.loc[self.elements_dict[index][i]].at['Normalized Radius']
                 ScatterSeries.setMeshSmooth(True)
-                ScatterSeries.setColorStyle(QtDataVisualization.Q3DTheme.ColorStyleUniform)
+                ScatterSeries.setColorStyle(QtDataVisualization.Q3DTheme.ColorStyle.ColorStyleUniform)
                 ScatterSeries.setBaseColor(QtGui.QColor(self.colors_dict[index][self.elements_dict[index][i]]))
                 ScatterSeries.setItemSize(radii/5/self.range)
                 ScatterSeries.setSingleHighlightColor(QtGui.QColor('white'))
@@ -2457,10 +2458,24 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
             self.activeTheme().setGridEnabled(False)
             self.activeTheme().setLabelBackgroundEnabled(False)
             self.activeTheme().setLabelBorderEnabled(False)
-            self.activeTheme().setLabelTextColor(QtCore.Qt.transparent)
+            self.activeTheme().setLabelTextColor(QtCore.Qt.GlobalColor.transparent)
 
     def update_view_direction(self,preset):
-        self.scene().activeCamera().setCameraPreset(preset)
+        if preset == 1:
+            p = QtDataVisualization.Q3DCamera.CameraPreset.CameraPresetFront
+        elif preset == 2:
+            p = QtDataVisualization.Q3DCamera.CameraPreset.CameraPresetFrontHigh
+        elif preset == 4:
+            p = QtDataVisualization.Q3DCamera.CameraPreset.CameraPresetLeft
+        elif preset == 7:
+            p = QtDataVisualization.Q3DCamera.CameraPreset.CameraPresetRight
+        elif preset == 10:
+            p = QtDataVisualization.Q3DCamera.CameraPreset.CameraPresetBehind
+        elif preset == 16:
+            p = QtDataVisualization.Q3DCamera.CameraPreset.CameraPresetDirectlyAbove
+        else:
+            p = 1
+        self.scene().activeCamera().setCameraPreset(p)
 
     def update_camera_position(self,h,v,zoom):
         self.scene().activeCamera().setCameraPosition(h,v,zoom)
@@ -2501,6 +2516,22 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
             pass
 
     def change_shadow_quality(self,quality):
+        if quality == 0:
+            quality = QtDataVisualization.QAbstract3DGraph.ShadowQuality.ShadowQualityNone
+        elif quality == 1:
+            quality = QtDataVisualization.QAbstract3DGraph.ShadowQuality.ShadowQualityLow
+        elif quality == 2:
+            quality = QtDataVisualization.QAbstract3DGraph.ShadowQuality.ShadowQualityMedium
+        elif quality == 3:
+            quality = QtDataVisualization.QAbstract3DGraph.ShadowQuality.ShadowQualityHigh
+        elif quality == 4:
+            quality = QtDataVisualization.QAbstract3DGraph.ShadowQuality.ShadowQualitySoftLow
+        elif quality == 5:
+            quality = QtDataVisualization.QAbstract3DGraph.ShadowQuality.ShadowQualitySoftMedium
+        elif quality == 6:
+            quality = QtDataVisualization.QAbstract3DGraph.ShadowQuality.ShadowQualitySoftHigh
+        else:
+            quality = QtDataVisualization.QAbstract3DGraph.ShadowQuality.ShadowQualityNone
         self.setShadowQuality(quality)
 
     def save_scene(self, **kwargs):
@@ -2523,20 +2554,20 @@ class ScatterGraph(QtDataVisualization.Q3DScatter):
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()
 
 def test():

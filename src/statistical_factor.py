@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, QtDataVisualization
+from PyQt6 import QtCore, QtGui, QtWidgets, QtDataVisualization
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib import ticker, cm, colors
@@ -14,10 +14,10 @@ class Window(QtWidgets.QWidget):
         super(Window, self).__init__()
 
     def main(self):
-        self.mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.mainFrame = QtWidgets.QFrame()
         self.mainGrid = QtWidgets.QGridLayout(self.mainFrame)
-        self.mainGrid.setAlignment(QtCore.Qt.AlignTop)
+        self.mainGrid.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.Options = QtWidgets.QGroupBox("Options")
         self.OptionsGrid = QtWidgets.QGridLayout(self.Options)
         self.Eta = LabelSlider(0,100,0.5,100,"\u03B7 (\u03C0)")
@@ -40,25 +40,25 @@ class Window(QtWidgets.QWidget):
         self.FONTS_CHANGED.connect(self.graph.change_fonts)
         self.statusBar = QtWidgets.QGroupBox("Log")
         self.statusGrid = QtWidgets.QGridLayout(self.statusBar)
-        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Fixed)
+        self.statusBar.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Fixed)
         self.logBox = QtWidgets.QTextEdit(QtCore.QTime.currentTime().toString("hh:mm:ss")+ \
                                   "\u00A0\u00A0\u00A0\u00A0Initialized!")
         self.logBox.ensureCursorVisible()
-        self.logBox.setAlignment(QtCore.Qt.AlignTop)
-        self.logBox.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBox.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        self.logBox.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.logBoxScroll = QtWidgets.QScrollArea()
         self.logBoxScroll.setWidget(self.logBox)
         self.logBoxScroll.setWidgetResizable(True)
-        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.logBoxScroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.statusGrid.addWidget(self.logBoxScroll,0,0)
         self.applyButton = QtWidgets.QPushButton("Apply")
         self.applyButton.clicked.connect(self.apply)
         self.container = QtWidgets.QWidget.createWindowContainer(self.graph)
         self.screenSize = self.graph.screen().size()
-        self.container.setMinimumSize(self.screenSize.width()/2, self.screenSize.height()/2)
+        self.container.setMinimumSize(int(self.screenSize.width()/2), int(self.screenSize.height()/2))
         self.container.setMaximumSize(self.screenSize)
-        self.container.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
-        self.container.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.container.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Expanding)
+        self.container.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
 
         self.appearance = QtWidgets.QGroupBox("Appearance")
         self.appearanceVBox = QtWidgets.QVBoxLayout(self.appearance)
@@ -68,7 +68,7 @@ class Window(QtWidgets.QWidget):
         self.fontList.setCurrentFont(QtGui.QFont("Arial"))
         self.fontList.currentFontChanged.connect(self.refresh_font_name)
         self.fontSizeLabel = QtWidgets.QLabel("Adjust Font Size ({})".format(30))
-        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.fontSizeSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.fontSizeSlider.setMinimum(1)
         self.fontSizeSlider.setMaximum(100)
         self.fontSizeSlider.setValue(30)
@@ -347,7 +347,7 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
         if enable:
             for series in self.seriesList():
                 self.removeSeries(series)
-            self.SurfaceSeries.setDrawMode(QtDataVisualization.QSurface3DSeries.DrawSurface)
+            self.SurfaceSeries.setDrawMode(QtDataVisualization.QSurface3DSeries.DrawFlag.DrawSurface)
             self.SurfaceSeries.setFlatShadingEnabled(True)
             self.axisX().setLabelFormat("%.2f")
             self.axisZ().setLabelFormat("%.2f")
@@ -384,41 +384,41 @@ class SurfaceGraph(QtDataVisualization.Q3DSurface):
 
     def set_black_to_yellow_gradient(self):
         self.gr = QtGui.QLinearGradient()
-        self.gr.setColorAt(0.0, QtCore.Qt.darkBlue)
-        self.gr.setColorAt(0.05, QtCore.Qt.blue)
-        self.gr.setColorAt(0.1, QtCore.Qt.darkCyan)
-        self.gr.setColorAt(0.2, QtCore.Qt.cyan)
-        self.gr.setColorAt(0.4, QtCore.Qt.green)
-        self.gr.setColorAt(0.8, QtCore.Qt.yellow)
-        self.gr.setColorAt(1.0, QtCore.Qt.red)
+        self.gr.setColorAt(0.0, QtCore.Qt.GlobalColor.darkBlue)
+        self.gr.setColorAt(0.05, QtCore.Qt.GlobalColor.blue)
+        self.gr.setColorAt(0.1, QtCore.Qt.GlobalColor.darkCyan)
+        self.gr.setColorAt(0.2, QtCore.Qt.GlobalColor.cyan)
+        self.gr.setColorAt(0.4, QtCore.Qt.GlobalColor.green)
+        self.gr.setColorAt(0.8, QtCore.Qt.GlobalColor.yellow)
+        self.gr.setColorAt(1.0, QtCore.Qt.GlobalColor.red)
         self.seriesList()[0].setBaseGradient(self.gr)
-        self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyleRangeGradient)
+        self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyle.ColorStyleRangeGradient)
 
     def set_green_to_red_gradient(self):
         self.gr = QtGui.QLinearGradient()
-        self.gr.setColorAt(0.0, QtCore.Qt.darkGreen)
-        self.gr.setColorAt(0.5, QtCore.Qt.yellow)
-        self.gr.setColorAt(0.8, QtCore.Qt.red)
-        self.gr.setColorAt(1.0, QtCore.Qt.darkRed)
+        self.gr.setColorAt(0.0, QtCore.Qt.GlobalColor.darkGreen)
+        self.gr.setColorAt(0.5, QtCore.Qt.GlobalColor.yellow)
+        self.gr.setColorAt(0.8, QtCore.Qt.GlobalColor.red)
+        self.gr.setColorAt(1.0, QtCore.Qt.GlobalColor.darkRed)
         self.seriesList()[0].setBaseGradient(self.gr)
-        self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyleRangeGradient)
+        self.seriesList()[0].setColorStyle(QtDataVisualization.Q3DTheme.ColorStyle.ColorStyleRangeGradient)
 
     def raise_error(self,message):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setText(message)
         msg.setWindowTitle("Error")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setEscapeButton(QtWidgets.QMessageBox.Close)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         msg.exec()
 
     def raise_attention(self,information):
         info = QtWidgets.QMessageBox()
-        info.setIcon(QtWidgets.QMessageBox.Information)
+        info.setIcon(QtWidgets.QMessageBox.Icon.Information)
         info.setText(information)
         info.setWindowTitle("Information")
-        info.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        info.setEscapeButton(QtWidgets.QMessageBox.Close)
+        info.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        info.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Close)
         info.exec()
 
 def test():
