@@ -20,9 +20,9 @@ class Window():
     def __init__(self):
         self.dirname = os.path.dirname(__file__)
         config = configparser.ConfigParser()
-        config.read(os.path.join(self.dirname,'configuration.ini'))  #Read the configuration file
+        config.read(os.path.join(self.dirname,'configuration/configuration.ini'))  #Read the configuration file
         self.app = QtWidgets.QApplication(sys.argv)
-        icon = QtGui.QIcon(os.path.join(self.dirname,'icons/icon.png'))
+        icon = QtGui.QIcon(os.path.join(self.dirname,'data/icons/icon.png'))
         self.app.setWindowIcon(icon)
         self.app.setFont(QtGui.QFont(self.app.font().family()))
         self.app.setStyle("fusion")

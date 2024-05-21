@@ -61,8 +61,8 @@ class Window(QtWidgets.QWidget):
     def main(self):
         self.graph = ScatterGraph()
         dirname = os.path.dirname(__file__)
-        self.AFF = pd.read_excel(open(os.path.join(dirname,'files/AtomicFormFactors.xlsx'),'rb'),sheet_name="Atomic Form Factors",index_col=0)
-        self.AR = pd.read_excel(open(os.path.join(dirname,'files/AtomicRadii.xlsx'),'rb'),sheet_name="Atomic Radius",index_col=0)
+        self.AFF = pd.read_excel(open(os.path.join(dirname,'data/files/AtomicFormFactors.xlsx'),'rb'),sheet_name="Atomic Form Factors",index_col=0)
+        self.AR = pd.read_excel(open(os.path.join(dirname,'data/files/AtomicRadii.xlsx'),'rb'),sheet_name="Atomic Radius",index_col=0)
         self.structure_index = 0
         self.data_index_set = set()
         self.sample_index_set = set()

@@ -61,7 +61,8 @@ class Window(QtCore.QObject):
                }
         config = configparser.ConfigParser()
         config.read_dict(Dic)
-        with open('./configuration.ini','w') as configfile:
+        dirname = os.path.dirname(__file__)
+        with open(os.path.join(dirname,'configuration/configuration.ini'),'w') as configfile:
             config.write(configfile)
         return Dic
 
