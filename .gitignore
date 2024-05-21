@@ -5,7 +5,7 @@ build/
 dist/
 PyRHEED.egg-info/
 src/.idea
-src/__pycache__/
+src/pyrheed/__pycache__/
 src/venv
 src/venv_64
 Dockerfile
