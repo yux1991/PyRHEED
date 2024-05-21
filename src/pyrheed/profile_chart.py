@@ -1,4 +1,4 @@
-from process import Image
+from pyrheed.process import Image
 from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts, QtSvg
 import numpy as np
 

@@ -1,10 +1,10 @@
-from my_widgets import ColorPicker, DoubleSlider
+from pyrheed.my_widgets import ColorPicker, DoubleSlider
 from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 import configparser
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import plot_chart
+from pyrheed import plot_chart
 from scipy.stats import linregress as lrg
 
 class Window(QtCore.QObject):

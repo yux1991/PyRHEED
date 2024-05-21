@@ -1,11 +1,11 @@
 import configparser
 import numpy as np
 from numpy.lib import scimath
-from process import Diffraction
-import profile_chart
+from pyrheed.process import Diffraction
+from pyrheed import profile_chart
 from pymatgen.io.cif import CifParser
 from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
-from my_widgets import LabelMultipleLineEdit, LabelLineEdit, ColorPicker
+from pyrheed.my_widgets import LabelMultipleLineEdit, LabelLineEdit, ColorPicker
 import sys
 import os
 import itertools

@@ -1,8 +1,8 @@
-from process import Image, Convertor, ReciprocalSpaceMap
+from pyrheed.process import Image, Convertor, ReciprocalSpaceMap
 from PyQt6 import QtCore, QtWidgets, QtGui
 import configparser
 import os
-import profile_chart
+from pyrheed import profile_chart
 
 class Window(QtCore.QObject):
     #Public Signals

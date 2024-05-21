@@ -2,7 +2,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets, QtDataVisualization
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib import ticker, cm, colors
-from my_widgets import LabelSlider
+from pyrheed.my_widgets import LabelSlider
 import matplotlib.pyplot as plt
 import numpy as np
 import sys

@@ -11,3 +11,4 @@ src/venv_64
 Dockerfile
 PyRHEED.zip
 .dockerignore
+.pypirc

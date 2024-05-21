@@ -1,6 +1,6 @@
-import broadening, generate_report, main, process, reciprocal_space_mapping, simulate_RHEED, translational_antiphase_domain
+from pyrheed import simulate_RHEED
 from PyQt6 import QtCore, QtGui, QtWidgets, QtDataVisualization
-from my_widgets import IndexedPushButtonWithTag, StartEndStep
+from pyrheed.my_widgets import IndexedPushButtonWithTag, StartEndStep
 import configparser
 import matplotlib.pyplot as plt
 import shutil

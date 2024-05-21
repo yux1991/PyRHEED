@@ -18,7 +18,7 @@ from lxml import etree as ET
 from math import pi as Pi
 from matplotlib.patches import Polygon as matPolygon
 from matplotlib.collections import PatchCollection
-from process_monitor import Monitor
+from pyrheed.process_monitor import Monitor
 try:
     import pycuda.compiler as comp
     import pycuda.driver as drv

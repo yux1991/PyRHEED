@@ -1,19 +1,8 @@
 from PyQt6 import QtGui, QtWidgets, QtCore
-import broadening
-import gmm
-import configparser
-import generate_report
-import graph_3D_surface
-import kikuchi
-import manual_fit
+from pyrheed import *
 import os
-import preference
-import reciprocal_space_mapping
-import simulate_RHEED
-import statistical_factor
-import scenario
 import sys
-import window
+import configparser
 
 class Window():
     """The main class"""
