@@ -1,10 +1,10 @@
-from my_widgets import ColorPicker, DoubleSlider
+from pyrheed.my_widgets import ColorPicker, DoubleSlider
 from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 import configparser
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import plot_chart
+from pyrheed import plot_chart
 from scipy.stats import linregress as lrg
 
 class Window(QtCore.QObject):
@@ -25,7 +25,7 @@ class Window(QtCore.QObject):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
         self.dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(self.dirname,'configuration.ini'))
+        self.config.read(os.path.join(self.dirname,'configuration/configuration.ini'))
 
     def set_status(self,status):
         self.status = status

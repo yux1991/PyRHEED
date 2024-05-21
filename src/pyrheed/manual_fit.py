@@ -1,12 +1,12 @@
-from my_widgets import VerticalLabelSlider
-from process import Image, FitFunctions
+from pyrheed.my_widgets import VerticalLabelSlider
+from pyrheed.process import Image, FitFunctions
 from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 import configparser
 import glob
 import numpy as np
 import os
-import profile_chart
-import my_widgets
+from pyrheed import profile_chart
+from pyrheed import my_widgets
 
 class Window(QtCore.QObject):
 
@@ -18,7 +18,7 @@ class Window(QtCore.QObject):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
         dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))
         self.fontname = fontname
         self.fontsize = fontsize
         self.image_worker = Image()

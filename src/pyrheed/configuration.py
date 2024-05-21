@@ -51,5 +51,5 @@ class Configuration():
         config = configparser.ConfigParser()
         config.read_dict(Dic)
         dirname = os.path.dirname(__file__)
-        with open(os.path.join(dirname,'configuration.ini'),'w') as configfile:
+        with open(os.path.join(dirname,'configuration/configuration.ini'),'w') as configfile:
             config.write(configfile)

@@ -1,8 +1,8 @@
-from process import Image, Convertor, ReciprocalSpaceMap
+from pyrheed.process import Image, Convertor, ReciprocalSpaceMap
 from PyQt6 import QtCore, QtWidgets, QtGui
 import configparser
 import os
-import profile_chart
+from pyrheed import profile_chart
 
 class Window(QtCore.QObject):
     #Public Signals
@@ -23,7 +23,7 @@ class Window(QtCore.QObject):
         self.twoDimensionalMappingRegion = [0,0,0,0,0]
         self.config = configparser.ConfigParser()
         dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))
         self.image_worker = Image()
         self.convertor_worker = Convertor()
 

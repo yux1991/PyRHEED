@@ -1,14 +1,13 @@
-from process import Image
+from pyrheed.process import Image
 from PyQt6 import QtCore, QtGui, QtWidgets
-import browser
-import canvas
 import configparser
-import cursor
 import numpy as np
 import os
-import profile_chart
-import properties
-import time
+from pyrheed import browser
+from pyrheed import canvas
+from pyrheed import cursor
+from pyrheed import profile_chart
+from pyrheed import properties
 
 class Window(QtWidgets.QMainWindow):
 

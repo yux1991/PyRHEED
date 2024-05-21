@@ -33,16 +33,11 @@ It is written and tested with Python 3.7.4 (64 bit). The GUI is created using Py
 
 2. Installation
     ```
-    git clone https://github.com/yux1991/PyRHEED.git
-    cd PyRHEED
-    python -m venv env_pyrheed
-    source ./env_pyrheed/bin/activate
-    pip install -r requirements.txt 
+    pip install pyrheed
     ```
 3. Usage
     ```
-    cd src
-    python main.py
+    python -m pyrheed
     ```
 4. Load data
 

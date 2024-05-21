@@ -1,15 +1,15 @@
-from my_widgets import LabelSlider
-from process import Image, FitFunctions, FitBroadening
-from process_monitor import Monitor
+from pyrheed.my_widgets import LabelSlider
+from pyrheed.process import Image, FitFunctions, FitBroadening
+from pyrheed.process_monitor import Monitor
 from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 from sys import getsizeof
 import configparser
-import generate_report
+from pyrheed import generate_report
+from pyrheed import manual_fit
+from pyrheed import profile_chart
 import glob
-import manual_fit
 import numpy as np
 import os
-import profile_chart
 
 class Window(QtCore.QObject):
 
@@ -30,7 +30,7 @@ class Window(QtCore.QObject):
         self.analysisRegion = [0,0,0,0,0]
         self.config = configparser.ConfigParser()
         dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))
         self.image_worker = Image()
         self.fit_worker = FitFunctions()
 

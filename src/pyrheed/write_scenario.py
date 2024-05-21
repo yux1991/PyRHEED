@@ -92,5 +92,5 @@ config['TAPD'] = {'epi_cif_path':'C:/Google Drive/Documents/CIF/MoS2_3.15.cif',
                   }
 
 dirname = os.path.dirname(__file__)
-with open(os.path.join(dirname,'default_scenario.ini'),'w') as configfile:
+with open(os.path.join(dirname,'configuration/default_scenario.ini'),'w') as configfile:
     config.write(configfile)

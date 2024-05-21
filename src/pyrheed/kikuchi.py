@@ -1,11 +1,11 @@
 import configparser
 import numpy as np
 from numpy.lib import scimath
-from process import Diffraction
-import profile_chart
+from pyrheed.process import Diffraction
+from pyrheed import profile_chart
 from pymatgen.io.cif import CifParser
 from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
-from my_widgets import LabelMultipleLineEdit, LabelLineEdit, ColorPicker
+from pyrheed.my_widgets import LabelMultipleLineEdit, LabelLineEdit, ColorPicker
 import sys
 import os
 import itertools
@@ -18,7 +18,7 @@ class Window(QtCore.QObject):
         super(Window,self).__init__()
         dirname = os.path.dirname(__file__)
         self.config = configparser.ConfigParser()
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))  #Read the configuration file
         self.kikuchi_line_series = {}
         self.kikuchi_envelope_series = {}
         self.reciprocal_spot_series = {}

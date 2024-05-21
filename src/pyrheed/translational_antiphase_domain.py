@@ -1,9 +1,9 @@
 from PyQt6 import QtCore, QtWidgets
-from my_widgets import LabelSlider
-from process import FitFunctions
+from pyrheed.my_widgets import LabelSlider
+from pyrheed.process import FitFunctions
 import matplotlib.pyplot as plt
 import numpy as np
-import plot_chart
+from pyrheed import plot_chart
 import sys
 
 class Window(QtCore.QObject):

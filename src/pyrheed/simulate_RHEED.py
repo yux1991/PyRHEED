@@ -2,13 +2,13 @@ from PyQt6 import QtCore, QtGui, QtWidgets, QtDataVisualization
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.collections import LineCollection
-from my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, LabelSpinBox, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
-from process import Convertor, DiffractionPattern, TAPD_Simulation, TAPD_model
+from pyrheed.my_widgets import LabelLineEdit, IndexedComboBox, LockableDoubleSlider, LabelSlider, LabelSpinBox, InfoBoard, IndexedPushButton, DynamicalColorMap, IndexedColorPicker
+from pyrheed.process import Convertor, DiffractionPattern, TAPD_Simulation, TAPD_model
 from pymatgen.io.cif import CifParser
 from pymatgen.core import structure as pgStructure
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.lattice import Lattice
-import browser
+from pyrheed import browser
 import itertools
 import matplotlib as mpl
 import matplotlib.pyplot as plt

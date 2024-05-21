@@ -1,15 +1,13 @@
-from my_widgets import LabelSlider
-from process import Image, FitFunctions, FitBroadening
-from process_monitor import Monitor
+from pyrheed.my_widgets import LabelSlider
+from pyrheed.process import Image, FitFunctions, FitBroadening
+from pyrheed.process_monitor import Monitor
 from PyQt6 import QtCore, QtWidgets, QtGui, QtCharts
 from sys import getsizeof
 from sklearn.mixture import BayesianGaussianMixture
 from sklearn.mixture._gaussian_mixture import _estimate_gaussian_parameters
 from sklearn.mixture._gaussian_mixture import _compute_precision_cholesky
 import configparser
-import generate_report
 import glob
-import manual_fit
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -19,8 +17,10 @@ import numbers
 import os
 import time
 import sys
-import profile_chart
-import bar_chart
+from pyrheed import profile_chart
+from pyrheed import bar_chart
+from pyrheed import generate_report
+from pyrheed import manual_fit
 import pandas
 from scipy.stats import rv_discrete
 
@@ -43,7 +43,7 @@ class Window(QtCore.QObject):
         self.analysisRegion = [0,0,0,0,0]
         self.config = configparser.ConfigParser()
         dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))
         self.image_worker = Image()
         self.fit_worker = FitFunctions()
         self.stopped = False
