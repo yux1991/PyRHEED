@@ -12,7 +12,7 @@ class Window(QtCore.QObject):
         self.twoDimensionalMappingRegion = [0,0,0,0,0]
         self.config = configparser.ConfigParser()
         dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))
         self.defaultLineValueList = [['0', '0', '20', '0', '5', '60', '0.4', '100', '5', '20', '10', '0', '10'], \
                                      ['361.13', '20', '0', '5', '20', '0', '100', '50', '0', '500', '0.4', '0', '1',\
                                       '100', '60', '0', '180', '5', '0', '20', '10', '0', '-15', '15', '10'], \

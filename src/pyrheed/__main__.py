@@ -1,5 +1,5 @@
 from PyQt6 import QtGui, QtWidgets, QtCore
-from pyrheed import *
+from pyrheed import broadening, generate_report, gmm, graph_3D_surface, kikuchi, manual_fit, preference, reciprocal_space_mapping, scenario, simulate_RHEED, statistical_factor, window
 import os
 import sys
 import configparser

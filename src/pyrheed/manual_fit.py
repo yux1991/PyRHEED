@@ -18,7 +18,7 @@ class Window(QtCore.QObject):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
         dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))
         self.fontname = fontname
         self.fontsize = fontsize
         self.image_worker = Image()

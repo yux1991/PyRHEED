@@ -18,7 +18,7 @@ class Window(QtCore.QObject):
         super(Window,self).__init__()
         dirname = os.path.dirname(__file__)
         self.config = configparser.ConfigParser()
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))  #Read the configuration file
         self.kikuchi_line_series = {}
         self.kikuchi_envelope_series = {}
         self.reciprocal_spot_series = {}

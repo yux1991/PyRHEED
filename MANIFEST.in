@@ -1,0 +1,5 @@
+# MANIFEST.in
+
+include src/pyrheed/configuration/*
+include src/pyrheed/data/files/*
+include src/pyrheed/data/icons/*

@@ -23,7 +23,7 @@ class Window(QtCore.QObject):
         self.twoDimensionalMappingRegion = [0,0,0,0,0]
         self.config = configparser.ConfigParser()
         dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(dirname,'configuration.ini'))
+        self.config.read(os.path.join(dirname,'configuration/configuration.ini'))
         self.image_worker = Image()
         self.convertor_worker = Convertor()
 

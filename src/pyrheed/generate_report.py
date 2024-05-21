@@ -25,7 +25,7 @@ class Window(QtCore.QObject):
         super(Window,self).__init__()
         self.config = configparser.ConfigParser()
         self.dirname = os.path.dirname(__file__)
-        self.config.read(os.path.join(self.dirname,'configuration.ini'))
+        self.config.read(os.path.join(self.dirname,'configuration/configuration.ini'))
 
     def set_status(self,status):
         self.status = status

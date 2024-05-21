@@ -169,7 +169,7 @@ class Window(QtWidgets.QWidget):
             scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
             self.tab.addTab(scroll,section)
 
-        self.scenario_path_label = QtWidgets.QLabel("The scenario is:\n"+os.path.join(self.dirname,'default_scenario.ini'))
+        self.scenario_path_label = QtWidgets.QLabel("The scenario is:\n"+os.path.join(self.dirname,'configuration/default_scenario.ini'))
         self.choose_scenario_button = QtWidgets.QPushButton("Choose Scenario")
         self.choose_scenario_button.pressed.connect(self.choose_scenario)
         self.save_scenario_button = QtWidgets.QPushButton("Save Scenario")
@@ -237,13 +237,13 @@ class Window(QtWidgets.QWidget):
             self.config.write(configfile)
 
     def save_as_default_scenario(self):
-        with open(os.path.join(self.dirname,'default_scenario.ini'),'w') as configfile:
+        with open(os.path.join(self.dirname,'configuration/default_scenario.ini'),'w') as configfile:
             self.config.write(configfile)
 
     def load_scenario(self,path=None):
         self.config = configparser.ConfigParser()
         if path == None:
-            self.config.read(os.path.join(self.dirname,'default_scenario.ini'))
+            self.config.read(os.path.join(self.dirname,'configuration/default_scenario.ini'))
         else:
             self.config.read(path)
 
